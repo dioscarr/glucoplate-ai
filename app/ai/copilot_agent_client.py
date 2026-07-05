@@ -1,5 +1,30 @@
 from __future__ import annotations
 
+import os
+import shutil
+
+
+def _find_copilot_cli() -> str | None:
+    """Locate the Copilot CLI binary from common install locations."""
+    if path := os.environ.get("COPILOT_CLI_PATH"):
+        return path
+
+    if path := shutil.which("copilot"):
+        return path
+
+    candidates = [
+        os.path.expanduser("~/.local/bin/copilot"),
+        os.path.expandvars(
+            "${HOME}/.vscode-remote/data/User/globalStorage/"
+            "github.copilot-chat/copilotCli/copilot"
+        ),
+    ]
+    for candidate in candidates:
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+
+    return None
+
 
 class CopilotAgentClient:
     """Small wrapper around the GitHub Copilot SDK cookbook API.
@@ -9,29 +34,34 @@ class CopilotAgentClient:
     tests, and deployment experiments.
     """
 
-    def __init__(self, model: str = "gpt-5") -> None:
+    def __init__(self, model: str | None = None) -> None:
         self.model = model
 
     async def ask(self, prompt: str, timeout: float = 45.0) -> str:
         try:
-            from copilot import CopilotClient, MessageOptions, PermissionHandler, SessionConfig
+            from copilot import CopilotClient, PermissionHandler, RuntimeConnection
         except ImportError as exc:
             raise RuntimeError(
                 "GitHub Copilot SDK is not installed or available in this environment."
             ) from exc
 
-        client = CopilotClient()
+        cli_path = _find_copilot_cli()
+        connection = RuntimeConnection.for_stdio(path=cli_path) if cli_path else None
+        client = CopilotClient(connection=connection) if connection else CopilotClient()
         await client.start()
 
         try:
-            session = await client.create_session(
-                SessionConfig(
+            if self.model:
+                session = await client.create_session(
                     model=self.model,
                     on_permission_request=PermissionHandler.approve_all,
                 )
-            )
-            response = await session.send_and_wait(MessageOptions(prompt=prompt), timeout=timeout)
-            await session.destroy()
+            else:
+                session = await client.create_session(
+                    on_permission_request=PermissionHandler.approve_all,
+                )
+            response = await session.send_and_wait(prompt, timeout=timeout)
+            await session.disconnect()
         finally:
             await client.stop()
 
