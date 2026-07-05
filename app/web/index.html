@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GlucoPlate AI</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQnRwp2ATRS7sc0AbSWv5RRX4MWX8so=" crossorigin="" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">GlucoPlate AI</p>
+        <h1>Recipe, stores, map, and product lookup</h1>
+      </div>
+      <div class="searchbar">
+        <input id="recipeGoal" type="search" placeholder="Search recipe, ingredient, or meal idea..." value="Dominican chicken dinner" />
+        <button id="generateRecipeBtn">Generate</button>
+        <button id="useLocationBtn" class="secondary">Use my location</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="left-panel">
+        <article class="card">
+          <div class="section-header">
+            <h2>Recipe</h2>
+            <span id="aiProvider" class="pill">not generated</span>
+          </div>
+          <div id="recipeResult" class="muted">Generate a recipe to see clickable ingredients.</div>
+        </article>
+
+        <article class="card">
+          <div class="section-header">
+            <h2>Nearby stores</h2>
+            <span id="locationStatus" class="pill">location not set</span>
+          </div>
+          <div id="storeList" class="list muted">Use your location to search nearby grocery stores.</div>
+        </article>
+
+        <article class="card">
+          <div class="section-header">
+            <h2>Product matches</h2>
+            <span class="pill">price/inventory may be unknown</span>
+          </div>
+          <div id="productList" class="list muted">Click a recipe ingredient to check product metadata.</div>
+        </article>
+      </section>
+
+      <section class="map-panel">
+        <div id="map"></div>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
