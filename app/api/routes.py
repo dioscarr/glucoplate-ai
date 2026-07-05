@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Query
 
 from app.schemas.recipe import RecipeRequest, RecipeResponse
+from app.schemas.store import ProductAvailability, ProductSearchRequest, Store, StoreSearchRequest
+from app.services.price_availability_service import PriceAvailabilityService
 from app.services.recipe_generator import generate_recipe
+from app.services.store_locator_service import StoreLocatorService
 
 router = APIRouter(prefix="/api")
 
@@ -12,3 +15,15 @@ async def generate_recipe_endpoint(
     use_ai: bool = Query(default=True, description="Use Copilot SDK provider when available."),
 ) -> RecipeResponse:
     return await generate_recipe(request, use_ai=use_ai)
+
+
+@router.post("/stores/search", response_model=list[Store])
+def search_stores_endpoint(request: StoreSearchRequest) -> list[Store]:
+    service = StoreLocatorService()
+    return service.find_nearby_stores(request)
+
+
+@router.post("/products/search", response_model=list[ProductAvailability])
+def search_products_endpoint(request: ProductSearchRequest) -> list[ProductAvailability]:
+    service = PriceAvailabilityService()
+    return service.search(request)
