@@ -12,3 +12,14 @@ async def generate_recipe_endpoint(
     use_ai: bool = Query(default=True, description="Use Copilot SDK provider when available."),
 ) -> RecipeResponse:
     return await generate_recipe(request, use_ai=use_ai)
+
+
+@router.get("/ai/health")
+async def ai_health() -> dict:
+    """Quick check whether the GitHub Copilot SDK Python package is importable."""
+    try:
+        import copilot  # type: ignore
+
+        return {"copilot_installed": True, "version": getattr(copilot, "__version__", None)}
+    except Exception as exc:  # pragma: no cover - runtime environment dependent
+        return {"copilot_installed": False, "error": str(exc)}

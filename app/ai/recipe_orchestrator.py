@@ -73,9 +73,10 @@ class RecipeOrchestrator:
             payload: dict[str, Any] = json.loads(final_response)
             payload["ai_provider"] = "github-copilot-sdk-agent-chain"
             return RecipeResponse.model_validate(payload)
-        except Exception:
+        except Exception as exc:
             # MVP behavior: fallback keeps the demo deployable even without Copilot SDK runtime.
-            # Production behavior should log this exception and expose diagnostic metadata safely.
+            from loguru import logger
+            logger.warning("AI generation failed, using local fallback: {}", exc)
             return self.fallback_service.generate(request)
 
     def _to_context(self, value: dict[str, Any]) -> str:
