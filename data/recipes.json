@@ -1,0 +1,33 @@
+[
+  {
+    "id": "dominican-chicken-bowl",
+    "title": "Dominican-Inspired Chicken Bowl",
+    "culture": "Dominican",
+    "tags": ["high-protein", "balanced", "family-friendly"],
+    "ingredients": [
+      "grilled chicken breast",
+      "cauliflower rice",
+      "black beans",
+      "avocado",
+      "sauteed peppers",
+      "lime",
+      "cilantro"
+    ],
+    "notes": "A lighter bowl inspired by common Dominican flavors with controlled portions of beans and extra vegetables."
+  },
+  {
+    "id": "salmon-veggie-plate",
+    "title": "Salmon and Roasted Vegetable Plate",
+    "culture": "General",
+    "tags": ["low-carb", "omega-3", "quick"],
+    "ingredients": [
+      "salmon",
+      "broccoli",
+      "zucchini",
+      "olive oil",
+      "lemon",
+      "garlic"
+    ],
+    "notes": "Simple high-protein plate with non-starchy vegetables."
+  }
+]
