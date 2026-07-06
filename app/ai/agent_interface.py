@@ -51,13 +51,31 @@ def load_context_for_session(session_id: str, short_window: int = 7) -> Dict[str
     return {'short_term': short_files, 'long_term': long_term, 'config': cfg}
 
 
-def append_session_transcript(session_id: str, transcript_text: str) -> str:
-    """Save a session transcript to session_cache and return the filename."""
+from app.ai.redaction import redact_text, redact_json_like
+
+
+def append_session_transcript(session_id: str, transcript_text: str, redact: bool = True) -> str:
+    """Save a session transcript to session_cache and return the filename.
+
+    If redact is True (default) the transcript will be run through conservative
+    redaction helpers before being saved. Returns filename or empty string on failure.
+    """
+    safe_text = transcript_text
+    try:
+        if redact:
+            safe_text, count = redact_text(safe_text)
+            # additionally try to redact json-like secrets
+            safe_text, count2 = redact_json_like(safe_text)
+            count += count2
+    except Exception:
+        # If redaction fails, fall back to refusing to save (empty string)
+        return ''
+
     fname = f"session-{session_id}-{int(datetime.now(timezone.utc).timestamp())}.json"
     path = os.path.join(SESSION_DIR, fname)
     try:
         with open(path, 'w', encoding='utf-8') as f:
-            json.dump({'id': session_id, 'text': transcript_text, 'created_at': datetime.now(timezone.utc).isoformat()}, f, ensure_ascii=False)
+            json.dump({'id': session_id, 'text': safe_text, 'redactions': count if 'count' in locals() else 0, 'created_at': datetime.now(timezone.utc).isoformat()}, f, ensure_ascii=False)
     except Exception:
         return ''
     return fname
@@ -65,6 +83,11 @@ def append_session_transcript(session_id: str, transcript_text: str) -> str:
 
 def persist_session_summary(session_id: str, summary: str, tags: list[str] | None = None) -> Dict[str, Any]:
     """Add a summary to long-term memory via AgentMemory. Returns the memory entry."""
+    # summaries should also be lightly redacted before persisting
+    try:
+        summary_safe, _ = redact_text(summary)
+    except Exception:
+        summary_safe = summary
     am = AgentMemory()
-    entry = am.add_memory(f"session:{session_id} summary: {summary}", tags=tags or ['auto-summary'])
+    entry = am.add_memory(f"session:{session_id} summary: {summary_safe}", tags=tags or ['auto-summary'])
     return entry
