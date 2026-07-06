@@ -789,16 +789,35 @@ function renderStores(stores) {
       (store.address ? '<div class="store-addr">' + esc(store.address) + '</div>' : '') +
       (store.store_type ? '<div class="store-type">' + esc(store.store_type) + '</div>' : '');
     item.addEventListener('click', () => {
-      if (map) map.setView([store.latitude, store.longitude], 15);
-    });
-    storeList.appendChild(item);
+        if (!map) return;
+        // find marker for this store and center/open popup
+        const marker = state.markers.find(mk => mk.storeId === store.id);
+        if (marker) {
+          // If clustered, zoom to show marker, then open popup
+          if (state.clusterGroup) {
+            map.setView([store.latitude, store.longitude], 16);
+            // ensure cluster expands and popup opens after map movement
+            map.once('moveend', () => {
+              try { marker.openPopup(); } catch (e) {}
+            });
+          } else {
+            map.setView([store.latitude, store.longitude], 16);
+            try { marker.openPopup(); } catch (e) {}
+          }
+        } else {
+          map.setView([store.latitude, store.longitude], 16);
+        }
+      });
+      storeList.appendChild(item);
 
-    // Map marker
+      // Map marker
       if (map) {
         // use clustering if available
         const marker = L.marker([store.latitude, store.longitude])
-        .bindPopup('<strong>' + esc(store.name) + '</strong>' + (store.address ? '<br>' + esc(store.address) : ''));
-      state.markers.push(marker);
+          .bindPopup('<strong>' + esc(store.name) + '</strong>' + (store.address ? '<br>' + esc(store.address) : ''));
+        // attach store id for lookup
+        marker.storeId = store.id;
+        state.markers.push(marker);
         if (state.clusterGroup) {
           state.clusterGroup.addLayer(marker);
         } else {
