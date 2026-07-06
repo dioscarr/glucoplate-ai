@@ -729,7 +729,17 @@ function renderRecipe(d) {
     '<p style="font-size:.7rem;color:var(--gray-400);margin-top:1rem">Provider: <code>' + esc(d.ai_provider) + '</code></p>';
 
   card.style.display = 'block';
+
+  // Auto-generate images when using AI if user has enabled AI
+  try {
+    const useAi = document.getElementById('use_ai').checked;
+    if (useAi) {
+      // Small delay so UI can render before starting a long-running request
+      setTimeout(() => { try { generateImages(); } catch (e) { console.warn('Auto image generation failed', e); } }, 600);
+    }
+  } catch (e) { /* ignore */ }
 }
+
 
 /* ───────────────────────────────────────────────
    Location & stores

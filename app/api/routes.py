@@ -76,6 +76,13 @@ def get_cart(cart_id: str):
     return c or {}
 
 
+@router.put('/carts/{cart_id}', response_model=dict)
+def update_cart(cart_id: str, cart: dict):
+    svc = CartStoreService()
+    updated = svc.update(cart_id, cart)
+    return {'ok': bool(updated), 'cart': updated}
+
+
 @router.post('/route/plan')
 def plan_route(request: dict):
     """Plan an ordered route for the provided cart with stops as store IDs or coordinates.
