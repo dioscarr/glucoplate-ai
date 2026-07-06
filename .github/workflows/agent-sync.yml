@@ -1,0 +1,24 @@
+name: Agent Sync
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # daily at 02:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -r requirements.txt || true
+      - name: Run agent sync
+        run: |
+          python scripts/agent_sync.py || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

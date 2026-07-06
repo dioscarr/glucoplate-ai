@@ -1,0 +1,17 @@
+# Agent config (OpenClaw-inspired defaults)
+model_preferences:
+  summarizer: "gpt-4o-mini"
+  assistant: "copilot"  # prefer Copilot for creative prompts when available
+  cheap_summary: "gpt-4o-mini"  # cost-aware summarizer
+max_tokens_per_call: 2048
+daily_cost_cap_usd: 5.00
+allowed_providers:
+  - copilot
+  - openai
+  - google
+human_approval_threshold_usd: 1.00  # require manual approval for ops expected to exceed this
+memory_retention_days: 90
+short_term_window_days: 7
+policy:
+  no_secrets_in_memory: true
+  no_medical_advice_claims: true
