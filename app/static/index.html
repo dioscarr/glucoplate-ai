@@ -783,7 +783,17 @@ async function searchStores() {
     });
     const stores = await res.json();
     state.stores = stores;
-    renderStores(stores);
+    // Enrich stores with website/meta where available (lightweight)
+    try {
+      const enrichRes = await fetch('/api/stores/enrich', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ stores }) });
+      if (enrichRes.ok) {
+        const enriched = await enrichRes.json();
+        state.stores = enriched;
+      }
+    } catch (e) {
+      // ignore enrichment failures
+    }
+    renderStores(state.stores);
   } catch (err) {
     storeList.innerHTML = '<p class="muted">Could not fetch stores.</p>';
   }
@@ -874,16 +884,32 @@ async function lookupIngredient(btn, ingredient) {
   productList.innerHTML = '';
 
   try {
-    const res = await fetch('/api/products/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ingredient,
-        latitude: state.locationSet ? state.latitude : null,
-        longitude: state.locationSet ? state.longitude : null,
-      }),
+    // Normalize ingredient into search terms (AI-first with fallback)
+    let normRes = await fetch('/api/ingredients/normalize', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ingredients: [ingredient] })
     });
-    const products = await res.json();
+    let norm = null;
+    if (normRes.ok) {
+      const j = await normRes.json(); norm = j.normalized?.[0];
+    }
+    const queryTerms = norm ? (norm.search_terms || [norm.name || ingredient]) : [ingredient];
+
+    // Try product search for each query term until results found
+    let products = [];
+    for (const q of queryTerms) {
+      const res = await fetch('/api/products/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredient: q,
+          latitude: state.locationSet ? state.latitude : null,
+          longitude: state.locationSet ? state.longitude : null,
+        }),
+      });
+      if (!res.ok) continue;
+      const list = await res.json();
+      if (list && list.length) { products = list; break; }
+    }
     renderProducts(products, ingredient);
   } catch (err) {
     productList.innerHTML = '<p class="muted">Product lookup failed.</p>';
@@ -1063,7 +1089,7 @@ async function viewCart(cartId) {
   // show cart items in product-list area
   const productList = document.getElementById('product-list');
   if (!cart || !cart.items || !cart.items.length) { productList.innerHTML = '<p class="muted">Cart is empty.</p>'; return; }
-  productList.innerHTML = '<p style="font-size:.85rem;color:var(--gray-600);margin-bottom:.5rem">Viewing cart: <strong>' + esc(cart.title) + '</strong></p>';
+  productList.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem"><div style="font-size:.85rem;color:var(--gray-600)">Viewing cart: <strong>' + esc(cart.title) + '</strong></div><div><button class="btn btn-secondary" onclick="exportCart(\''+escAttr(cart.id)+'\')">Export / Print</button></div></div>';
   cart.items.forEach(it => {
     const div = document.createElement('div');
     div.className = 'product-card';
@@ -1072,12 +1098,31 @@ async function viewCart(cartId) {
   });
 }
 
+function exportCart(cartId) {
+  fetch('/api/carts/' + encodeURIComponent(cartId)).then(r=>r.json()).then(cart=>{
+    const lines = [];
+    lines.push('<h2>'+escapeHtml(cart.title || 'Cart')+'</h2>');
+    lines.push('<p>Exported from GlucoPlate AI — printable shopping list</p>');
+    lines.push('<ol>');
+    (cart.items||[]).forEach(it => {
+      lines.push('<li><strong>'+escapeHtml(it.product_name || it.ingredient || 'Item')+'</strong>' + (it.store_name ? ' — ' + escapeHtml(it.store_name) : '') + (it.notes ? '<div style="font-size:.85rem;color:#666">'+escapeHtml(it.notes.join('; '))+'</div>' : '') + '</li>');
+    });
+    lines.push('</ol>');
+    const w = window.open('', '_blank');
+    w.document.write('<html><head><title>Shopping list</title></head><body>'+lines.join('')+'<hr><button onclick="window.print()">Print</button></body></html>');
+    w.document.close();
+  });
+}
+
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 async function saveProductToCart(product) {
-  // pick first cart if available, otherwise prompt to create
+  // let user choose a cart if multiple exist
   const cartsRes = await fetch('/api/carts');
   const carts = await cartsRes.json();
-  let cartId = carts?.[0]?.id;
-  if (!cartId) {
+  let cartId = null;
+
+  if (!carts || !carts.length) {
     const ok = confirm('No cart exists. Create a new cart?');
     if (!ok) return;
     const title = prompt('Cart name:','My cart');
@@ -1085,14 +1130,24 @@ async function saveProductToCart(product) {
     const created = await createRes.json();
     cartId = created.cart.id;
     await loadCarts();
+  } else if (carts.length === 1) {
+    cartId = carts[0].id;
+  } else {
+    // let user pick
+    const names = carts.map((c,i) => (i+1) + ': ' + (c.title || c.id)).join('\n');
+    const pick = prompt('Choose cart by number:\n' + names + '\nEnter number:');
+    const idx = parseInt(pick) - 1;
+    if (isNaN(idx) || idx < 0 || idx >= carts.length) { alert('Invalid selection'); return; }
+    cartId = carts[idx].id;
   }
+
   // add item to cart
   const cartRes = await fetch('/api/carts/' + encodeURIComponent(cartId));
   const cart = await cartRes.json();
   cart.items = cart.items || [];
   cart.items.push(product);
   await fetch('/api/carts/' + encodeURIComponent(cartId), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(cart) });
-  alert('Saved to cart');
+  alert('Saved to cart "' + (cart.title || cart.id) + '"');
   loadCarts();
 }
 

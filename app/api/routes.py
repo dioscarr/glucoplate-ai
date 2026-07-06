@@ -11,6 +11,7 @@ from app.services.cart_store_service import CartStoreService
 from app.services.store_locator_service import StoreLocatorService
 from app.services.route_service import RouteService
 from app.services.web_scraper_service import fetch_metadata
+from app.services.ingredient_normalizer import normalize_ingredients
 from app.schemas.recipe_image import RecipeImageRequest, RecipeGalleryResponse
 from app.schemas.store import StoreSearchRequest, Store
 
@@ -103,6 +104,14 @@ def enrich_stores(request: dict):
         store['meta'] = meta
         enriched.append(store)
     return enriched
+
+
+@router.post('/ingredients/normalize')
+def normalize_ingredients_endpoint(request: dict):
+    """Normalize a list of ingredient strings into structured search terms."""
+    ingredients = request.get('ingredients') or []
+    result = normalize_ingredients(ingredients)
+    return {'normalized': result}
 
 
 @router.get("/ai/health")
