@@ -356,21 +356,44 @@
     }
     .stores-sidebar h3 {
       font-size: .82rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .5px; color: var(--gray-400);
+      letter-spacing: .5px; color: var(--gray-500);
+      padding-bottom: .25rem;
+      border-bottom: 1px dashed var(--gray-100);
     }
     /* Make each logical section scrollable to avoid long page scrolling */
     .stores-sidebar > div {
       max-height: 240px; /* reasonable default height per section */
       overflow: auto;
       padding-right: 6px; /* room for scrollbar */
+      padding-top: .6rem;
     }
+    /* Tab buttons look */
+    .stores-sidebar .btn-secondary { background: transparent; color: var(--gray-600); border: 1px solid transparent; padding: .4rem .6rem; }
+    .stores-sidebar .btn-secondary.active { background: linear-gradient(90deg,#eef7f0,#f7fff9); color: var(--green); border-color: rgba(45,122,79,0.12); box-shadow: 0 4px 10px rgba(45,122,79,0.06); }
+
     /* Make product and carts lists compact and scrollable */
     #product-list, #carts-list {
       max-height: 180px;
       overflow: auto;
+      display: flex; flex-direction: column; gap: .4rem;
     }
-    /* Ensure recents section doesn't grow too large */
-    #recents-section { max-height: 280px; overflow: auto; }
+    /* Recents list */
+    #recents-list { max-height: 280px; overflow: auto; display:flex; flex-direction:column; gap:.5rem }
+
+    /* Visual enhancements for items */
+    .store-item { transition: transform .12s, box-shadow .12s; }
+    .store-item:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(31,78,58,0.06); }
+
+    .product-card { transition: transform .12s, box-shadow .12s; border-color: transparent; }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 8px 22px rgba(0,0,0,0.06); border-color: rgba(34,197,94,0.06); }
+
+    .card.small { padding: .5rem; font-size:.9rem }
+
+    /* Count badges */
+    .count-badge { background: var(--green-light); color: var(--green); font-weight:800; padding:.15rem .4rem; border-radius:999px; margin-left:.25rem; }
+
+    /* Slightly stronger divider for sidebar */
+    .stores-sidebar .divider { background: linear-gradient(90deg, transparent, var(--gray-200), transparent); height:1px; margin: .5rem 0 }
 
 
     .store-item {
@@ -527,18 +550,30 @@
     <div class="tab-panel" id="tab-map">
       <div class="map-stores-layout">
 
-        <!-- Stores + Products sidebar -->
+        <!-- Stores + Products sidebar with inner tabs -->
         <div class="stores-sidebar" id="stores-sidebar">
-          <!-- Nearby stores -->
-          <div>
-            <h3>Nearby Stores</h3>
-            <div id="store-list"><p class="muted">Use your location to find nearby grocery stores.</p></div>
+          <div style="display:flex;gap:.4rem;align-items:center;justify-content:space-between">
+            <div style="display:flex;gap:.25rem">
+              <button class="btn btn-secondary" onclick="switchSidebarTab('stores')" id="tab-stores-btn">Stores <span id="count-stores" style="font-weight:700;margin-left:.3rem">0</span></button>
+              <button class="btn btn-secondary" onclick="switchSidebarTab('products')" id="tab-products-btn">Products <span id="count-products" style="font-weight:700;margin-left:.3rem">0</span></button>
+              <button class="btn btn-secondary" onclick="switchSidebarTab('carts')" id="tab-carts-btn">Carts <span id="count-carts" style="font-weight:700;margin-left:.3rem">0</span></button>
+              <button class="btn btn-secondary" onclick="switchSidebarTab('recents')" id="tab-recents-btn">Recents <span id="count-recents" style="font-weight:700;margin-left:.3rem">0</span></button>
+            </div>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <input id="sidebar-search" placeholder="Search stores, products, carts" style="padding:.4rem .6rem;border-radius:8px;border:1px solid var(--gray-200);font-size:.88rem" oninput="sidebarFilter(this.value)" />
+            </div>
           </div>
 
           <div class="divider"></div>
 
-          <!-- Product lookup -->
-          <div>
+          <!-- Tab: Nearby Stores -->
+          <div id="sidebar-stores" class="sidebar-tab">
+            <h3>Nearby Stores</h3>
+            <div id="store-list"><p class="muted">Use your location to find nearby grocery stores.</p></div>
+          </div>
+
+          <!-- Tab: Product lookup -->
+          <div id="sidebar-products" class="sidebar-tab" style="display:none">
             <h3>Product Lookup</h3>
             <div id="product-loading" style="display:none">
               <div class="spinner" style="width:24px;height:24px;border-width:2px;margin:.75rem auto"></div>
@@ -547,15 +582,20 @@
             <div style="margin-top:.5rem;font-size:.78rem;color:var(--gray-600)">Tip: click "Save" to add an item to a cart. If multiple carts exist you'll be prompted to choose.</div>
           </div>
 
-          <div class="divider"></div>
-
-          <div>
+          <!-- Tab: Saved Carts -->
+          <div id="sidebar-carts" class="sidebar-tab" style="display:none">
             <h3>Saved Carts</h3>
             <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
               <button class="btn btn-secondary" onclick="createCartPrompt()">+ New Cart</button>
               <button class="btn" onclick="loadCarts()">Refresh</button>
             </div>
             <div id="carts-list"><p class="muted">No carts yet.</p></div>
+          </div>
+
+          <!-- Tab: Recents -->
+          <div id="sidebar-recents" class="sidebar-tab" style="display:none">
+            <h3>Recents</h3>
+            <div id="recents-list"><p class="muted">No recent recipes yet.</p></div>
           </div>
         </div>
 
@@ -1169,6 +1209,43 @@ async function viewCart(cartId) {
   });
 }
 
+function editCartName(cartId) {
+  const newName = prompt('New name for cart:');
+  if (!newName) return;
+  fetch('/api/carts/' + encodeURIComponent(cartId)).then(r=>r.json()).then(cart=>{
+    cart.title = newName;
+    return fetch('/api/carts/' + encodeURIComponent(cartId), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(cart) });
+  }).then(()=>{ loadCarts(); alert('Cart renamed'); }).catch(e=>alert('Failed to rename cart: '+e.message));
+}
+
+// Sidebar tab switching
+function switchSidebarTab(name) {
+  document.querySelectorAll('.sidebar-tab').forEach(el=>el.style.display='none');
+  document.getElementById('sidebar-'+name).style.display = 'block';
+  // update counts/search if needed
+  if (name === 'recents') loadRecents();
+  if (name === 'carts') loadCarts();
+}
+
+function sidebarFilter(q) {
+  q = (q||'').toLowerCase();
+  // filter stores
+  document.querySelectorAll('#store-list .store-item').forEach(el=>{
+    const txt = el.textContent.toLowerCase(); el.style.display = txt.includes(q)?'block':'none';
+  });
+  // filter products
+  document.querySelectorAll('#product-list .product-card').forEach(el=>{
+    const txt = el.textContent.toLowerCase(); el.style.display = txt.includes(q)?'flex':'none';
+  });
+  // filter carts
+  document.querySelectorAll('#carts-list .store-item').forEach(el=>{
+    const txt = el.textContent.toLowerCase(); el.style.display = txt.includes(q)?'block':'none';
+  });
+  // filter recents
+  document.querySelectorAll('#recents-list .card').forEach(el=>{
+    const txt = el.textContent.toLowerCase(); el.style.display = txt.includes(q)?'block':'none';
+  });
+}
 function exportCart(cartId) {
   fetch('/api/carts/' + encodeURIComponent(cartId)).then(r=>r.json()).then(cart=>{
     const lines = [];
