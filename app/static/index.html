@@ -525,6 +525,17 @@
             </div>
             <div id="product-list"><p class="muted">Click an ingredient from the recipe to look up products.</p></div>
           </div>
+
+          <div class="divider"></div>
+
+          <div>
+            <h3>Saved Carts</h3>
+            <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+              <button class="btn btn-secondary" onclick="createCartPrompt()">+ New Cart</button>
+              <button class="btn" onclick="loadCarts()">Refresh</button>
+            </div>
+            <div id="carts-list"><p class="muted">No carts yet.</p></div>
+          </div>
         </div>
 
         <!-- Map -->
@@ -830,23 +841,24 @@ function renderStores(stores) {
       if (map) {
         // use clustering if available
         // use a circle marker to avoid missing image assets
-        const marker = L.circleMarker([store.latitude, store.longitude], {
-          radius: 8,
-          fillColor: '#3388ff',
-          color: '#2a7ae2',
-          weight: 1,
-          opacity: 1,
-          fillOpacity: 0.9
-        }).bindPopup('<strong>' + esc(store.name) + '</strong>' + (store.address ? '<br>' + esc(store.address) : ''));
-        // attach store id for lookup
-        marker.storeId = store.id;
-        state.markers.push(marker);
-        if (state.clusterGroup) {
-          state.clusterGroup.addLayer(marker);
-        } else {
-          marker.addTo(map);
-        }
-      }
+            const popupHtml = '<strong>' + esc(store.name) + '</strong>' + (store.address ? '<br>' + esc(store.address) : '') + (store.website ? '<br><a href="'+esc(store.website)+'" target="_blank">Website</a>' : '') + (store.phone ? '<br>☎ '+esc(store.phone) : '') + (store.facebook ? '<br><a href="'+esc(store.facebook)+'" target="_blank">Facebook</a>' : '') + (store.opening_hours ? '<br>Hours: '+esc(store.opening_hours) : '');
+            const marker = L.circleMarker([store.latitude, store.longitude], {
+              radius: 8,
+              fillColor: '#3388ff',
+              color: '#2a7ae2',
+              weight: 1,
+              opacity: 1,
+              fillOpacity: 0.9
+            }).bindPopup(popupHtml);
+            // attach store id for lookup
+            marker.storeId = store.id;
+            state.markers.push(marker);
+            if (state.clusterGroup) {
+              state.clusterGroup.addLayer(marker);
+            } else {
+              marker.addTo(map);
+            }
+          }
   });
 }
 
@@ -881,7 +893,7 @@ async function lookupIngredient(btn, ingredient) {
   }
 }
 
-function renderProducts(products, ingredient) {
+async function renderProducts(products, ingredient) {
   const productList = document.getElementById('product-list');
   if (!products.length) {
     productList.innerHTML = '<p class="muted">No products found for "' + esc(ingredient) + '".</p>';
@@ -892,7 +904,7 @@ function renderProducts(products, ingredient) {
   // Clear previous store highlights
   if (map && state.markers) state.markers.forEach(m => m.setIcon && m.setIcon(m.defaultIcon || m.getIcon()));
 
-  products.slice(0, 10).forEach(p => {
+  products.slice(0, 10).forEach(async p => {
     const card = document.createElement('div');
     card.className = 'product-card';
 
@@ -903,6 +915,9 @@ function renderProducts(products, ingredient) {
     const priceHtml = p.price ? '<span class="price-badge">' + esc(p.currency || '$') + (p.price).toFixed ? (p.price).toFixed(2) : esc(p.price) + '</span>' : '';
     const ratingHtml = p.rating ? '<span class="rating">★ ' + esc(p.rating) + '</span>' : '';
 
+    // Add Save to Cart button
+    const saveBtn = '<button class="btn btn-secondary" style="padding:.35rem .5rem;font-size:.8rem" onclick="saveProductToCart(' + escAttr(JSON.stringify(p)) + ')">Save</button>';
+
     card.innerHTML = imgHtml + '<div style="flex:1">'
       + '<div style="display:flex;justify-content:space-between;align-items:center">'
       + '<div class="prod-name">' + esc(p.product_name || 'Unknown product') + '</div>'
@@ -910,7 +925,8 @@ function renderProducts(products, ingredient) {
       + '</div>'
       + (p.brand ? '<div class="prod-brand">' + esc(p.brand) + '</div>' : '')
       + '<div class="prod-source">' + esc(p.source) + (p.store_name ? ' · ' + esc(p.store_name) : '') + '</div>'
-      + '</div>';
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:.5rem;margin-left:.5rem">' + saveBtn + '</div>';
 
     productList.appendChild(card);
 
@@ -920,16 +936,17 @@ function renderProducts(products, ingredient) {
       if (match) {
         // find corresponding marker (approx by lat/lon)
         const m = state.markers.find(mk => {
+          if (!mk.getLatLng) return false;
           const latlng = mk.getLatLng();
           return Math.abs(latlng.lat - match.latitude) < 0.0005 && Math.abs(latlng.lng - match.longitude) < 0.0005;
         });
         if (m) {
           // store default icon for later reset
-          m.defaultIcon = m.getIcon();
+          if (m.getIcon) m.defaultIcon = m.getIcon();
           // create a simple highlighted icon by changing color using DivIcon
           const highlight = L.divIcon({ className: 'store-highlight', html: '<div style="width:12px;height:12px;border-radius:50%;background:#2d7a4f;border:2px solid white"></div>', iconSize: [18,18] });
-          m.setIcon(highlight);
-          m.openPopup();
+          if (m.setIcon) m.setIcon(highlight);
+          try { m.openPopup(); } catch (e) {}
         }
       }
     }
@@ -1011,6 +1028,105 @@ function renderImageGallery(data) {
 
   gallery.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:.5rem">${thumbs}</div>`;
 }
+
+
+
+/* ───────────────────────────────────────────────
+   Carts and routing UI functions
+─────────────────────────────────────────────── */
+
+async function createCartPrompt() {
+  const name = prompt('Name for new cart (e.g. Weekend groceries):');
+  if (!name) return;
+  const cart = { title: name, items: [] };
+  const res = await fetch('/api/carts', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(cart) });
+  if (res.ok) { loadCarts(); alert('Cart created'); } else { alert('Failed to create cart'); }
+}
+
+async function loadCarts() {
+  const res = await fetch('/api/carts');
+  const list = await res.json();
+  const el = document.getElementById('carts-list');
+  if (!list.length) { el.innerHTML = '<p class="muted">No carts yet.</p>'; return; }
+  el.innerHTML = '';
+  list.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'store-item';
+    d.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>' + esc(c.title || 'Cart') + '</strong><div style="font-size:.75rem;color:var(--gray-400)">'+(c.items?.length||0)+' items</div></div><div style="display:flex;gap:.4rem"><button class="btn btn-secondary" onclick="viewCart(\''+escAttr(c.id)+'\')">Open</button><button class="btn" onclick="planCartRoute(\''+escAttr(c.id)+'\')">Plan Route</button></div></div>';
+    el.appendChild(d);
+  });
+}
+
+async function viewCart(cartId) {
+  const res = await fetch('/api/carts/' + encodeURIComponent(cartId));
+  const cart = await res.json();
+  // show cart items in product-list area
+  const productList = document.getElementById('product-list');
+  if (!cart || !cart.items || !cart.items.length) { productList.innerHTML = '<p class="muted">Cart is empty.</p>'; return; }
+  productList.innerHTML = '<p style="font-size:.85rem;color:var(--gray-600);margin-bottom:.5rem">Viewing cart: <strong>' + esc(cart.title) + '</strong></p>';
+  cart.items.forEach(it => {
+    const div = document.createElement('div');
+    div.className = 'product-card';
+    div.innerHTML = (it.image_url?'<img src="'+esc(it.image_url)+'"/>':'<div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center">🛒</div>') + '<div style="flex:1"><div class="prod-name">'+esc(it.product_name || it.ingredient || 'Item')+'</div><div class="prod-source">'+esc(it.store_name||'')+'</div></div>';
+    productList.appendChild(div);
+  });
+}
+
+async function saveProductToCart(product) {
+  // pick first cart if available, otherwise prompt to create
+  const cartsRes = await fetch('/api/carts');
+  const carts = await cartsRes.json();
+  let cartId = carts?.[0]?.id;
+  if (!cartId) {
+    const ok = confirm('No cart exists. Create a new cart?');
+    if (!ok) return;
+    const title = prompt('Cart name:','My cart');
+    const createRes = await fetch('/api/carts', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ title, items: [] }) });
+    const created = await createRes.json();
+    cartId = created.cart.id;
+    await loadCarts();
+  }
+  // add item to cart
+  const cartRes = await fetch('/api/carts/' + encodeURIComponent(cartId));
+  const cart = await cartRes.json();
+  cart.items = cart.items || [];
+  cart.items.push(product);
+  await fetch('/api/carts/' + encodeURIComponent(cartId), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(cart) });
+  alert('Saved to cart');
+  loadCarts();
+}
+
+async function planCartRoute(cartId) {
+  const res = await fetch('/api/carts/' + encodeURIComponent(cartId));
+  const cart = await res.json();
+  if (!cart || !cart.items || !cart.items.length) { alert('Cart empty'); return; }
+  // map products to stores (use first matching store from state.stores)
+  const stops = [];
+  cart.items.forEach(it => {
+    if (it.store_name) {
+      const match = state.stores.find(s => (s.name||'').toLowerCase().includes((it.store_name||'').toLowerCase()));
+      if (match) stops.push(match);
+    }
+  });
+  if (!stops.length) { alert('No store locations available for items in this cart. Try searching products from the map first.'); return; }
+  // use current location as start
+  const payload = { start_lat: state.latitude, start_lng: state.longitude, stops: stops };
+  const planRes = await fetch('/api/route/plan', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  const plan = await planRes.json();
+  // draw route geometry on map
+  if (plan.geometry && map) {
+    if (state.currentRouteLayer) { map.removeLayer(state.currentRouteLayer); }
+    state.currentRouteLayer = L.geoJSON(plan.geometry, { style: { color: '#2d7a4f', weight: 4, opacity: .85 } }).addTo(map);
+    // center to bounds
+    const bounds = state.currentRouteLayer.getBounds();
+    map.fitBounds(bounds, { padding: [40,40] });
+  }
+  // show summary
+  alert('Planned route: ' + (plan.total_distance_m ? (Math.round(plan.total_distance_m) + ' m') : 'distance unknown'));
+}
+
+// Load carts on startup
+loadCarts();
 
 </script>
 </body>
