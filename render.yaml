@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: glucoplate-ai
+    runtime: docker
+    plan: free
+    branch: main
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12
+      - key: PORT
+        value: 8000
