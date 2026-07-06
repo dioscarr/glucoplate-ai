@@ -1,7 +1,7 @@
 import time
 
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
@@ -33,30 +33,44 @@ async def log_requests(request: Request, call_next):
         duration=duration_ms,
     )
 
-    # Update agent memory for key actions to keep short/long-term context fresh.
     try:
         from app.ai.agent_memory import AgentMemory
+
         am = AgentMemory()
-        path = request.url.path or ''
-        method = request.method or ''
-        # Only record POST/PUT actions on important routes to avoid noise
-        if method in ('POST', 'PUT') and any(p in path for p in ['/api/recipes', '/api/carts', '/api/products', '/api/stores', '/api/recipes/gallery']):
+        path = request.url.path or ""
+        method = request.method or ""
+        important_paths = [
+            "/api/recipes",
+            "/api/carts",
+            "/api/products",
+            "/api/stores",
+            "/api/recipes/gallery",
+        ]
+        if method in ("POST", "PUT") and any(p in path for p in important_paths):
             try:
-                # Read small payload safely
                 body = await request.body()
                 summary = f"{method} {path} payload_len={len(body)} status={response.status_code}"
-                # Add short fact to memory
-                am.add_memory(summary, tags=['api_event'])
+                am.add_memory(summary, tags=["api_event"])
             except Exception:
-                am.add_memory(f"{method} {path} (payload unreadable)", tags=['api_event'])
+                am.add_memory(f"{method} {path} (payload unreadable)", tags=["api_event"])
     except Exception:
-        # Don't break requests if memory subsystem fails
         pass
 
     return response
 
+
 @app.get("/", include_in_schema=False)
 def root() -> RedirectResponse:
+    return RedirectResponse(url="/static/index.html")
+
+
+@app.head("/", include_in_schema=False)
+def root_head() -> Response:
+    return Response(status_code=200)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon() -> RedirectResponse:
     return RedirectResponse(url="/static/index.html")
 
 
