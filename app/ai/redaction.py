@@ -42,10 +42,21 @@ def redact_json_like(text: str) -> Tuple[str, int]:
     """Attempt to redact JSON-ish payloads by removing values for keys like api_key, token, secret.
 
     This searches for simple key: value patterns and replaces the value with [REDACTED_SECRET].
+    Handles cases like:
+      "api_key": "value"
+      'token': 'value'
+      password: value
     """
-    # key: "value" or 'value' or key: value
-    key_re = re.compile(r"\b(api_key|apikey|secret|token|password)\b\s*[:=]\s*(?:\"[^\"]*\"|'[^']*'|[^\s,\n\r]+)", re.IGNORECASE)
-    out, n = key_re.subn(lambda m: m.group(0).split(':')[0] + ': [REDACTED_SECRET]', text)
+    # Match "key": "value" or 'key': 'value' or key: value
+    key_re = re.compile(r"([\'\"]?)(api_key|apikey|secret|token|password)\1\s*[:=]\s*(\"([^\"]*)\"|'([^']*)'|([^\s,\n\r]+))", re.IGNORECASE)
+
+    def _repl(m):
+        # Preserve the original quoting around key
+        quote = m.group(1) or ''
+        key = m.group(2)
+        return f"{quote}{key}{quote}: [REDACTED_SECRET]"
+
+    out, n = key_re.subn(_repl, text)
     return out, n
 
 
