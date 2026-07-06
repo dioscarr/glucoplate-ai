@@ -574,6 +574,15 @@ function initMap() {
     .addTo(map)
     .bindPopup('Default search area');
 
+  // Fix for missing default marker images: point Leaflet to CDN-hosted images (no integrity)
+  if (L && L.Icon && L.Icon.Default && typeof L.Icon.Default.mergeOptions === 'function') {
+    L.Icon.Default.mergeOptions({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+    });
+  }
+
   // Initialize marker clustering if plugin available
   if (L.markerClusterGroup) {
     state.clusterGroup = L.markerClusterGroup();
