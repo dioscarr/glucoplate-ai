@@ -36,10 +36,24 @@ def search_products_endpoint(request: ProductSearchRequest) -> list[ProductAvail
     return PriceAvailabilityService().search(request)
 
 
-@router.post("/recipes/gallery", response_model=RecipeGalleryResponse)
-def generate_recipe_gallery_endpoint(request: RecipeImageRequest) -> RecipeGalleryResponse:
-    service = RecipeGalleryService()
-    return service.generate_gallery(request)
+from app.services.gallery_job_service import GalleryJobService
+
+
+@router.post("/recipes/gallery")
+def enqueue_recipe_gallery(request: RecipeImageRequest):
+    """Enqueue an image generation job and return a job_id. Use GET /api/recipes/gallery/{job_id} to poll."""
+    job_svc = GalleryJobService()
+    job_id = job_svc.enqueue(request.dict() if hasattr(request, 'dict') else dict(request))
+    return {"ok": True, "job_id": job_id}
+
+
+@router.get('/recipes/gallery/{job_id}')
+def get_gallery_job(job_id: str):
+    job_svc = GalleryJobService()
+    job = job_svc.get(job_id)
+    if not job:
+        return {"ok": False, "error": "not found"}
+    return job
 
 
 @router.post("/recipes/save")

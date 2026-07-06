@@ -707,6 +707,7 @@ function renderRecipe(d) {
       '<span class="badge ' + badgeClass + '">' + badgeLabel + '</span>' +
     '</div>' +
     '<div style="margin-top:.6rem;display:flex;gap:.5rem;justify-content:flex-end">' +
+      '<label style="display:flex;align-items:center;gap:.5rem"><input type="checkbox" id="auto_gen_images"/> Auto images</label>' +
       '<button class="btn btn-secondary" id="gen-images-btn" onclick="generateImages()">📸 Generate Images</button>' +
     '</div>' +
     '<p class="summary">' + esc(d.summary) + '</p>' +
@@ -733,7 +734,8 @@ function renderRecipe(d) {
   // Auto-generate images when using AI if user has enabled AI
   try {
     const useAi = document.getElementById('use_ai').checked;
-    if (useAi) {
+    const autoGen = localStorage.getItem('auto_generate_images') === '1';
+    if (useAi && autoGen) {
       // Small delay so UI can render before starting a long-running request
       setTimeout(() => { try { generateImages(); } catch (e) { console.warn('Auto image generation failed', e); } }, 600);
     }
@@ -1008,6 +1010,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') generateRecipe();
   });
 
+  // auto images toggle
+  const autoCheckbox = document.getElementById('auto_gen_images');
+  if (autoCheckbox) {
+    autoCheckbox.checked = localStorage.getItem('auto_generate_images') === '1';
+    autoCheckbox.addEventListener('change', () => {
+      localStorage.setItem('auto_generate_images', autoCheckbox.checked ? '1' : '0');
+    });
+  }
+
   // Request user location by default (user asked: "Use My location by default")
   // This will prompt the browser for permission on load.
   // If denied, app falls back to default coordinates defined in state.
@@ -1023,7 +1034,7 @@ async function generateImages() {
   gallery.innerHTML = '<div class="spinner"></div><p class="loading-text">Generating images (may take 20-60s)…</p>';
 
   const btn = document.getElementById('gen-images-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Enqueuing…'; }
 
   const body = {
     title: recipe.title,
@@ -1034,14 +1045,29 @@ async function generateImages() {
   };
 
   try {
+    // enqueue job
     const res = await fetch('/api/recipes/gallery', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + await res.text());
-    const data = await res.json();
-    renderImageGallery(data);
+    const { job_id } = await res.json();
+    gallery.innerHTML = '<div class="loading-text">Images queued (job ' + esc(job_id) + '). Fetching status…</div>';
+
+    // Poll job status until completed/failed
+    let status = null;
+    for (let i=0;i<40;i++) {
+      await new Promise(r=>setTimeout(r, 1500));
+      const sres = await fetch('/api/recipes/gallery/' + encodeURIComponent(job_id));
+      if (!sres.ok) continue;
+      const jout = await sres.json();
+      status = jout.status;
+      if (status === 'completed') { renderImageGallery(jout.result || jout); break; }
+      if (status === 'failed') { gallery.innerHTML = '<div class="error-box">Image job failed: ' + esc(jout.error || 'unknown') + '</div>'; break; }
+      gallery.innerHTML = '<div class="loading-text">Image job ' + esc(job_id) + ' status: ' + esc(status) + ' (polling)</div>';
+    }
+    if (!status) gallery.innerHTML = '<div class="loading-text">Image job still pending. Refresh later.</div>';
   } catch (err) {
     gallery.innerHTML = '<div class="error-box">Image generation failed: ' + esc(err.message) + '</div>';
   } finally {
