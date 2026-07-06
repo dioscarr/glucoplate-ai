@@ -2,6 +2,7 @@ import json
 from typing import Any
 
 from app.ai.agents.nutrition_agent import NutritionAgent
+from app.ai.json_utils import extract_json_text
 from app.ai.agents.planner_agent import PlannerAgent
 from app.ai.agents.recipe_agent import RecipeAgent
 from app.ai.agents.reviewer_agent import ReviewerAgent
@@ -70,7 +71,7 @@ class RecipeOrchestrator:
                 )
             )
 
-            payload: dict[str, Any] = json.loads(final_response)
+            payload: dict[str, Any] = json.loads(extract_json_text(final_response))
             payload["ai_provider"] = "github-copilot-sdk-agent-chain"
             return RecipeResponse.model_validate(payload)
         except Exception as exc:

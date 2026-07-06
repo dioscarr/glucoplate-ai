@@ -1,6 +1,7 @@
 import json
 from typing import Any
 
+from app.ai.json_utils import extract_json_text
 from app.schemas.recipe import NutritionEstimate, RecipeRequest, RecipeResponse, SafetyReview
 
 
@@ -79,7 +80,7 @@ User request:
 
     def _parse_response(self, raw_content: str) -> RecipeResponse:
         try:
-            payload: dict[str, Any] = json.loads(raw_content)
+            payload: dict[str, Any] = json.loads(extract_json_text(raw_content))
         except json.JSONDecodeError as exc:
             raise RuntimeError("Copilot SDK response was not valid JSON.") from exc
 
