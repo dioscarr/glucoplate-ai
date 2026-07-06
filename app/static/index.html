@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GlucoPlate AI — Diabetes-Friendly Recipes</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="/static/vendor/leaflet.css" />
+  <link rel="stylesheet" href="/static/vendor/MarkerCluster.css" />
+  <link rel="stylesheet" href="/static/vendor/MarkerCluster.Default.css" />
   <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><circle cx='32' cy='32' r='28' fill='%232d7a4f'/><text x='50%' y='54%' font-size='36' fill='white' text-anchor='middle' font-family='Arial' dy='.1em'>🥗</text></svg>">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -539,7 +541,8 @@
   GlucoPlate AI · For general wellness support only · Not medical advice · Estimates are approximate
 </footer>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="/static/vendor/leaflet.js"></script>
+<script src="/static/vendor/leaflet.markercluster.js"></script>
 <script>
 /* ───────────────────────────────────────────────
    State
@@ -569,6 +572,12 @@ function initMap() {
   userMarker = L.marker([state.latitude, state.longitude])
     .addTo(map)
     .bindPopup('Default search area');
+
+  // Initialize marker clustering if plugin available
+  if (L.markerClusterGroup) {
+    state.clusterGroup = L.markerClusterGroup();
+    map.addLayer(state.clusterGroup);
+  }
 }
 
 /* ───────────────────────────────────────────────
@@ -762,8 +771,8 @@ function renderStores(stores) {
     return;
   }
 
-  // Clear old map markers
-  if (map) state.markers.forEach(m => m.remove());
+  // Clear old map markers/clusters
+    if (map && state.clusterGroup) { state.clusterGroup.clearLayers(); } else if (map) { state.markers.forEach(m => m.remove()); }
   state.markers = [];
 
   storeList.innerHTML = '';
@@ -781,12 +790,17 @@ function renderStores(stores) {
     storeList.appendChild(item);
 
     // Map marker
-    if (map) {
-      const marker = L.marker([store.latitude, store.longitude])
-        .addTo(map)
+      if (map) {
+        // use clustering if available
+        const marker = L.marker([store.latitude, store.longitude])
         .bindPopup('<strong>' + esc(store.name) + '</strong>' + (store.address ? '<br>' + esc(store.address) : ''));
       state.markers.push(marker);
-    }
+        if (state.clusterGroup) {
+          state.clusterGroup.addLayer(marker);
+        } else {
+          marker.addTo(map);
+        }
+      }
   });
 }
 
