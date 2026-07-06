@@ -370,6 +370,7 @@
     .store-item .store-name { font-size: .85rem; font-weight: 600; color: var(--gray-800); }
     .store-item .store-addr { font-size: .75rem; color: var(--gray-400); margin-top: 2px; }
     .store-item .store-type { font-size: .7rem; color: var(--green); font-weight: 600; margin-top: 2px; }
+        .store-item.active { box-shadow: 0 0 0 3px rgba(45,122,79,0.08); border-color: var(--green-mid); background: linear-gradient(90deg,#f3fbf4,#ffffff); }
 
     /* Product results */
     .product-item, .product-card {
@@ -799,16 +800,22 @@ function renderStores(stores) {
       (store.store_type ? '<div class="store-type">' + esc(store.store_type) + '</div>' : '');
     item.addEventListener('click', () => {
         if (!map) return;
+        // highlight clicked list item
+        document.querySelectorAll('.store-item').forEach(el => el.classList.remove('active'));
+        item.classList.add('active');
+
         // find marker for this store and center/open popup
         const marker = state.markers.find(mk => mk.storeId === store.id);
         if (marker) {
-          // If clustered, zoom to show marker, then open popup
-          if (state.clusterGroup) {
-            map.setView([store.latitude, store.longitude], 16);
-            // ensure cluster expands and popup opens after map movement
-            map.once('moveend', () => {
+          // If clustered and clusterGroup supports zoomToShowLayer, use it for smoother expansion
+          if (state.clusterGroup && typeof state.clusterGroup.zoomToShowLayer === 'function') {
+            state.clusterGroup.zoomToShowLayer(marker, () => {
               try { marker.openPopup(); } catch (e) {}
             });
+          } else if (state.clusterGroup && typeof map.once === 'function') {
+            // fallback: setView then open popup on moveend
+            map.setView([store.latitude, store.longitude], 16);
+            map.once('moveend', () => { try { marker.openPopup(); } catch (e) {} });
           } else {
             map.setView([store.latitude, store.longitude], 16);
             try { marker.openPopup(); } catch (e) {}
