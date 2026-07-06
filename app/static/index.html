@@ -181,7 +181,7 @@
     #tab-map.active  { display: flex; flex-direction: column; padding: 0; }
 
     /* Ensure map container and map take full height */
-    .map-stores-layout { height: 100%; display: grid; grid-template-columns: 280px 1fr; }
+    .map-stores-layout { height: 100%; display: grid; grid-template-columns: 360px 1fr; }
     #map-container { flex: 1; min-height: 0; height: 100%; }
     #map { width: 100%; height: 100%; min-height: 300px; }
 
@@ -1065,22 +1065,31 @@ async function createCartPrompt() {
   const name = prompt('Name for new cart (e.g. Weekend groceries):');
   if (!name) return;
   const cart = { title: name, items: [] };
-  const res = await fetch('/api/carts', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(cart) });
-  if (res.ok) { loadCarts(); alert('Cart created'); } else { alert('Failed to create cart'); }
+  try {
+    const res = await fetch('/api/carts', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(cart) });
+    if (res.ok) { await loadCarts(); alert('Cart created'); } else { const t = await res.text().catch(()=>res.statusText); alert('Failed to create cart: ' + t); }
+  } catch (e) {
+    alert('Failed to create cart: ' + e.message);
+  }
 }
 
 async function loadCarts() {
-  const res = await fetch('/api/carts');
-  const list = await res.json();
-  const el = document.getElementById('carts-list');
-  if (!list.length) { el.innerHTML = '<p class="muted">No carts yet.</p>'; return; }
-  el.innerHTML = '';
-  list.forEach(c => {
-    const d = document.createElement('div');
-    d.className = 'store-item';
-    d.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>' + esc(c.title || 'Cart') + '</strong><div style="font-size:.75rem;color:var(--gray-400)">'+(c.items?.length||0)+' items</div></div><div style="display:flex;gap:.4rem"><button class="btn btn-secondary" onclick="viewCart(\''+escAttr(c.id)+'\')">Open</button><button class="btn" onclick="planCartRoute(\''+escAttr(c.id)+'\')">Plan Route</button></div></div>';
-    el.appendChild(d);
-  });
+  try {
+    const res = await fetch('/api/carts');
+    if (!res.ok) { document.getElementById('carts-list').innerHTML = '<p class="muted">Could not load carts.</p>'; return; }
+    const list = await res.json();
+    const el = document.getElementById('carts-list');
+    if (!list.length) { el.innerHTML = '<p class="muted">No carts yet.</p>'; return; }
+    el.innerHTML = '';
+    list.forEach(c => {
+      const d = document.createElement('div');
+      d.className = 'store-item';
+      d.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>' + esc(c.title || 'Cart') + '</strong><div style="font-size:.75rem;color:var(--gray-400)">'+(c.items?.length||0)+' items</div></div><div style="display:flex;gap:.4rem"><button class="btn btn-secondary" onclick="viewCart(\''+escAttr(c.id)+'\')">Open</button><button class="btn" onclick="planCartRoute(\''+escAttr(c.id)+'\')">Plan Route</button></div></div>';
+      el.appendChild(d);
+    });
+  } catch (e) {
+    document.getElementById('carts-list').innerHTML = '<p class="muted">Could not load carts.</p>';
+  }
 }
 
 async function viewCart(cartId) {
