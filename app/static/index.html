@@ -505,6 +505,7 @@
       </div>
       <div id="recipe-error" class="error-box" style="display:none"></div>
       <div id="recipe-card" class="card" style="display:none"></div>
+      <div id="recents-section" style="margin-top:12px"></div>
       <div id="image-gallery" class="card" style="display:none;margin-top:12px"></div>
     </div>
 
@@ -736,6 +737,11 @@ function renderRecipe(d) {
     '<p style="font-size:.7rem;color:var(--gray-400);margin-top:1rem">Provider: <code>' + esc(d.ai_provider) + '</code></p>';
 
   card.style.display = 'block';
+
+  // Save to recents (server-side JSON file) for quick recall
+  try {
+    fetch('/api/recipes/recents', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(d) }).catch(e=>console.warn('Failed to save recent', e));
+  } catch (e) { /* ignore */ }
 
   // Auto-generate images when using AI if user has enabled AI
   try {
@@ -1233,6 +1239,28 @@ async function planCartRoute(cartId) {
 
 // Load carts on startup
 loadCarts();
+// Load recents on startup
+async function loadRecents() {
+  try {
+    const res = await fetch('/api/recipes/recents');
+    if (!res.ok) return;
+    const list = await res.json();
+    const el = document.getElementById('recents-section');
+    if (!list || !list.length) { el.innerHTML = ''; return; }
+    el.innerHTML = '<h3>Recents</h3>' + list.map(r => '<div class="card" style="margin-bottom:.5rem;padding:.6rem"><strong>' + esc(r.title) + '</strong><div style="font-size:.8rem;color:var(--gray-500)">' + esc(new Date(r.created_at).toLocaleString()) + '</div><div style="margin-top:.5rem;color:var(--gray-700)">' + esc(r.summary) + '</div><div style="margin-top:.5rem"><button class="btn btn-secondary" onclick="viewRecent(\'' + escAttr(r.id) + '\')">Open</button></div></div>' ).join('');
+  } catch (e) { /* ignore */ }
+}
+
+function viewRecent(id) {
+  fetch('/api/recipes/recents').then(r=>r.json()).then(list=>{
+    const entry = (list||[]).find(x=>x.id===id);
+    if (!entry) { alert('Recent not found'); return; }
+    // render the full recipe stored inside
+    if (entry.recipe) renderRecipe(entry.recipe);
+  });
+}
+
+loadRecents();
 
 </script>
 </body>

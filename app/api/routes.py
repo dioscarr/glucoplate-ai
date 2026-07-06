@@ -70,6 +70,23 @@ def list_recipes_endpoint():
     return svc.list()
 
 
+# Recents: simple file-backed list of generated recipe summaries
+from app.services.recents_service import RecentsService
+
+
+@router.post('/recipes/recents')
+def add_recent(recipe: dict):
+    svc = RecentsService()
+    entry = svc.add(recipe)
+    return {'ok': True, 'recent': entry}
+
+
+@router.get('/recipes/recents')
+def list_recents(limit: int = 20):
+    svc = RecentsService()
+    return svc.list(limit=limit)
+
+
 @router.post('/carts', response_model=dict)
 def create_cart(cart: dict):
     svc = CartStoreService()
