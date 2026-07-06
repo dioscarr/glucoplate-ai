@@ -563,18 +563,18 @@
 
         <!-- Stores + Products sidebar with inner tabs -->
         <div class="stores-sidebar" id="stores-sidebar">
-          <div style="display:flex;gap:.4rem;align-items:center;justify-content:space-between">
-            <div style="display:flex;gap:.25rem">
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <div style="display:flex;align-items:center;">
+              <div style="display:flex;align-items:center;background:var(--gray-50);border-radius:8px;padding:.28rem .4rem;border:1px solid var(--gray-200);width:100%;">
+                <span style="font-size:1rem;margin-right:.4rem;color:var(--gray-400)">🔎</span>
+                <input id="sidebar-search" placeholder="Search stores, products, carts" style="padding:.35rem .4rem;border-radius:6px;border:0;background:transparent;font-size:.88rem;width:100%" oninput="sidebarFilter(this.value)" />
+              </div>
+            </div>
+            <div style="display:flex;gap:.25rem;flex-wrap:wrap">
               <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('stores')" id="tab-stores-btn">🏬 Stores <span id="count-stores" class="count-badge">0</span></button>
               <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('products')" id="tab-products-btn">🛒 Products <span id="count-products" class="count-badge">0</span></button>
               <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('carts')" id="tab-carts-btn">🧾 Carts <span id="count-carts" class="count-badge">0</span></button>
               <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('recents')" id="tab-recents-btn">🕘 Recents <span id="count-recents" class="count-badge">0</span></button>
-            </div>
-            <div style="display:flex;gap:.5rem;align-items:center">
-              <div style="display:flex;align-items:center;background:var(--gray-50);border-radius:8px;padding:.28rem .4rem;border:1px solid var(--gray-200);">
-                <span style="font-size:1rem;margin-right:.4rem;color:var(--gray-400)">🔎</span>
-                <input id="sidebar-search" placeholder="Search stores, products, carts" style="padding:.35rem .4rem;border-radius:6px;border:0;background:transparent;font-size:.88rem;min-width:220px" oninput="sidebarFilter(this.value)" />
-              </div>
             </div>
           </div>
 
