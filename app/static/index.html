@@ -2,141 +2,163 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>GlucoPlate AI</title>
   <link rel="stylesheet" href="/static/vendor/leaflet.css" />
   <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><circle cx='32' cy='32' r='28' fill='%232563eb'/><text x='50%' y='56%' font-size='34' fill='white' text-anchor='middle' font-family='Arial'>🍽</text></svg>">
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     :root {
-      --bg: #f8fafc; --panel: rgba(255,255,255,.88); --card: #ffffff; --text: #0f172a;
-      --muted: #64748b; --line: #dbeafe; --primary: #2563eb; --primary-2: #38bdf8;
-      --primary-dark: #1d4ed8; --soft: #eff6ff; --good: #16a34a; --warn: #f59e0b;
-      --bad: #ef4444; --shadow: 0 18px 45px rgba(37,99,235,.12); --radius: 22px;
+      --bg: #f6f9ff; --surface: #ffffff; --surface-2: #f8fbff; --text: #0f172a;
+      --muted: #64748b; --line: #d8e7ff; --primary: #2563eb; --primary-2: #0ea5e9;
+      --primary-3: #60a5fa; --soft: #eff6ff; --good: #16a34a; --warn: #f59e0b; --danger: #ef4444;
+      --shadow-sm: 0 8px 22px rgba(15, 23, 42, .06); --shadow: 0 24px 70px rgba(37, 99, 235, .16);
+      --radius: 24px; --radius-sm: 16px; --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
     [data-theme="dark"] {
-      --bg: #020617; --panel: rgba(15,23,42,.9); --card: #0f172a; --text: #e2e8f0;
-      --muted: #94a3b8; --line: #1e3a8a; --soft: #0b1b3a; --shadow: 0 18px 50px rgba(14,165,233,.12);
+      --bg: #020617; --surface: #0f172a; --surface-2: #111c33; --text: #e2e8f0;
+      --muted: #94a3b8; --line: #1e3a8a; --soft: #081a3a; --shadow-sm: 0 8px 22px rgba(0,0,0,.24); --shadow: 0 24px 70px rgba(14, 165, 233, .12);
     }
+    html { scroll-behavior: smooth; }
     body {
-      margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(56,189,248,.22), transparent 34rem),
-        radial-gradient(circle at bottom right, rgba(37,99,235,.18), transparent 32rem), var(--bg);
-      color: var(--text); min-height: 100vh;
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 10% 0%, rgba(96,165,250,.24), transparent 34rem), radial-gradient(circle at 95% 10%, rgba(14,165,233,.16), transparent 30rem), var(--bg);
     }
     button, input, select { font: inherit; }
-    .shell { min-height: 100vh; display: flex; flex-direction: column; }
-    header {
-      position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between;
-      gap: 1rem; padding: 1rem clamp(1rem, 3vw, 2.25rem); backdrop-filter: blur(18px);
-      background: linear-gradient(90deg, rgba(37,99,235,.96), rgba(14,165,233,.92)); color: white;
-      box-shadow: 0 12px 35px rgba(37,99,235,.28);
+    button { -webkit-tap-highlight-color: transparent; }
+    .app { min-height: 100vh; padding-bottom: calc(1rem + var(--safe-bottom)); }
+    .topbar {
+      position: sticky; top: 0; z-index: 50; backdrop-filter: blur(22px);
+      background: color-mix(in srgb, var(--surface) 82%, transparent); border-bottom: 1px solid var(--line);
     }
-    .brand { display: flex; gap: .8rem; align-items: center; min-width: 0; }
-    .logo { width: 46px; height: 46px; border-radius: 16px; display:grid; place-items:center; font-size:1.55rem; background: rgba(255,255,255,.18); box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
-    h1 { margin:0; font-size: clamp(1.1rem, 2.6vw, 1.65rem); letter-spacing: -.04em; }
-    .tagline { margin:.12rem 0 0; font-size:.78rem; opacity:.82; white-space: nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .theme-toggle { display:flex; align-items:center; gap:.35rem; padding:.3rem; border-radius:999px; background:rgba(255,255,255,.18); }
-    .theme-toggle button { border:0; cursor:pointer; color:white; background:transparent; border-radius:999px; padding:.45rem .65rem; font-weight:800; }
-    .theme-toggle button.active { background:white; color:var(--primary-dark); }
-    .layout { display:grid; grid-template-columns: 360px 1fr; gap:1rem; padding:1rem; flex:1; min-height:0; }
-    .panel, .card { background: var(--panel); border:1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-    .sidebar { padding: 1rem; display:flex; flex-direction:column; gap:.8rem; align-self:start; }
-    .section-title { font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:.08em; font-size:.78rem; }
-    .field { display:flex; flex-direction:column; gap:.35rem; }
-    label { color: var(--muted); font-weight:800; font-size:.78rem; }
-    input, select { width:100%; border:1px solid var(--line); border-radius: 14px; background: var(--card); color:var(--text); padding:.72rem .85rem; outline:none; }
-    input:focus, select:focus { border-color: var(--primary-2); box-shadow: 0 0 0 4px rgba(56,189,248,.18); }
-    .row { display:grid; grid-template-columns: 1fr 1fr; gap:.7rem; }
-    .provider-row { display:grid; grid-template-columns:1fr; gap:.55rem; padding:.75rem; border-radius:18px; background:var(--soft); border:1px solid var(--line); }
-    .btn { width:100%; border:0; cursor:pointer; border-radius:16px; padding:.85rem 1rem; color:white; font-weight:900; background: linear-gradient(135deg,var(--primary),var(--primary-2)); box-shadow: 0 12px 28px rgba(37,99,235,.28); transition: transform .15s, filter .15s; }
-    .btn:hover { filter: brightness(1.04); transform: translateY(-1px); }
-    .btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
-    .btn.secondary { background: var(--card); color: var(--primary); border: 1px solid var(--line); box-shadow:none; }
-    .muted { color:var(--muted); font-size:.86rem; line-height:1.5; }
-    .main { min-width:0; display:flex; flex-direction:column; gap:1rem; }
-    .tabs { display:flex; gap:.5rem; padding:.45rem; border-radius:22px; background: var(--panel); border:1px solid var(--line); box-shadow: var(--shadow); }
-    .tab { flex:1; border:0; cursor:pointer; padding:.82rem; border-radius:17px; color:var(--muted); background:transparent; font-weight:900; }
-    .tab.active { color:white; background:linear-gradient(135deg,var(--primary),var(--primary-2)); }
-    .view { display:none; min-height:0; }
-    .view.active { display:block; }
-    .recipe-grid { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:1rem; }
-    .card { padding:1rem; }
-    .empty { min-height:320px; display:grid; place-items:center; text-align:center; border-style:dashed; color:var(--muted); }
-    .recipe-title { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; }
-    h2 { margin:.1rem 0 .4rem; font-size:clamp(1.35rem,3vw,2rem); letter-spacing:-.045em; }
-    h3 { margin:.2rem 0 .65rem; font-size:.85rem; text-transform:uppercase; color:var(--muted); letter-spacing:.08em; }
-    .badge { display:inline-flex; align-items:center; gap:.35rem; border-radius:999px; padding:.3rem .65rem; font-size:.75rem; font-weight:900; background:var(--soft); color:var(--primary); white-space:nowrap; }
-    .nutrition { display:grid; grid-template-columns: repeat(4,1fr); gap:.6rem; margin:1rem 0; }
-    .nut { background:var(--soft); border:1px solid var(--line); border-radius:16px; padding:.8rem; text-align:center; }
-    .nut strong { display:block; color:var(--primary); font-size:1.2rem; }
-    ul, ol { padding-left:1.1rem; line-height:1.65; }
-    .chips { display:flex; flex-wrap:wrap; gap:.45rem; }
-    .chip { border:1px solid var(--line); background:var(--soft); color:var(--primary); padding:.42rem .7rem; border-radius:999px; cursor:pointer; font-weight:800; }
-    .safety { border-radius:16px; padding:.85rem; background:rgba(22,163,74,.1); color:var(--good); border:1px solid rgba(22,163,74,.25); }
-    .map-grid { display:grid; grid-template-columns: 420px 1fr; gap:1rem; height: calc(100vh - 170px); min-height:560px; }
-    .side-stack { display:flex; flex-direction:column; gap:.85rem; overflow:auto; padding-right:.15rem; }
-    #map { min-height:420px; height:100%; border-radius:var(--radius); border:1px solid var(--line); box-shadow:var(--shadow); overflow:hidden; }
-    .search-box { display:flex; gap:.5rem; }
-    .list { display:flex; flex-direction:column; gap:.65rem; }
-    .item { display:flex; gap:.75rem; align-items:flex-start; border:1px solid var(--line); background:var(--card); border-radius:18px; padding:.75rem; }
-    .item img { width:68px; height:68px; object-fit:contain; border-radius:14px; background:var(--soft); flex-shrink:0; }
-    .item-title { font-weight:900; font-size:1rem; }
-    .source { color:var(--primary); font-weight:900; font-size:.82rem; }
-    .footer { text-align:center; color:var(--muted); font-size:.78rem; padding:1rem; }
-    .spinner { width:32px; height:32px; border-radius:999px; border:3px solid var(--line); border-top-color:var(--primary); animation:spin .8s linear infinite; margin:auto; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    @media(max-width:900px){ .layout{grid-template-columns:1fr; padding:.75rem;} .recipe-grid,.map-grid{grid-template-columns:1fr; height:auto;} #map{height:420px;} header{align-items:flex-start;} .theme-toggle{flex-shrink:0;} .nutrition{grid-template-columns:repeat(2,1fr);} .tagline{white-space:normal;} }
+    .topbar-inner { max-width: 1360px; margin: auto; padding: .8rem clamp(1rem, 3vw, 2rem); display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .brand { display:flex; align-items:center; gap:.8rem; min-width:0; }
+    .logo { width:48px; height:48px; border-radius:18px; display:grid; place-items:center; color:white; font-size:1.5rem; background:linear-gradient(135deg,var(--primary),var(--primary-2)); box-shadow:0 12px 30px rgba(37,99,235,.28); }
+    h1 { margin:0; font-size:1.15rem; letter-spacing:-.04em; }
+    .brand p { margin:.1rem 0 0; color:var(--muted); font-size:.8rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:42vw; }
+    .top-actions { display:flex; align-items:center; gap:.5rem; }
+    .pill-btn, .icon-btn { border:1px solid var(--line); background:var(--surface); color:var(--text); border-radius:999px; padding:.55rem .8rem; cursor:pointer; font-weight:800; box-shadow:var(--shadow-sm); }
+    .icon-btn { width:42px; height:42px; display:grid; place-items:center; padding:0; }
+    .desktop-shell { max-width:1360px; margin:auto; padding:1rem clamp(1rem,3vw,2rem); display:grid; grid-template-columns: 380px minmax(0, 1fr); gap:1rem; }
+    .panel { background:color-mix(in srgb, var(--surface) 92%, transparent); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+    .builder { padding:1rem; align-self:start; position:sticky; top:86px; max-height:calc(100vh - 105px); overflow:auto; }
+    .hero { padding:1.15rem; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:1rem; align-items:center; background:linear-gradient(135deg, rgba(37,99,235,.14), rgba(14,165,233,.08)); }
+    .eyebrow { color:var(--primary); font-size:.76rem; font-weight:950; letter-spacing:.1em; text-transform:uppercase; }
+    .hero h2 { margin:.25rem 0 .25rem; font-size:clamp(1.45rem,3vw,2.55rem); letter-spacing:-.065em; line-height:.98; }
+    .hero p { margin:0; color:var(--muted); line-height:1.45; }
+    .status-dots { display:flex; flex-direction:column; gap:.5rem; min-width:170px; }
+    .status { display:flex; align-items:center; gap:.45rem; padding:.48rem .65rem; border:1px solid var(--line); background:var(--surface); border-radius:999px; color:var(--muted); font-weight:850; font-size:.78rem; }
+    .dot { width:.58rem; height:.58rem; border-radius:99px; background:var(--good); box-shadow:0 0 0 4px rgba(22,163,74,.11); }
+    .form-stack { display:flex; flex-direction:column; gap:.82rem; margin-top:1rem; }
+    label { display:block; color:var(--muted); font-size:.78rem; font-weight:900; margin-bottom:.35rem; }
+    input, select { width:100%; border:1px solid var(--line); background:var(--surface-2); color:var(--text); border-radius:16px; padding:.82rem .9rem; outline:0; }
+    input:focus, select:focus { border-color:var(--primary-2); box-shadow:0 0 0 4px rgba(14,165,233,.15); background:var(--surface); }
+    .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; }
+    .primary-btn { border:0; border-radius:18px; padding:.95rem 1rem; color:white; cursor:pointer; font-weight:950; background:linear-gradient(135deg,var(--primary),var(--primary-2)); box-shadow:0 16px 32px rgba(37,99,235,.26); }
+    .secondary-btn { border:1px solid var(--line); border-radius:18px; padding:.88rem 1rem; cursor:pointer; color:var(--primary); background:var(--surface); font-weight:950; }
+    .primary-btn:active, .secondary-btn:active, .pill-btn:active, .icon-btn:active { transform:scale(.98); }
+    .provider-card { padding:.85rem; border-radius:20px; background:var(--soft); border:1px solid var(--line); }
+    .tabs { display:flex; gap:.55rem; padding:.45rem; margin-bottom:1rem; background:var(--surface); border:1px solid var(--line); border-radius:999px; box-shadow:var(--shadow-sm); width:max-content; }
+    .tab { border:0; background:transparent; cursor:pointer; border-radius:999px; padding:.72rem 1rem; color:var(--muted); font-weight:950; }
+    .tab.active { background:linear-gradient(135deg,var(--primary),var(--primary-2)); color:white; }
+    .view { display:none; }
+    .view.active { display:block; animation:fade .18s ease; }
+    @keyframes fade { from{opacity:.65; transform:translateY(4px)} to{opacity:1; transform:none} }
+    .content-grid { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:1rem; }
+    .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:1rem; }
+    .empty-state { min-height:420px; display:grid; place-items:center; text-align:center; border-style:dashed; }
+    .empty-icon { width:84px; height:84px; border-radius:30px; display:grid; place-items:center; margin:0 auto 1rem; background:var(--soft); color:var(--primary); font-size:2.4rem; }
+    .recipe-head { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; }
+    .recipe-head h2 { margin:.4rem 0 .35rem; font-size:clamp(1.65rem,3vw,2.4rem); letter-spacing:-.06em; line-height:1.02; }
+    .badge { display:inline-flex; align-items:center; gap:.4rem; padding:.4rem .7rem; border-radius:999px; background:var(--soft); color:var(--primary); font-size:.78rem; font-weight:950; white-space:nowrap; }
+    .nutrition { display:grid; grid-template-columns:repeat(4,1fr); gap:.65rem; margin:1rem 0; }
+    .nut { border:1px solid var(--line); border-radius:18px; background:var(--surface-2); padding:.85rem; }
+    .nut strong { display:block; color:var(--primary); font-size:1.35rem; letter-spacing:-.04em; }
+    .muted { color:var(--muted); line-height:1.5; }
+    .section-title { margin:1.15rem 0 .6rem; color:var(--muted); font-size:.8rem; font-weight:950; letter-spacing:.08em; text-transform:uppercase; }
+    .chips { display:flex; flex-wrap:wrap; gap:.5rem; }
+    .chip { border:1px solid var(--line); background:var(--soft); color:var(--primary); border-radius:999px; padding:.55rem .78rem; font-weight:900; cursor:pointer; }
+    ol { padding-left:1.2rem; line-height:1.7; }
+    .safety { padding:.9rem; border-radius:18px; border:1px solid rgba(22,163,74,.22); background:rgba(22,163,74,.1); color:var(--good); font-weight:700; }
+    .rail { display:flex; flex-direction:column; gap:1rem; }
+    .metric-list { display:grid; gap:.65rem; }
+    .mini { display:flex; justify-content:space-between; gap:.8rem; padding:.75rem; border-radius:18px; background:var(--surface-2); border:1px solid var(--line); }
+    .shop-grid { display:grid; grid-template-columns:390px minmax(0,1fr); gap:1rem; min-height:650px; }
+    .shop-side { display:flex; flex-direction:column; gap:1rem; min-width:0; }
+    .search-row { display:flex; gap:.55rem; }
+    .search-row .primary-btn { padding:.75rem 1rem; white-space:nowrap; }
+    .list { display:grid; gap:.65rem; margin-top:.75rem; }
+    .item { display:flex; gap:.8rem; align-items:flex-start; border:1px solid var(--line); background:var(--surface-2); border-radius:20px; padding:.78rem; }
+    .item img { width:74px; height:74px; object-fit:contain; border-radius:16px; background:var(--surface); flex-shrink:0; }
+    .item-title { font-weight:950; letter-spacing:-.025em; }
+    .source { color:var(--primary); font-weight:950; font-size:.82rem; margin-top:.16rem; }
+    #map { height:100%; min-height:650px; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow-sm); }
+    .mobile-bottom-nav, .mobile-fab { display:none; }
+    .spinner { width:34px; height:34px; border-radius:999px; border:3px solid var(--line); border-top-color:var(--primary); animation:spin .8s linear infinite; margin:auto; }
+    @keyframes spin { to{ transform:rotate(360deg); } }
+    @media(max-width:1080px){ .desktop-shell{grid-template-columns:1fr;} .builder{position:relative;top:auto;max-height:none;} .content-grid,.shop-grid{grid-template-columns:1fr;} #map{min-height:440px;} .tabs{width:100%;} .tab{flex:1;} }
+    @media(max-width:760px){
+      .topbar-inner{padding:.7rem .9rem;} .brand p{display:none;} .logo{width:42px;height:42px;border-radius:16px;} h1{font-size:1.02rem;}
+      .desktop-shell{padding:.75rem .75rem 6.2rem; display:block;} .builder{display:none;} .tabs{display:none;}
+      .hero{grid-template-columns:1fr; padding:1rem; margin-bottom:.85rem;} .hero h2{font-size:2rem;} .status-dots{display:grid;grid-template-columns:1fr 1fr;min-width:0;}
+      .content-grid{display:block;} .rail{margin-top:.85rem;} .empty-state{min-height:300px;} .card{padding:.9rem;border-radius:22px;}
+      .recipe-head{display:block;} .nutrition{grid-template-columns:repeat(2,1fr);} .shop-grid{display:block;min-height:0;} .shop-side{gap:.85rem;} #map{height:420px;min-height:420px;margin-top:.85rem;}
+      .mobile-bottom-nav{display:flex; position:fixed; left:.75rem; right:.75rem; bottom:calc(.75rem + var(--safe-bottom)); z-index:60; background:color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter:blur(22px); border:1px solid var(--line); border-radius:26px; padding:.45rem; box-shadow:0 20px 50px rgba(15,23,42,.22);}
+      .mobile-bottom-nav button{flex:1;border:0;background:transparent;color:var(--muted);border-radius:20px;padding:.55rem .25rem;font-weight:950;font-size:.72rem;display:grid;gap:.18rem;place-items:center;}
+      .mobile-bottom-nav button.active{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:white;}
+      .mobile-fab{display:block; position:fixed; right:1rem; bottom:calc(5.3rem + var(--safe-bottom)); z-index:55; border:0; border-radius:999px; padding:1rem 1.05rem; color:white; font-weight:950; background:linear-gradient(135deg,var(--primary),var(--primary-2)); box-shadow:0 18px 38px rgba(37,99,235,.34);}
+      .mobile-sheet{display:none;position:fixed;inset:0;z-index:80;background:rgba(2,6,23,.5);backdrop-filter:blur(8px);padding:1rem;align-items:flex-end;}
+      .mobile-sheet.open{display:flex;} .sheet-card{width:100%;max-height:88vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:30px;padding:1rem;box-shadow:var(--shadow);}
+      .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;} .sheet-head h2{margin:0;font-size:1.15rem;}
+      .mobile-form{display:flex;flex-direction:column;gap:.75rem;} .field-grid{grid-template-columns:1fr 1fr;} .top-actions .pill-btn{display:none;}
+    }
   </style>
 </head>
 <body>
-<div class="shell">
-  <header>
-    <div class="brand"><div class="logo">🍽</div><div><h1>GlucoPlate AI</h1><p class="tagline">Blue-theme wellness recipes, product lookup, maps, and AI provider fallbacks</p></div></div>
-    <div class="theme-toggle" aria-label="Theme selector"><button id="lightBtn" onclick="setTheme('light')">☀</button><button id="darkBtn" onclick="setTheme('dark')">🌙</button></div>
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><div class="logo">🍽</div><div><h1>GlucoPlate AI</h1><p>AI recipes, grocery products, and maps with graceful provider fallbacks</p></div></div>
+      <div class="top-actions"><button class="pill-btn" onclick="openBuilder()">New Recipe</button><button class="icon-btn" id="themeBtn" onclick="toggleTheme()">🌙</button></div>
+    </div>
   </header>
 
-  <div class="layout">
-    <aside class="panel sidebar">
-      <div class="section-title">Recipe Builder</div>
-      <div class="provider-row">
-        <label for="provider">AI Provider</label>
-        <select id="provider"><option value="auto">Automatic / Hosted fallback</option><option value="copilot">GitHub Copilot SDK</option><option value="gemini">Google Gemini</option><option value="local">Local Demo</option></select>
-        <p class="muted" id="provider-note">Hosted demo uses available providers and falls back safely.</p>
-      </div>
-      <div class="field"><label for="goal">What do you want to eat?</label><input id="goal" value="quick Dominican-style dinner" /></div>
-      <div class="row"><div class="field"><label for="servings">Servings</label><input id="servings" type="number" value="2" min="1" max="12" /></div><div class="field"><label for="max_carbs">Max carbs</label><input id="max_carbs" type="number" value="45" min="0" max="150" /></div></div>
-      <div class="field"><label for="culture">Cultural style</label><input id="culture" value="Dominican" /></div>
-      <div class="field"><label for="preferences">Preferences</label><input id="preferences" value="low sodium, high protein" /></div>
-      <div class="field"><label for="avoid">Avoid ingredients</label><input id="avoid" placeholder="peanuts, shellfish" /></div>
-      <button class="btn" id="generateBtn" onclick="generateRecipe()">Generate Recipe</button>
-      <button class="btn secondary" onclick="useCurrentLocation()">📍 Use My Location</button>
-      <p class="muted" id="locStatus">Default location: Cortland, NY. Click ingredients to search products.</p>
-    </aside>
-
-    <main class="main">
+  <div class="desktop-shell">
+    <aside class="panel builder" id="desktopBuilder"></aside>
+    <main>
+      <section class="panel hero">
+        <div><div class="eyebrow">Hosted Demo</div><h2>Plan smarter meals with AI.</h2><p>Generate a diabetes-conscious recipe, tap ingredients, compare products, and map nearby grocery options.</p></div>
+        <div class="status-dots"><div class="status"><span class="dot"></span> App online</div><div class="status"><span class="dot"></span> Fallback ready</div><div class="status"><span class="dot"></span> Product images</div></div>
+      </section>
       <nav class="tabs"><button id="recipeTab" class="tab active" onclick="showView('recipe')">🍽 Recipe</button><button id="shopTab" class="tab" onclick="showView('shop')">🛒 Products & Map</button></nav>
-      <section id="recipeView" class="view active"><div class="recipe-grid"><div id="recipeCard" class="card empty"><div><div style="font-size:3rem">🥗</div><h2>Ready when you are</h2><p class="muted">Generate a diabetes-conscious recipe with a provider-aware AI flow.</p></div></div><div class="card"><h3>System Status</h3><div class="list"><div class="item"><div><div class="item-title">AI Gateway</div><div class="source" id="aiStatus">Auto / fallback ready</div></div></div><div class="item"><div><div class="item-title">Product Images</div><div class="source">OpenFoodFacts / external images</div></div></div><div class="item"><div><div class="item-title">Theme</div><div class="source" id="themeStatus">Light</div></div></div></div></div></div></section>
-      <section id="shopView" class="view"><div class="map-grid"><div class="side-stack"><div class="card"><h3>Product Lookup</h3><div class="search-box"><input id="productQuery" placeholder="Search products like cacao, peanut butter" /><button class="btn" style="width:auto" onclick="searchProducts(document.getElementById('productQuery').value)">Search</button></div><div id="productList" class="list" style="margin-top:.8rem"><p class="muted">Click an ingredient or search manually.</p></div></div><div class="card"><h3>Nearby Stores</h3><button class="btn secondary" onclick="searchStores()">Refresh stores</button><div id="storeList" class="list" style="margin-top:.8rem"><p class="muted">Store search may fall back if the external API is limited.</p></div></div></div><div id="map"></div></div></section>
+      <section id="recipeView" class="view active"><div class="content-grid"><div id="recipeCard" class="card empty-state"><div><div class="empty-icon">🥗</div><h2>Start with a craving</h2><p class="muted">Use the recipe builder to generate a meal plan that can turn into a grocery workflow.</p></div></div><aside class="rail"><div class="card"><div class="section-title">System</div><div class="metric-list"><div class="mini"><span>AI Provider</span><strong id="aiStatus">Auto</strong></div><div class="mini"><span>Theme</span><strong id="themeStatus">Light</strong></div><div class="mini"><span>Location</span><strong id="locMini">Default</strong></div></div></div><div class="card"><div class="section-title">Tip</div><p class="muted">After generating a recipe, tap any ingredient chip to search product options with images.</p></div></aside></div></section>
+      <section id="shopView" class="view"><div class="shop-grid"><div class="shop-side"><div class="card"><div class="section-title">Product Lookup</div><div class="search-row"><input id="productQuery" placeholder="Search cacao, tuna, oats..." /><button class="primary-btn" onclick="searchProducts(productQuery.value)">Search</button></div><div id="productList" class="list"><p class="muted">Search products or tap a recipe ingredient.</p></div></div><div class="card"><div class="section-title">Nearby Stores</div><button class="secondary-btn" onclick="useCurrentLocation()">📍 Use my location</button><button class="secondary-btn" style="margin-top:.55rem" onclick="searchStores()">Refresh stores</button><div id="storeList" class="list"><p class="muted">Store lookup may use fallback if the external API is limited.</p></div></div></div><div id="map"></div></div></section>
     </main>
   </div>
-  <div class="footer">GlucoPlate AI · General wellness support only · Not medical advice · Estimates are approximate</div>
+
+  <button class="mobile-fab" onclick="openBuilder()">＋ Recipe</button>
+  <nav class="mobile-bottom-nav"><button id="mRecipeTab" class="active" onclick="showView('recipe')"><span>🍽</span><span>Recipe</span></button><button id="mShopTab" onclick="showView('shop')"><span>🛒</span><span>Shop</span></button><button onclick="openBuilder()"><span>✨</span><span>Create</span></button></nav>
+  <div class="mobile-sheet" id="builderSheet"><div class="sheet-card"><div class="sheet-head"><h2>Create recipe</h2><button class="icon-btn" onclick="closeBuilder()">✕</button></div><div id="mobileBuilder"></div></div></div>
 </div>
 <script src="/static/vendor/leaflet.js"></script>
 <script>
-const state = { latitude: 42.6012, longitude: -76.1805, recipe: null, map: null, userMarker: null, storeMarkers: [] };
-function setTheme(theme){ document.documentElement.dataset.theme = theme; localStorage.setItem('glucoplate-theme', theme); document.getElementById('lightBtn').classList.toggle('active', theme==='light'); document.getElementById('darkBtn').classList.toggle('active', theme==='dark'); document.getElementById('themeStatus').textContent = theme[0].toUpperCase()+theme.slice(1); }
-setTheme(localStorage.getItem('glucoplate-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-function showView(view){ document.querySelectorAll('.tab,.view').forEach(x=>x.classList.remove('active')); document.getElementById(view+'Tab').classList.add('active'); document.getElementById(view+'View').classList.add('active'); if(view==='shop') setTimeout(initMap, 50); }
-function initMap(){ if(state.map){ state.map.invalidateSize(); return; } state.map = L.map('map').setView([state.latitude,state.longitude],13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'&copy; OpenStreetMap'}).addTo(state.map); state.userMarker = L.marker([state.latitude,state.longitude]).addTo(state.map).bindPopup('Search area'); }
-function split(v){ return v.split(',').map(x=>x.trim()).filter(Boolean); }
-async function generateRecipe(){ const btn=document.getElementById('generateBtn'); const provider=document.getElementById('provider').value; const useAi = provider !== 'local'; const body={ goal:goal.value.trim(), servings:+servings.value||2, max_carbs_per_serving:+max_carbs.value||45, culture:culture.value.trim()||null, preferences:split(preferences.value), avoid_ingredients:split(avoid.value) }; btn.disabled=true; btn.textContent='Generating…'; recipeCard.className='card empty'; recipeCard.innerHTML='<div><div class="spinner"></div><p class="muted" style="margin-top:1rem">Generating with '+provider+' provider…</p></div>'; try{ const res=await fetch('/api/recipes/generate?use_ai='+useAi,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); if(!res.ok) throw new Error(await res.text()); const data=await res.json(); state.recipe=data; renderRecipe(data, provider); }catch(e){ recipeCard.innerHTML='<div><h2>Could not generate recipe</h2><p class="muted">'+e.message+'</p></div>'; }finally{ btn.disabled=false; btn.textContent='Generate Recipe'; } }
-function renderRecipe(d, provider){ const n=d.nutrition_estimate||{}; const ingredients=(d.ingredients||[]).map(i=>'<button class="chip" onclick="searchProducts(`'+String(i).replaceAll('`','')+'`)">'+i+'</button>').join(''); const steps=(d.steps||[]).map(s=>'<li>'+s+'</li>').join(''); const subs=(d.substitutions||[]).map(s=>'<span class="chip">'+s+'</span>').join(''); recipeCard.className='card'; recipeCard.innerHTML='<div class="recipe-title"><div><span class="badge">🤖 '+(d.ai_provider||provider||'fallback')+'</span><h2>'+d.title+'</h2></div></div><p class="muted">'+d.summary+'</p><div class="nutrition"><div class="nut"><strong>'+(n.calories??'—')+'</strong><span>Calories</span></div><div class="nut"><strong>'+(n.carbs_g??'—')+'g</strong><span>Carbs</span></div><div class="nut"><strong>'+(n.protein_g??'—')+'g</strong><span>Protein</span></div><div class="nut"><strong>'+(n.fiber_g??'—')+'g</strong><span>Fiber</span></div></div><h3>Ingredients</h3><div class="chips">'+ingredients+'</div><h3>Steps</h3><ol>'+steps+'</ol><h3>Substitutions</h3><div class="chips">'+subs+'</div><h3>Safety</h3><div class="safety">'+((d.safety_review&&d.safety_review.disclaimer)||'For general wellness support only.')+'</div>'; document.getElementById('aiStatus').textContent='Last provider: '+(d.ai_provider||provider); }
-async function searchProducts(q){ if(!q) return; showView('shop'); productQuery.value=q; productList.innerHTML='<div class="spinner"></div>'; const body={ingredient:q, latitude:state.latitude, longitude:state.longitude}; try{ const res=await fetch('/api/products/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); if(!res.ok) throw new Error(await res.text()); const data=await res.json(); productList.innerHTML=data.map(p=>'<div class="item">'+(p.image_url?'<img src="'+p.image_url+'" alt="">':'')+'<div><div class="item-title">'+(p.product_name||p.ingredient||q)+'</div><div class="muted">'+(p.brand||'')+'</div><div class="source">'+(p.source||'unknown')+'</div></div></div>').join('') || '<p class="muted">No products found.</p>'; }catch(e){ productList.innerHTML='<p class="muted">Product lookup unavailable: '+e.message+'</p>'; } }
-async function searchStores(){ initMap(); storeList.innerHTML='<div class="spinner"></div>'; try{ const res=await fetch('/api/stores/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitude:state.latitude,longitude:state.longitude,radius_meters:7000,query:'grocery'})}); if(!res.ok) throw new Error(await res.text()); const data=await res.json(); state.storeMarkers.forEach(m=>state.map.removeLayer(m)); state.storeMarkers=[]; storeList.innerHTML=data.map(s=>{ const m=L.marker([s.latitude,s.longitude]).addTo(state.map).bindPopup(s.name); state.storeMarkers.push(m); return '<div class="item"><div><div class="item-title">'+s.name+'</div><div class="muted">'+(s.address||'')+'</div><div class="source">'+(s.source||s.store_type||'store')+'</div></div></div>'; }).join(''); if(data[0]) state.map.setView([data[0].latitude,data[0].longitude],13); }catch(e){ storeList.innerHTML='<p class="muted">Store search unavailable: '+e.message+'</p>'; } }
-function useCurrentLocation(){ if(!navigator.geolocation){ locStatus.textContent='Geolocation not available.'; return; } navigator.geolocation.getCurrentPosition(pos=>{ state.latitude=pos.coords.latitude; state.longitude=pos.coords.longitude; locStatus.textContent='Location ready.'; if(state.map){ state.map.setView([state.latitude,state.longitude],13); state.userMarker.setLatLng([state.latitude,state.longitude]); } searchStores(); },()=>{ locStatus.textContent='Could not access location.'; }); }
-window.addEventListener('load',()=>{ initMap(); });
+const state={latitude:42.6012,longitude:-76.1805,recipe:null,map:null,userMarker:null,storeMarkers:[]};
+const builderHtml=`<div class="form-stack"><div class="provider-card"><label for="provider">AI Provider</label><select id="provider"><option value="auto">Automatic / Hosted fallback</option><option value="copilot">GitHub Copilot SDK</option><option value="gemini">Google Gemini</option><option value="local">Local Demo</option></select><p class="muted" style="margin:.5rem 0 0">Choose a provider, or let the app fall back safely in hosted mode.</p></div><div><label for="goal">What do you want to eat?</label><input id="goal" value="quick Dominican-style dinner" /></div><div class="field-grid"><div><label for="servings">Servings</label><input id="servings" type="number" value="2" min="1" max="12" /></div><div><label for="max_carbs">Max carbs</label><input id="max_carbs" type="number" value="45" min="0" max="150" /></div></div><div><label for="culture">Cultural style</label><input id="culture" value="Dominican" /></div><div><label for="preferences">Preferences</label><input id="preferences" value="low sodium, high protein" /></div><div><label for="avoid">Avoid ingredients</label><input id="avoid" placeholder="peanuts, shellfish" /></div><button class="primary-btn" id="generateBtn" onclick="generateRecipe()">Generate Recipe</button><button class="secondary-btn" onclick="useCurrentLocation()">📍 Use My Location</button><p class="muted" id="locStatus">Default location loaded. You can update it anytime.</p></div>`;
+desktopBuilder.innerHTML=builderHtml; mobileBuilder.innerHTML=builderHtml.replaceAll('id="','id="m_').replaceAll('for="','for="m_').replaceAll('generateRecipe()','generateRecipe(true)').replaceAll('useCurrentLocation()','useCurrentLocation(true)');
+function activePrefix(mobile=false){return mobile?'m_':''} function val(id){return (document.getElementById(id)||document.getElementById('m_'+id)).value}
+function split(v){return (v||'').split(',').map(x=>x.trim()).filter(Boolean)}
+function setTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem('glucoplate-theme',t);themeBtn.textContent=t==='dark'?'☀':'🌙';themeStatus.textContent=t[0].toUpperCase()+t.slice(1)}
+function toggleTheme(){setTheme((document.documentElement.dataset.theme||'light')==='dark'?'light':'dark')} setTheme(localStorage.getItem('glucoplate-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+function openBuilder(){builderSheet.classList.add('open')} function closeBuilder(){builderSheet.classList.remove('open')}
+function showView(v){document.querySelectorAll('.tab,.view,.mobile-bottom-nav button').forEach(x=>x.classList.remove('active'));document.getElementById(v+'View').classList.add('active');document.getElementById(v+'Tab')?.classList.add('active');document.getElementById(v==='recipe'?'mRecipeTab':'mShopTab')?.classList.add('active');if(v==='shop')setTimeout(initMap,80)}
+function initMap(){if(state.map){state.map.invalidateSize();return}state.map=L.map('map').setView([state.latitude,state.longitude],13);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(state.map);state.userMarker=L.marker([state.latitude,state.longitude]).addTo(state.map).bindPopup('Search area')}
+async function generateRecipe(mobile=false){const p=activePrefix(mobile),btn=document.getElementById(p+'generateBtn');const provider=val(p+'provider');const useAi=provider!=='local';const body={goal:val(p+'goal').trim(),servings:+val(p+'servings')||2,max_carbs_per_serving:+val(p+'max_carbs')||45,culture:val(p+'culture')||null,preferences:split(val(p+'preferences')),avoid_ingredients:split(val(p+'avoid'))};if(!body.goal){alert('Tell GlucoPlate what you want to eat.');return}closeBuilder();showView('recipe');if(btn){btn.disabled=true;btn.textContent='Generating…'}recipeCard.className='card empty-state';recipeCard.innerHTML='<div><div class="spinner"></div><p class="muted" style="margin-top:1rem">Generating with '+provider+'…</p></div>';try{const res=await fetch('/api/recipes/generate?use_ai='+useAi,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!res.ok)throw new Error(await res.text());const data=await res.json();state.recipe=data;renderRecipe(data,provider)}catch(e){recipeCard.innerHTML='<div><div class="empty-icon">⚠️</div><h2>Generation failed</h2><p class="muted">'+e.message+'</p></div>'}finally{if(btn){btn.disabled=false;btn.textContent='Generate Recipe'}}}
+function renderRecipe(d,provider){const n=d.nutrition_estimate||{};const ing=(d.ingredients||[]).map(i=>'<button class="chip" onclick="searchProducts(`'+String(i).replaceAll('`','')+'`)">'+i+'</button>').join('');const steps=(d.steps||[]).map(s=>'<li>'+s+'</li>').join('');const subs=(d.substitutions||[]).map(s=>'<span class="chip">'+s+'</span>').join('');recipeCard.className='card';recipeCard.innerHTML='<div class="recipe-head"><div><span class="badge">🤖 '+(d.ai_provider||provider||'fallback')+'</span><h2>'+d.title+'</h2><p class="muted">'+d.summary+'</p></div></div><div class="nutrition"><div class="nut"><strong>'+(n.calories??'—')+'</strong><span>Calories</span></div><div class="nut"><strong>'+(n.carbs_g??'—')+'g</strong><span>Carbs</span></div><div class="nut"><strong>'+(n.protein_g??'—')+'g</strong><span>Protein</span></div><div class="nut"><strong>'+(n.fiber_g??'—')+'g</strong><span>Fiber</span></div></div><div class="section-title">Ingredients</div><div class="chips">'+ing+'</div><div class="section-title">Steps</div><ol>'+steps+'</ol><div class="section-title">Smart swaps</div><div class="chips">'+subs+'</div><div class="section-title">Safety note</div><div class="safety">'+((d.safety_review&&d.safety_review.disclaimer)||'For general wellness support only.')+'</div>';aiStatus.textContent=d.ai_provider||provider}
+async function searchProducts(q){if(!q)return;showView('shop');productQuery.value=q;productList.innerHTML='<div class="spinner"></div>';try{const res=await fetch('/api/products/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ingredient:q,latitude:state.latitude,longitude:state.longitude})});if(!res.ok)throw new Error(await res.text());const data=await res.json();productList.innerHTML=data.map(p=>'<div class="item">'+(p.image_url?'<img src="'+p.image_url+'" alt="">':'')+'<div><div class="item-title">'+(p.product_name||p.ingredient||q)+'</div><div class="muted">'+(p.brand||'')+'</div><div class="source">'+(p.source||'unknown')+'</div></div></div>').join('')||'<p class="muted">No products found.</p>'}catch(e){productList.innerHTML='<p class="muted">Product lookup unavailable: '+e.message+'</p>'}}
+async function searchStores(){initMap();storeList.innerHTML='<div class="spinner"></div>';try{const res=await fetch('/api/stores/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitude:state.latitude,longitude:state.longitude,radius_meters:7000,query:'grocery'})});if(!res.ok)throw new Error(await res.text());const data=await res.json();state.storeMarkers.forEach(m=>state.map.removeLayer(m));state.storeMarkers=[];storeList.innerHTML=data.map(s=>{const m=L.marker([s.latitude,s.longitude]).addTo(state.map).bindPopup(s.name);state.storeMarkers.push(m);return '<div class="item"><div><div class="item-title">'+s.name+'</div><div class="muted">'+(s.address||'')+'</div><div class="source">'+(s.source||s.store_type||'store')+'</div></div></div>'}).join('')||'<p class="muted">No stores found.</p>';if(data[0])state.map.setView([data[0].latitude,data[0].longitude],13)}catch(e){storeList.innerHTML='<p class="muted">Store search unavailable: '+e.message+'</p>'}}
+function useCurrentLocation(mobile=false){if(!navigator.geolocation){alert('Geolocation not available.');return}navigator.geolocation.getCurrentPosition(pos=>{state.latitude=pos.coords.latitude;state.longitude=pos.coords.longitude;locMini.textContent='Ready';document.querySelectorAll('#locStatus,#m_locStatus').forEach(x=>x.textContent='Location ready.');if(state.map){state.map.setView([state.latitude,state.longitude],13);state.userMarker.setLatLng([state.latitude,state.longitude])}if(mobile)closeBuilder();searchStores()},()=>alert('Could not access location.'))}
+window.addEventListener('load',()=>{initMap()});
 </script>
 </body>
 </html>
