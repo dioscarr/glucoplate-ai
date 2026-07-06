@@ -15,6 +15,10 @@ class Store(BaseModel):
     longitude: float
     address: str | None = None
     store_type: str | None = None
+    website: str | None = None
+    phone: str | None = None
+    facebook: str | None = None
+    opening_hours: str | None = None
     source: str = "openstreetmap"
 
 

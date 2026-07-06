@@ -7,7 +7,12 @@ from app.services.recipe_generator import generate_recipe
 from app.services.store_locator_service import StoreLocatorService
 from app.services.recipe_gallery_service import RecipeGalleryService
 from app.services.recipe_store_service import RecipeStoreService
+from app.services.cart_store_service import CartStoreService
+from app.services.store_locator_service import StoreLocatorService
+from app.services.route_service import RouteService
+from app.services.web_scraper_service import fetch_metadata
 from app.schemas.recipe_image import RecipeImageRequest, RecipeGalleryResponse
+from app.schemas.store import StoreSearchRequest, Store
 
 router = APIRouter(prefix="/api")
 
@@ -48,6 +53,56 @@ def save_recipe_endpoint(recipe: dict):
 def list_recipes_endpoint():
     svc = RecipeStoreService()
     return svc.list()
+
+
+@router.post('/carts', response_model=dict)
+def create_cart(cart: dict):
+    svc = CartStoreService()
+    created = svc.create(cart)
+    return {'ok': True, 'cart': created}
+
+
+@router.get('/carts', response_model=list)
+def list_carts():
+    svc = CartStoreService()
+    return svc.list()
+
+
+@router.get('/carts/{cart_id}', response_model=dict)
+def get_cart(cart_id: str):
+    svc = CartStoreService()
+    c = svc.get(cart_id)
+    return c or {}
+
+
+@router.post('/route/plan')
+def plan_route(request: dict):
+    """Plan an ordered route for the provided cart with stops as store IDs or coordinates.
+    Request should include: start_lat, start_lng, stops: [{id, latitude, longitude, ...}]
+    """
+    start_lat = request.get('start_lat')
+    start_lng = request.get('start_lng')
+    stops = [Store(**s) for s in request.get('stops', [])]
+    rs = RouteService()
+    return rs.plan_route(start_lat, start_lng, stops)
+
+
+@router.post('/stores/enrich')
+def enrich_stores(request: dict):
+    """Given a list of stores (from OSM), enrich with website meta tags where available."""
+    stores = [Store(**s) for s in request.get('stores', [])]
+    enriched = []
+    for s in stores:
+        meta = {}
+        if s.website:
+            try:
+                meta = fetch_metadata(s.website)
+            except Exception:
+                meta = {}
+        store = s.dict()
+        store['meta'] = meta
+        enriched.append(store)
+    return enriched
 
 
 @router.get("/ai/health")
