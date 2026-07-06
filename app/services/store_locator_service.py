@@ -62,6 +62,10 @@ out center tags;
             longitude=float(longitude),
             address=address,
             store_type=tags.get("shop"),
+            website=tags.get('website') or tags.get('contact:website'),
+            phone=tags.get('phone') or tags.get('contact:phone'),
+            facebook=tags.get('facebook') or tags.get('contact:facebook'),
+            opening_hours=tags.get('opening_hours'),
         )
 
     def _fallback_stores(self, request: StoreSearchRequest) -> list[Store]:
