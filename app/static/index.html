@@ -370,22 +370,28 @@
     .store-item .store-type { font-size: .7rem; color: var(--green); font-weight: 600; margin-top: 2px; }
 
     /* Product results */
-    .product-item {
+    .product-item, .product-card {
       display: flex; gap: .75rem; align-items: flex-start;
       padding: .6rem .75rem;
       border: 1px solid var(--gray-200);
       border-radius: 8px;
+      margin-bottom: .5rem;
+      background: white;
     }
-    .product-item img {
-      width: 48px; height: 48px;
+    .product-item img, .product-card img {
+      width: 64px; height: 64px;
       object-fit: contain;
       border-radius: 6px;
       background: var(--gray-100);
       flex-shrink: 0;
     }
-    .product-item .prod-name { font-size: .85rem; font-weight: 600; color: var(--gray-800); }
-    .product-item .prod-brand { font-size: .75rem; color: var(--gray-400); }
-    .product-item .prod-source { font-size: .7rem; color: var(--green); margin-top: 2px; }
+    .product-item .prod-name, .product-card .prod-name { font-size: .95rem; font-weight: 700; color: var(--gray-800); }
+    .product-item .prod-brand, .product-card .prod-brand { font-size: .78rem; color: var(--gray-400); }
+    .product-item .prod-source, .product-card .prod-source { font-size: .72rem; color: var(--green); margin-top: 2px; }
+    .product-card .meta { margin-left: 0.25rem; display:flex; gap:.5rem; align-items:center; }
+    .price-badge { background: linear-gradient(90deg,#fff7ed,#fff0de); color: var(--orange); padding: .25rem .5rem; border-radius:6px; font-weight:800; }
+    .rating { color: #b88b00; font-weight:700; font-size:.9rem; }
+    .store-highlight { background: linear-gradient(90deg,#e8f5ee,#f8fff9); border:1px solid #b6dfc9; }
 
     #map-container { flex: 1; min-height: 400px; }
     #map { width: 100%; height: 100%; }
@@ -822,18 +828,52 @@ function renderProducts(products, ingredient) {
     return;
   }
   productList.innerHTML = '<p style="font-size:.78rem;color:var(--gray-600);margin-bottom:.5rem">Results for <strong>' + esc(ingredient) + '</strong>:</p>';
-  products.slice(0, 5).forEach(p => {
-    const item = document.createElement('div');
-    item.className = 'product-item';
-    item.innerHTML =
-      (p.image_url ? '<img src="' + esc(p.image_url) + '" alt="" loading="lazy"/>' :
-        '<div style="width:48px;height:48px;background:var(--gray-100);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🛒</div>') +
-      '<div>' +
-        '<div class="prod-name">' + esc(p.product_name || 'Unknown product') + '</div>' +
-        (p.brand ? '<div class="prod-brand">' + esc(p.brand) + '</div>' : '') +
-        '<div class="prod-source">via ' + esc(p.source) + '</div>' +
-      '</div>';
-    productList.appendChild(item);
+
+  // Clear previous store highlights
+  if (map && state.markers) state.markers.forEach(m => m.setIcon && m.setIcon(m.defaultIcon || m.getIcon()));
+
+  products.slice(0, 10).forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+
+    const imgHtml = p.image_url
+      ? '<img src="' + esc(p.image_url) + '" alt="' + esc(p.product_name || '') + '" loading="lazy"/>'
+      : '<div style="width:64px;height:64px;background:var(--gray-100);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.6rem">🛒</div>';
+
+    const priceHtml = p.price ? '<span class="price-badge">' + esc(p.currency || '$') + (p.price).toFixed ? (p.price).toFixed(2) : esc(p.price) + '</span>' : '';
+    const ratingHtml = p.rating ? '<span class="rating">★ ' + esc(p.rating) + '</span>' : '';
+
+    card.innerHTML = imgHtml + '<div style="flex:1">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center">'
+      + '<div class="prod-name">' + esc(p.product_name || 'Unknown product') + '</div>'
+      + '<div class="meta">' + priceHtml + ratingHtml + '</div>'
+      + '</div>'
+      + (p.brand ? '<div class="prod-brand">' + esc(p.brand) + '</div>' : '')
+      + '<div class="prod-source">' + esc(p.source) + (p.store_name ? ' · ' + esc(p.store_name) : '') + '</div>'
+      + '</div>';
+
+    productList.appendChild(card);
+
+    // Highlight store marker if product provides a store_name
+    if (p.store_name && map && state.stores) {
+      const match = state.stores.find(s => (s.name || '').toLowerCase().includes((p.store_name||'').toLowerCase()));
+      if (match) {
+        // find corresponding marker (approx by lat/lon)
+        const m = state.markers.find(mk => {
+          const latlng = mk.getLatLng();
+          return Math.abs(latlng.lat - match.latitude) < 0.0005 && Math.abs(latlng.lng - match.longitude) < 0.0005;
+        });
+        if (m) {
+          // store default icon for later reset
+          m.defaultIcon = m.getIcon();
+          // create a simple highlighted icon by changing color using DivIcon
+          const highlight = L.divIcon({ className: 'store-highlight', html: '<div style="width:12px;height:12px;border-radius:50%;background:#2d7a4f;border:2px solid white"></div>', iconSize: [18,18] });
+          m.setIcon(highlight);
+          m.openPopup();
+        }
+      }
+    }
+
   });
 }
 
