@@ -368,8 +368,13 @@
       padding-top: .6rem;
     }
     /* Tab buttons look */
-    .stores-sidebar .btn-secondary { background: transparent; color: var(--gray-600); border: 1px solid transparent; padding: .4rem .6rem; }
-    .stores-sidebar .btn-secondary.active { background: linear-gradient(90deg,#eef7f0,#f7fff9); color: var(--green); border-color: rgba(45,122,79,0.12); box-shadow: 0 4px 10px rgba(45,122,79,0.06); }
+    .stores-sidebar .btn-secondary { background: transparent; color: var(--gray-600); border: 1px solid transparent; padding: .4rem .6rem; transition: all .18s; }
+    .stores-sidebar .btn-secondary.active, .stores-sidebar .sidebar-tab-btn.active { background: linear-gradient(90deg,#eef7f0,#f7fff9); color: var(--green); border-color: rgba(45,122,79,0.12); box-shadow: 0 4px 10px rgba(45,122,79,0.06); transform: translateY(-2px); }
+
+    /* Tab content transition */
+    .sidebar-tab { transition: opacity .22s ease, transform .22s ease; }
+    .sidebar-tab.hide { opacity: 0; transform: translateY(6px); pointer-events: none; }
+    .sidebar-tab.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
     /* Make product and carts lists compact and scrollable */
     #product-list, #carts-list {
@@ -554,10 +559,10 @@
         <div class="stores-sidebar" id="stores-sidebar">
           <div style="display:flex;gap:.4rem;align-items:center;justify-content:space-between">
             <div style="display:flex;gap:.25rem">
-              <button class="btn btn-secondary" onclick="switchSidebarTab('stores')" id="tab-stores-btn">Stores <span id="count-stores" style="font-weight:700;margin-left:.3rem">0</span></button>
-              <button class="btn btn-secondary" onclick="switchSidebarTab('products')" id="tab-products-btn">Products <span id="count-products" style="font-weight:700;margin-left:.3rem">0</span></button>
-              <button class="btn btn-secondary" onclick="switchSidebarTab('carts')" id="tab-carts-btn">Carts <span id="count-carts" style="font-weight:700;margin-left:.3rem">0</span></button>
-              <button class="btn btn-secondary" onclick="switchSidebarTab('recents')" id="tab-recents-btn">Recents <span id="count-recents" style="font-weight:700;margin-left:.3rem">0</span></button>
+              <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('stores')" id="tab-stores-btn">🏬 Stores <span id="count-stores" class="count-badge">0</span></button>
+              <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('products')" id="tab-products-btn">🛒 Products <span id="count-products" class="count-badge">0</span></button>
+              <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('carts')" id="tab-carts-btn">🧾 Carts <span id="count-carts" class="count-badge">0</span></button>
+              <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('recents')" id="tab-recents-btn">🕘 Recents <span id="count-recents" class="count-badge">0</span></button>
             </div>
             <div style="display:flex;gap:.5rem;align-items:center">
               <input id="sidebar-search" placeholder="Search stores, products, carts" style="padding:.4rem .6rem;border-radius:8px;border:1px solid var(--gray-200);font-size:.88rem" oninput="sidebarFilter(this.value)" />
@@ -568,13 +573,19 @@
 
           <!-- Tab: Nearby Stores -->
           <div id="sidebar-stores" class="sidebar-tab">
-            <h3>Nearby Stores</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <h3>Nearby Stores</h3>
+              <button class="btn btn-secondary" id="toggle-stores-btn" onclick="toggleSection('stores')">Collapse</button>
+            </div>
             <div id="store-list"><p class="muted">Use your location to find nearby grocery stores.</p></div>
           </div>
 
           <!-- Tab: Product lookup -->
-          <div id="sidebar-products" class="sidebar-tab" style="display:none">
-            <h3>Product Lookup</h3>
+          <div id="sidebar-products" class="sidebar-tab hide" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <h3>Product Lookup</h3>
+              <button class="btn btn-secondary" id="toggle-products-btn" onclick="toggleSection('products')">Collapse</button>
+            </div>
             <div id="product-loading" style="display:none">
               <div class="spinner" style="width:24px;height:24px;border-width:2px;margin:.75rem auto"></div>
             </div>
@@ -583,18 +594,24 @@
           </div>
 
           <!-- Tab: Saved Carts -->
-          <div id="sidebar-carts" class="sidebar-tab" style="display:none">
-            <h3>Saved Carts</h3>
-            <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
-              <button class="btn btn-secondary" onclick="createCartPrompt()">+ New Cart</button>
-              <button class="btn" onclick="loadCarts()">Refresh</button>
+          <div id="sidebar-carts" class="sidebar-tab hide" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <h3>Saved Carts</h3>
+              <div style="display:flex;gap:.5rem">
+                <button class="btn btn-secondary" onclick="createCartPrompt()">+ New Cart</button>
+                <button class="btn" onclick="loadCarts()">Refresh</button>
+                <button class="btn btn-secondary" id="toggle-carts-btn" onclick="toggleSection('carts')">Collapse</button>
+              </div>
             </div>
             <div id="carts-list"><p class="muted">No carts yet.</p></div>
           </div>
 
           <!-- Tab: Recents -->
-          <div id="sidebar-recents" class="sidebar-tab" style="display:none">
-            <h3>Recents</h3>
+          <div id="sidebar-recents" class="sidebar-tab hide" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <h3>Recents</h3>
+              <button class="btn btn-secondary" id="toggle-recents-btn" onclick="toggleSection('recents')">Collapse</button>
+            </div>
             <div id="recents-list"><p class="muted">No recent recipes yet.</p></div>
           </div>
         </div>
@@ -1220,12 +1237,53 @@ function editCartName(cartId) {
 
 // Sidebar tab switching
 function switchSidebarTab(name) {
-  document.querySelectorAll('.sidebar-tab').forEach(el=>el.style.display='none');
-  document.getElementById('sidebar-'+name).style.display = 'block';
+  // hide all
+  document.querySelectorAll('.sidebar-tab').forEach(el=>{ el.classList.remove('show'); el.classList.add('hide'); el.style.display='none'; });
+  // deactivate buttons
+  document.querySelectorAll('.sidebar-tab-btn').forEach(b=>b.classList.remove('active'));
+  // show target
+  const target = document.getElementById('sidebar-'+name);
+  if (!target) return;
+  target.style.display = 'block';
+  setTimeout(()=>{ target.classList.remove('hide'); target.classList.add('show'); }, 20);
+  // activate corresponding button
+  const btn = document.getElementById('tab-'+name+'-btn'); if (btn) btn.classList.add('active');
   // update counts/search if needed
   if (name === 'recents') loadRecents();
   if (name === 'carts') loadCarts();
 }
+
+function toggleSection(name) {
+  const el = document.getElementById('sidebar-'+name);
+  const btn = document.getElementById('toggle-'+name+'-btn');
+  if (!el) return;
+  const collapsed = localStorage.getItem('sidebar-collapsed-'+name) === '1';
+  if (collapsed) {
+    // expand
+    el.style.maxHeight = '';
+    if (btn) btn.textContent = 'Collapse';
+    localStorage.setItem('sidebar-collapsed-'+name, '0');
+  } else {
+    // collapse
+    el.style.maxHeight = '36px';
+    if (btn) btn.textContent = 'Expand';
+    localStorage.setItem('sidebar-collapsed-'+name, '1');
+  }
+}
+
+// Initialize default sidebar tab and collapse state
+(function(){
+  switchSidebarTab('stores');
+  ['stores','products','carts','recents'].forEach(name=>{
+    const collapsed = localStorage.getItem('sidebar-collapsed-'+name) === '1';
+    if (collapsed) {
+      const el = document.getElementById('sidebar-'+name);
+      const btn = document.getElementById('toggle-'+name+'-btn');
+      if (el) el.style.maxHeight = '36px';
+      if (btn) btn.textContent = 'Expand';
+    }
+  });
+})();
 
 function sidebarFilter(q) {
   q = (q||'').toLowerCase();
