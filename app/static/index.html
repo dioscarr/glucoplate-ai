@@ -499,6 +499,7 @@
       </div>
       <div id="recipe-error" class="error-box" style="display:none"></div>
       <div id="recipe-card" class="card" style="display:none"></div>
+      <div id="image-gallery" class="card" style="display:none;margin-top:12px"></div>
     </div>
 
     <!-- MAP & STORES TAB -->
@@ -683,6 +684,9 @@ function renderRecipe(d) {
     '<div class="recipe-header">' +
       '<h2>' + esc(d.title) + '</h2>' +
       '<span class="badge ' + badgeClass + '">' + badgeLabel + '</span>' +
+    '</div>' +
+    '<div style="margin-top:.6rem;display:flex;gap:.5rem;justify-content:flex-end">' +
+      '<button class="btn btn-secondary" id="gen-images-btn" onclick="generateImages()">📸 Generate Images</button>' +
     '</div>' +
     '<p class="summary">' + esc(d.summary) + '</p>' +
     '<div class="nutrition-grid">' +
@@ -909,6 +913,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') generateRecipe();
   });
 });
+
+/* Image generation: call /api/recipes/gallery and render thumbnails */
+async function generateImages() {
+  const recipe = state.recipe;
+  if (!recipe) { alert('Generate a recipe first.'); return; }
+  const gallery = document.getElementById('image-gallery');
+  gallery.style.display = 'block';
+  gallery.innerHTML = '<div class="spinner"></div><p class="loading-text">Generating images (may take 20-60s)…</p>';
+
+  const btn = document.getElementById('gen-images-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
+
+  const body = {
+    title: recipe.title,
+    summary: recipe.summary,
+    ingredients: recipe.ingredients || [],
+    style: 'realistic plated food photography',
+    image_count: 4
+  };
+
+  try {
+    const res = await fetch('/api/recipes/gallery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + await res.text());
+    const data = await res.json();
+    renderImageGallery(data);
+  } catch (err) {
+    gallery.innerHTML = '<div class="error-box">Image generation failed: ' + esc(err.message) + '</div>';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📸 Generate Images'; }
+  }
+}
+
+function renderImageGallery(data) {
+  const gallery = document.getElementById('image-gallery');
+  if (!data || !data.images || !data.images.length) {
+    gallery.innerHTML = '<div class="card muted">No images generated.</div>';
+    return;
+  }
+  const thumbs = data.images.map(img => {
+    const src = img.image_url || '';
+    const status = img.status || 'prompt-only';
+    const note = (img.notes || []).join('\n');
+    return `<a href="${esc(src)}" target="_blank" class="product-card" style="display:inline-flex;flex-direction:column;align-items:center;width:150px;margin-right:.5rem;text-decoration:none;color:inherit"><div style="width:140px;height:120px;overflow:hidden;border-radius:8px;background:var(--gray-100);display:flex;align-items:center;justify-content:center">${src?`<img src="${esc(src)}" style="width:100%;height:100%;object-fit:cover"/>`:'<div style="font-size:2rem">🖼️</div>'}</div><div style="font-size:.8rem;margin-top:.4rem;text-align:center">${esc(img.title || '')}</div><div style="font-size:.7rem;color:var(--gray-400)">${esc(status)}</div></a>`;
+  }).join('');
+
+  gallery.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:.5rem">${thumbs}</div>`;
+}
+
 </script>
 </body>
 </html>
