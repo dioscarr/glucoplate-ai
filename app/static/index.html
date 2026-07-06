@@ -368,8 +368,10 @@
       padding-top: .6rem;
     }
     /* Tab buttons look */
-    .stores-sidebar .btn-secondary { background: transparent; color: var(--gray-600); border: 1px solid transparent; padding: .4rem .6rem; transition: all .18s; }
-    .stores-sidebar .btn-secondary.active, .stores-sidebar .sidebar-tab-btn.active { background: linear-gradient(90deg,#eef7f0,#f7fff9); color: var(--green); border-color: rgba(45,122,79,0.12); box-shadow: 0 4px 10px rgba(45,122,79,0.06); transform: translateY(-2px); }
+    .stores-sidebar .btn-secondary { background: transparent; color: var(--gray-600); border: 1px solid transparent; padding: .35rem .6rem; transition: all .18s; font-size:.9rem }
+    .stores-sidebar .btn-secondary.active, .stores-sidebar .sidebar-tab-btn.active { background: linear-gradient(90deg,#f1fbf4,#f9fff9); color: var(--green); border-color: rgba(45,122,79,0.12); box-shadow: 0 6px 18px rgba(45,122,79,0.06); transform: translateY(-2px); }
+    /* make counts subtle */
+    .count-badge { background: rgba(45,122,79,0.06); color: var(--green); font-weight:700; padding:.12rem .36rem; border-radius:8px; margin-left:.4rem; font-size:.82rem }
 
     /* Tab content transition */
     .sidebar-tab { transition: opacity .22s ease, transform .22s ease; }
@@ -565,7 +567,10 @@
               <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('recents')" id="tab-recents-btn">🕘 Recents <span id="count-recents" class="count-badge">0</span></button>
             </div>
             <div style="display:flex;gap:.5rem;align-items:center">
-              <input id="sidebar-search" placeholder="Search stores, products, carts" style="padding:.4rem .6rem;border-radius:8px;border:1px solid var(--gray-200);font-size:.88rem" oninput="sidebarFilter(this.value)" />
+              <div style="display:flex;align-items:center;background:var(--gray-50);border-radius:8px;padding:.28rem .4rem;border:1px solid var(--gray-200);">
+                <span style="font-size:1rem;margin-right:.4rem;color:var(--gray-400)">🔎</span>
+                <input id="sidebar-search" placeholder="Search stores, products, carts" style="padding:.35rem .4rem;border-radius:6px;border:0;background:transparent;font-size:.88rem;min-width:220px" oninput="sidebarFilter(this.value)" />
+              </div>
             </div>
           </div>
 
