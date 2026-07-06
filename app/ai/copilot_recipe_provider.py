@@ -1,6 +1,7 @@
 import json
 from typing import Any
 
+from app.ai.json_utils import extract_json_text
 from app.schemas.recipe import NutritionEstimate, RecipeRequest, RecipeResponse, SafetyReview
 
 
@@ -16,7 +17,7 @@ class CopilotRecipeProvider:
 
     async def generate(self, request: RecipeRequest) -> RecipeResponse:
         try:
-            from copilot import CopilotClient, MessageOptions, PermissionHandler, SessionConfig
+            from copilot import CopilotClient, PermissionHandler
         except ImportError as exc:
             raise RuntimeError(
                 "GitHub Copilot SDK is not installed or available in this environment."
@@ -26,16 +27,12 @@ class CopilotRecipeProvider:
         await client.start()
 
         try:
-            session = await client.create_session(
-                SessionConfig(
-                    model="gpt-5",
-                    on_permission_request=PermissionHandler.approve_all,
-                )
-            )
+            # Prefer runtime default model unless a specific model is required
+            session = await client.create_session(on_permission_request=PermissionHandler.approve_all)
 
             prompt = self._build_prompt(request)
-            response = await session.send_and_wait(MessageOptions(prompt=prompt), timeout=45.0)
-            await session.destroy()
+            response = await session.send_and_wait(prompt, timeout=45.0)
+            await session.disconnect()
 
             if not response or not response.data or not response.data.content:
                 raise RuntimeError("Copilot SDK returned an empty response.")
@@ -83,7 +80,7 @@ User request:
 
     def _parse_response(self, raw_content: str) -> RecipeResponse:
         try:
-            payload: dict[str, Any] = json.loads(raw_content)
+            payload: dict[str, Any] = json.loads(extract_json_text(raw_content))
         except json.JSONDecodeError as exc:
             raise RuntimeError("Copilot SDK response was not valid JSON.") from exc
 

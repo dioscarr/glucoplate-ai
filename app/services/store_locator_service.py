@@ -7,11 +7,7 @@ from app.schemas.store import Store, StoreSearchRequest
 
 
 class StoreLocatorService:
-    """Find nearby food stores using OpenStreetMap Overpass API.
-
-    OpenStreetMap/Overpass can identify nearby grocery stores and supermarkets,
-    but it does not provide live product price or inventory.
-    """
+    """Find nearby food stores using OpenStreetMap Overpass API."""
 
     overpass_url = "https://overpass-api.de/api/interpreter"
 

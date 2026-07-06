@@ -3,18 +3,9 @@ from app.services.product_lookup_service import ProductLookupService
 
 
 class PriceAvailabilityService:
-    """Product price and availability facade.
+    """Product price and availability facade using Open Food Facts.
 
-    MVP behavior:
-    - Uses Open Food Facts for product metadata.
-    - Returns unknown price and inventory unless a retailer adapter is added.
-
-    Future adapters:
-    - Kroger API
-    - Walmart affiliate/search APIs where permitted
-    - Instacart/retailer partner APIs
-    - Open Food Facts Open Prices, where available
-    - User-submitted local price observations
+    Future adapters: Kroger API, Walmart search, Instacart, Open Food Facts Open Prices.
     """
 
     def __init__(self, product_lookup_service: ProductLookupService | None = None) -> None:

@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GlucoPlate AI — Diabetes-Friendly Recipes</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><circle cx='32' cy='32' r='28' fill='%232d7a4f'/><text x='50%' y='54%' font-size='36' fill='white' text-anchor='middle' font-family='Arial' dy='.1em'>🥗</text></svg>">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:       #2d7a4f;
+      --green-dark:  #1f5e3a;
+      --green-light: #e8f5ee;
+      --green-mid:   #4caf80;
+      --orange:      #e07b3a;
+      --gray-50:     #f9fafb;
+      --gray-100:    #f3f4f6;
+      --gray-200:    #e5e7eb;
+      --gray-400:    #9ca3af;
+      --gray-600:    #4b5563;
+      --gray-800:    #1f2937;
+      --red-light:   #fef2f2;
+      --red:         #dc2626;
+      --radius:      12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--green);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+      flex-shrink: 0;
+    }
+    header .logo { font-size: 1.75rem; }
+    header .brand h1  { font-size: 1.2rem; font-weight: 700; letter-spacing: -.3px; }
+    header .brand p   { font-size: .78rem; opacity: .8; margin-top: 2px; }
+
+    /* ── App layout: sidebar + main panel ── */
+    .app-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 0;
+      flex: 1;
+      min-height: 0;
+    }
+    @media (max-width: 800px) {
+      .app-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── Left sidebar (form) ── */
+    .sidebar {
+      background: white;
+      border-right: 1px solid var(--gray-200);
+      padding: 1.5rem 1.25rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
+    .sidebar h2 {
+      font-size: .95rem; font-weight: 700; color: var(--green);
+      margin-bottom: .25rem;
+    }
+
+    /* Form elements */
+    .field { display: flex; flex-direction: column; gap: .3rem; }
+    label { font-size: .78rem; font-weight: 600; color: var(--gray-600); }
+    input[type="text"], input[type="number"], select {
+      padding: .45rem .7rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: .88rem;
+      color: var(--gray-800);
+      background: var(--gray-50);
+      transition: border-color .15s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--green-mid);
+      background: white;
+    }
+    .row { display: flex; gap: .6rem; }
+    .row .field { flex: 1; }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .55rem .75rem;
+      background: var(--green-light);
+      border-radius: 8px;
+      font-size: .83rem;
+      font-weight: 600;
+      color: var(--green);
+    }
+    .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer;
+      inset: 0; background: var(--gray-200);
+      border-radius: 24px; transition: .2s;
+    }
+    .slider::before {
+      content: ""; position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; bottom: 3px;
+      background: white; border-radius: 50%; transition: .2s;
+    }
+    .toggle input:checked + .slider { background: var(--green); }
+    .toggle input:checked + .slider::before { transform: translateX(20px); }
+
+    .btn {
+      padding: .7rem;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      width: 100%;
+    }
+    .btn:hover  { background: var(--green-dark); }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { background: var(--gray-400); cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      background: white;
+      color: var(--green);
+      border: 1.5px solid var(--green);
+    }
+    .btn-secondary:hover { background: var(--green-light); }
+
+    .divider {
+      height: 1px; background: var(--gray-200); margin: .25rem 0;
+    }
+
+    /* location status pill */
+    .loc-pill {
+      display: inline-block;
+      font-size: .72rem; font-weight: 600;
+      padding: .2rem .55rem;
+      border-radius: 99px;
+      background: var(--gray-100);
+      color: var(--gray-600);
+    }
+    .loc-pill.active { background: var(--green-light); color: var(--green); }
+
+    /* ── Right main panel ── */
+    .main-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      /* Ensure the main panel fills the viewport height below header */
+      height: calc(100vh - 72px); /* header ~72px */
+    }
+
+    /* Tab bar */
+    /* Make tab panels fill remaining vertical space so internal areas (map) can stretch */
+    .tab-panel { display: none; flex: 1; overflow: auto; padding: 1.5rem; height: 100%; }
+    .tab-panel.active { display: block; }
+    #tab-map.active  { display: flex; flex-direction: column; padding: 0; }
+
+    /* Ensure map container and map take full height */
+    .map-stores-layout { height: 100%; display: grid; grid-template-columns: 280px 1fr; }
+    #map-container { flex: 1; min-height: 0; height: 100%; }
+    #map { width: 100%; height: 100%; min-height: 300px; }
+
+    /* Tab bar */
+    .tab-bar {
+      display: flex;
+      border-bottom: 2px solid var(--gray-200);
+      background: white;
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: .75rem 1.25rem;
+      border: none;
+      background: none;
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color .15s, border-color .15s;
+    }
+    .tab-btn:hover { color: var(--green); }
+    .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+    /* Tab panels */
+    .tab-panel { display: none; flex: 1; overflow-y: auto; padding: 1.5rem; }
+    .tab-panel.active { display: block; }
+    #tab-map.active  { display: flex; flex-direction: column; padding: 0; }
+
+    /* ── Recipe tab content ── */
+    .card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+    .placeholder-card {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 300px;
+      background: white;
+      border: 2px dashed var(--gray-200);
+      border-radius: var(--radius);
+      color: var(--gray-400);
+      gap: .75rem;
+    }
+    .placeholder-card .icon { font-size: 2.5rem; }
+    .placeholder-card p { font-size: .9rem; }
+
+    .recipe-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: .75rem;
+    }
+    .recipe-header h2 { font-size: 1.3rem; font-weight: 800; color: var(--gray-800); }
+    .badge {
+      font-size: .7rem; font-weight: 700; padding: .25rem .6rem;
+      border-radius: 99px; white-space: nowrap; flex-shrink: 0;
+    }
+    .badge-ai       { background: var(--green-light); color: var(--green); }
+    .badge-fallback { background: #fff7ed; color: var(--orange); }
+
+    .summary {
+      font-size: .88rem; color: var(--gray-600);
+      line-height: 1.6; margin-bottom: 1.1rem;
+      padding-bottom: 1.1rem;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .nutrition-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .5rem;
+      margin-bottom: 1.1rem;
+    }
+    @media (max-width: 600px) { .nutrition-grid { grid-template-columns: repeat(2, 1fr); } }
+    .nut-card {
+      background: var(--gray-100);
+      border-radius: 8px;
+      padding: .55rem .5rem;
+      text-align: center;
+    }
+    .nut-card .value { font-size: 1.05rem; font-weight: 800; color: var(--green); }
+    .nut-card .label { font-size: .65rem; color: var(--gray-600); margin-top: 2px; }
+
+    .section { margin-bottom: 1.1rem; }
+    .section h3 {
+      font-size: .78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .6px; color: var(--gray-400); margin-bottom: .5rem;
+    }
+    .section ul, .section ol { padding-left: 1.25rem; }
+    .section li { font-size: .88rem; line-height: 1.7; color: var(--gray-800); }
+
+    /* Ingredients as clickable buttons */
+    .ingredient-btn {
+      display: inline-block;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 99px;
+      padding: .25rem .65rem;
+      font-size: .82rem;
+      color: var(--gray-700, #374151);
+      margin: .2rem .2rem 0 0;
+      cursor: pointer;
+      transition: background .12s, border-color .12s;
+    }
+    .ingredient-btn:hover {
+      background: var(--green-light);
+      border-color: var(--green-mid);
+      color: var(--green);
+    }
+    .ingredient-btn.looking-up { opacity: .6; cursor: wait; }
+
+    .sub-chip {
+      display: inline-block;
+      background: var(--gray-100);
+      border-radius: 99px;
+      padding: .3rem .75rem;
+      font-size: .8rem;
+      color: var(--gray-600);
+      margin: .2rem .2rem 0 0;
+    }
+    .safety-box {
+      border-radius: 8px; padding: .75rem 1rem;
+      font-size: .82rem; line-height: 1.5;
+    }
+    .safety-ok   { background: var(--green-light); color: #1a5c35; border: 1px solid #b6dfc9; }
+    .safety-warn { background: var(--red-light); color: var(--red); border: 1px solid #fca5a5; }
+
+    /* Spinner */
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--gray-200);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 1.5rem auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { text-align: center; color: var(--gray-400); font-size: .88rem; }
+
+    .error-box {
+      background: var(--red-light); border: 1px solid #fca5a5;
+      border-radius: 8px; padding: 1rem;
+      color: var(--red); font-size: .88rem;
+    }
+
+    /* ── Map & Stores tab ── */
+    .map-stores-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    @media (max-width: 700px) {
+      .map-stores-layout { grid-template-columns: 1fr; }
+    }
+
+    .stores-sidebar {
+      background: white;
+      border-right: 1px solid var(--gray-200);
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
+    .stores-sidebar h3 {
+      font-size: .82rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--gray-400);
+    }
+
+    .store-item {
+      padding: .6rem .75rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color .12s, background .12s;
+    }
+    .store-item:hover { border-color: var(--green-mid); background: var(--green-light); }
+    .store-item .store-name { font-size: .85rem; font-weight: 600; color: var(--gray-800); }
+    .store-item .store-addr { font-size: .75rem; color: var(--gray-400); margin-top: 2px; }
+    .store-item .store-type { font-size: .7rem; color: var(--green); font-weight: 600; margin-top: 2px; }
+
+    /* Product results */
+    .product-item, .product-card {
+      display: flex; gap: .75rem; align-items: flex-start;
+      padding: .6rem .75rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: .5rem;
+      background: white;
+    }
+    .product-item img, .product-card img {
+      width: 64px; height: 64px;
+      object-fit: contain;
+      border-radius: 6px;
+      background: var(--gray-100);
+      flex-shrink: 0;
+    }
+    .product-item .prod-name, .product-card .prod-name { font-size: .95rem; font-weight: 700; color: var(--gray-800); }
+    .product-item .prod-brand, .product-card .prod-brand { font-size: .78rem; color: var(--gray-400); }
+    .product-item .prod-source, .product-card .prod-source { font-size: .72rem; color: var(--green); margin-top: 2px; }
+    .product-card .meta { margin-left: 0.25rem; display:flex; gap:.5rem; align-items:center; }
+    .price-badge { background: linear-gradient(90deg,#fff7ed,#fff0de); color: var(--orange); padding: .25rem .5rem; border-radius:6px; font-weight:800; }
+    .rating { color: #b88b00; font-weight:700; font-size:.9rem; }
+    .store-highlight { background: linear-gradient(90deg,#e8f5ee,#f8fff9); border:1px solid #b6dfc9; }
+
+    #map-container { flex: 1; min-height: 400px; }
+    #map { width: 100%; height: 100%; }
+
+    /* Muted text */
+    .muted { color: var(--gray-400); font-size: .85rem; }
+
+    footer {
+      text-align: center; font-size: .72rem;
+      color: var(--gray-400); padding: .75rem 1rem;
+      border-top: 1px solid var(--gray-200);
+      background: white; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🥗</span>
+  <div class="brand">
+    <h1>GlucoPlate AI</h1>
+    <p>Diabetes-friendly recipe generation &amp; grocery discovery</p>
+  </div>
+</header>
+
+<div class="app-layout">
+
+  <!-- ── LEFT SIDEBAR: Recipe form ── -->
+  <aside class="sidebar">
+    <h2>Generate a Recipe</h2>
+
+    <div class="toggle-row">
+      <span>🤖 Use AI (Copilot SDK)</span>
+      <label class="toggle">
+        <input type="checkbox" id="use_ai" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="field">
+      <label for="goal">What do you want to eat?</label>
+      <input type="text" id="goal" placeholder="e.g. quick Dominican-style dinner"
+             value="quick Dominican-style dinner" />
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="servings">Servings</label>
+        <input type="number" id="servings" value="2" min="1" max="12" />
+      </div>
+      <div class="field">
+        <label for="max_carbs">Max carbs / serving (g)</label>
+        <input type="number" id="max_carbs" value="45" min="0" max="150" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="culture">Cultural style (optional)</label>
+      <input type="text" id="culture" placeholder="e.g. Dominican, Mediterranean" value="Dominican" />
+    </div>
+
+    <div class="field">
+      <label for="preferences">Preferences (comma-separated)</label>
+      <input type="text" id="preferences" placeholder="e.g. low sodium, high protein" value="low sodium" />
+    </div>
+
+    <div class="field">
+      <label for="avoid">Avoid ingredients (comma-separated)</label>
+      <input type="text" id="avoid" placeholder="e.g. peanuts, shellfish" />
+    </div>
+
+    <button class="btn" id="submit-btn" onclick="generateRecipe()">Generate Recipe</button>
+
+    <div class="divider"></div>
+
+    <!-- Location section -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem">
+      <h2 style="margin:0">Nearby Stores</h2>
+      <span class="loc-pill" id="loc-pill">location not set</span>
+    </div>
+    <button class="btn btn-secondary" id="loc-btn" onclick="useCurrentLocation()">📍 Use My Location</button>
+    <p class="muted" style="font-size:.75rem">After generating a recipe, click any ingredient to search for it in stores near you.</p>
+  </aside>
+
+  <!-- ── RIGHT MAIN PANEL ── -->
+  <div class="main-panel">
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-recipe-btn" onclick="switchTab('recipe')">🍽 Recipe</button>
+      <button class="tab-btn" id="tab-map-btn" onclick="switchTab('map')">🗺 Stores &amp; Map</button>
+    </div>
+
+    <!-- RECIPE TAB -->
+    <div class="tab-panel active" id="tab-recipe">
+      <div id="recipe-placeholder" class="placeholder-card">
+        <div class="icon">🥗</div>
+        <p>Fill in the form and click <strong>Generate Recipe</strong> to get started.</p>
+      </div>
+      <div id="recipe-loading" style="display:none">
+        <div class="spinner"></div>
+        <p class="loading-text" id="loading-text">Generating your recipe…</p>
+      </div>
+      <div id="recipe-error" class="error-box" style="display:none"></div>
+      <div id="recipe-card" class="card" style="display:none"></div>
+    </div>
+
+    <!-- MAP & STORES TAB -->
+    <div class="tab-panel" id="tab-map">
+      <div class="map-stores-layout">
+
+        <!-- Stores + Products sidebar -->
+        <div class="stores-sidebar" id="stores-sidebar">
+          <!-- Nearby stores -->
+          <div>
+            <h3>Nearby Stores</h3>
+            <div id="store-list"><p class="muted">Use your location to find nearby grocery stores.</p></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Product lookup -->
+          <div>
+            <h3>Product Lookup</h3>
+            <div id="product-loading" style="display:none">
+              <div class="spinner" style="width:24px;height:24px;border-width:2px;margin:.75rem auto"></div>
+            </div>
+            <div id="product-list"><p class="muted">Click an ingredient from the recipe to look up products.</p></div>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div id="map-container">
+          <div id="map"></div>
+        </div>
+
+      </div>
+    </div><!-- /tab-map -->
+
+  </div><!-- /main-panel -->
+
+</div><!-- /app-layout -->
+
+<footer>
+  GlucoPlate AI · For general wellness support only · Not medical advice · Estimates are approximate
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+/* ───────────────────────────────────────────────
+   State
+─────────────────────────────────────────────── */
+const state = {
+  latitude: 43.0481,
+  longitude: -76.1474,
+  locationSet: false,
+  recipe: null,
+  stores: [],
+  markers: [],
+};
+
+/* ───────────────────────────────────────────────
+   Map initialisation (lazy — only when tab shown)
+─────────────────────────────────────────────── */
+let map = null;
+let userMarker = null;
+
+function initMap() {
+  if (map) return;
+  map = L.map('map').setView([state.latitude, state.longitude], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(map);
+  userMarker = L.marker([state.latitude, state.longitude])
+    .addTo(map)
+    .bindPopup('Default search area');
+}
+
+/* ───────────────────────────────────────────────
+   Tab switching
+─────────────────────────────────────────────── */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab + '-btn').classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+
+  if (tab === 'map') {
+    initMap();
+    setTimeout(() => map && map.invalidateSize(), 100);
+  }
+}
+
+/* ───────────────────────────────────────────────
+   Recipe generation
+─────────────────────────────────────────────── */
+async function generateRecipe() {
+  const goal = document.getElementById('goal').value.trim();
+  if (!goal) { alert('Please describe what you want to eat.'); return; }
+
+  const useAi   = document.getElementById('use_ai').checked;
+  const servings = parseInt(document.getElementById('servings').value) || 2;
+  const maxCarbs = parseInt(document.getElementById('max_carbs').value) || 45;
+  const culture  = document.getElementById('culture').value.trim() || null;
+  const prefs    = document.getElementById('preferences').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const avoid    = document.getElementById('avoid').value.split(',').map(s=>s.trim()).filter(Boolean);
+
+  const body = { goal, servings, max_carbs_per_serving: maxCarbs, preferences: prefs, avoid_ingredients: avoid };
+  if (culture) body.culture = culture;
+
+  // Show loading on recipe tab
+  switchTab('recipe');
+  document.getElementById('recipe-placeholder').style.display = 'none';
+  document.getElementById('recipe-loading').style.display = 'block';
+  document.getElementById('recipe-error').style.display = 'none';
+  document.getElementById('recipe-card').style.display = 'none';
+  document.getElementById('loading-text').textContent = useAi
+    ? 'Generating with GitHub Copilot AI… (may take 20–40 s)'
+    : 'Generating local recipe…';
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+
+  try {
+    const res = await fetch('/api/recipes/generate?use_ai=' + useAi, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + await res.text());
+    const data = await res.json();
+    state.recipe = data;
+    renderRecipe(data);
+  } catch (err) {
+    document.getElementById('recipe-loading').style.display = 'none';
+    const ep = document.getElementById('recipe-error');
+    ep.style.display = 'block';
+    ep.textContent = 'Error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Recipe';
+  }
+}
+
+function renderRecipe(d) {
+  document.getElementById('recipe-loading').style.display = 'none';
+
+  const isAI = d.ai_provider && d.ai_provider !== 'local-fallback';
+  const badgeClass = isAI ? 'badge-ai' : 'badge-fallback';
+  const badgeLabel = isAI ? '🤖 AI-generated' : '📋 Local fallback';
+
+  const nut = d.nutrition_estimate || {};
+  const nutItems = [
+    { value: nut.calories ?? '—',             label: 'Calories' },
+    { value: (nut.carbs_g ?? '—') + 'g',     label: 'Carbs' },
+    { value: (nut.protein_g ?? '—') + 'g',   label: 'Protein' },
+    { value: (nut.fiber_g ?? '—') + 'g',     label: 'Fiber' },
+    { value: (nut.fat_g ?? '—') + 'g',       label: 'Fat' },
+    { value: (nut.sugar_g ?? '—') + 'g',     label: 'Sugar' },
+    { value: (nut.sodium_mg ?? '—') + 'mg',  label: 'Sodium' },
+  ];
+
+  const safety = d.safety_review || {};
+  const safetyClass = safety.approved ? 'safety-ok' : 'safety-warn';
+  const safetyIcon  = safety.approved ? '✅' : '⚠️';
+  const warningsHtml = (safety.warnings || []).length
+    ? '<ul style="margin-top:.4rem;padding-left:1.2rem">' +
+      safety.warnings.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul>'
+    : '';
+
+  // Ingredients as clickable chips that trigger product lookup
+  const ingredientsHtml = (d.ingredients || []).map(i =>
+    '<button class="ingredient-btn" onclick="lookupIngredient(this,\'' + escAttr(i) + '\')">' + esc(i) + '</button>'
+  ).join('');
+
+  const card = document.getElementById('recipe-card');
+  card.innerHTML =
+    '<div class="recipe-header">' +
+      '<h2>' + esc(d.title) + '</h2>' +
+      '<span class="badge ' + badgeClass + '">' + badgeLabel + '</span>' +
+    '</div>' +
+    '<p class="summary">' + esc(d.summary) + '</p>' +
+    '<div class="nutrition-grid">' +
+      nutItems.map(n =>
+        '<div class="nut-card"><div class="value">' + n.value +
+        '</div><div class="label">' + n.label + '</div></div>'
+      ).join('') +
+    '</div>' +
+    '<div class="section"><h3>Ingredients</h3><div style="margin-top:.25rem">' + ingredientsHtml + '</div></div>' +
+    '<div class="section"><h3>Steps</h3>' +
+      '<ol>' + (d.steps || []).map(s => '<li>' + esc(s) + '</li>').join('') + '</ol>' +
+    '</div>' +
+    '<div class="section"><h3>Substitutions</h3><div>' +
+      (d.substitutions || []).map(s => '<span class="sub-chip">' + esc(s) + '</span>').join('') +
+    '</div></div>' +
+    '<div class="section"><h3>Safety Review</h3>' +
+      '<div class="safety-box ' + safetyClass + '">' + safetyIcon + ' ' + esc(safety.disclaimer || '') + warningsHtml + '</div>' +
+    '</div>' +
+    '<p style="font-size:.7rem;color:var(--gray-400);margin-top:1rem">Provider: <code>' + esc(d.ai_provider) + '</code></p>';
+
+  card.style.display = 'block';
+}
+
+/* ───────────────────────────────────────────────
+   Location & stores
+─────────────────────────────────────────────── */
+async function useCurrentLocation() {
+  const btn = document.getElementById('loc-btn');
+  const pill = document.getElementById('loc-pill');
+  btn.disabled = true;
+  pill.textContent = 'requesting…';
+
+  if (!navigator.geolocation) {
+    pill.textContent = 'not supported';
+    btn.disabled = false;
+    await searchStores();
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      state.latitude  = pos.coords.latitude;
+      state.longitude = pos.coords.longitude;
+      state.locationSet = true;
+      pill.textContent = 'location set';
+      pill.classList.add('active');
+      if (map) {
+        map.setView([state.latitude, state.longitude], 13);
+        userMarker.setLatLng([state.latitude, state.longitude]).bindPopup('Your location').openPopup();
+      }
+      btn.disabled = false;
+      switchTab('map');
+      await searchStores();
+    },
+    async () => {
+      pill.textContent = 'using default';
+      btn.disabled = false;
+      switchTab('map');
+      await searchStores();
+    }
+  );
+}
+
+async function searchStores() {
+  const storeList = document.getElementById('store-list');
+  storeList.innerHTML = '<div class="spinner" style="width:24px;height:24px;border-width:2px;margin:.75rem auto"></div>';
+
+  try {
+    const res = await fetch('/api/stores/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ latitude: state.latitude, longitude: state.longitude, radius_meters: 5000 }),
+    });
+    const stores = await res.json();
+    state.stores = stores;
+    renderStores(stores);
+  } catch (err) {
+    storeList.innerHTML = '<p class="muted">Could not fetch stores.</p>';
+  }
+}
+
+function renderStores(stores) {
+  const storeList = document.getElementById('store-list');
+  if (!stores.length) {
+    storeList.innerHTML = '<p class="muted">No stores found nearby.</p>';
+    return;
+  }
+
+  // Clear old map markers
+  if (map) state.markers.forEach(m => m.remove());
+  state.markers = [];
+
+  storeList.innerHTML = '';
+  stores.forEach(store => {
+    // Sidebar item
+    const item = document.createElement('div');
+    item.className = 'store-item';
+    item.innerHTML =
+      '<div class="store-name">' + esc(store.name) + '</div>' +
+      (store.address ? '<div class="store-addr">' + esc(store.address) + '</div>' : '') +
+      (store.store_type ? '<div class="store-type">' + esc(store.store_type) + '</div>' : '');
+    item.addEventListener('click', () => {
+      if (map) map.setView([store.latitude, store.longitude], 15);
+    });
+    storeList.appendChild(item);
+
+    // Map marker
+    if (map) {
+      const marker = L.marker([store.latitude, store.longitude])
+        .addTo(map)
+        .bindPopup('<strong>' + esc(store.name) + '</strong>' + (store.address ? '<br>' + esc(store.address) : ''));
+      state.markers.push(marker);
+    }
+  });
+}
+
+/* ───────────────────────────────────────────────
+   Product lookup (triggered by ingredient click)
+─────────────────────────────────────────────── */
+async function lookupIngredient(btn, ingredient) {
+  btn.classList.add('looking-up');
+  switchTab('map');
+  const productList = document.getElementById('product-list');
+  const productLoading = document.getElementById('product-loading');
+  productLoading.style.display = 'block';
+  productList.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/products/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ingredient,
+        latitude: state.locationSet ? state.latitude : null,
+        longitude: state.locationSet ? state.longitude : null,
+      }),
+    });
+    const products = await res.json();
+    renderProducts(products, ingredient);
+  } catch (err) {
+    productList.innerHTML = '<p class="muted">Product lookup failed.</p>';
+  } finally {
+    productLoading.style.display = 'none';
+    btn.classList.remove('looking-up');
+  }
+}
+
+function renderProducts(products, ingredient) {
+  const productList = document.getElementById('product-list');
+  if (!products.length) {
+    productList.innerHTML = '<p class="muted">No products found for "' + esc(ingredient) + '".</p>';
+    return;
+  }
+  productList.innerHTML = '<p style="font-size:.78rem;color:var(--gray-600);margin-bottom:.5rem">Results for <strong>' + esc(ingredient) + '</strong>:</p>';
+
+  // Clear previous store highlights
+  if (map && state.markers) state.markers.forEach(m => m.setIcon && m.setIcon(m.defaultIcon || m.getIcon()));
+
+  products.slice(0, 10).forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+
+    const imgHtml = p.image_url
+      ? '<img src="' + esc(p.image_url) + '" alt="' + esc(p.product_name || '') + '" loading="lazy"/>'
+      : '<div style="width:64px;height:64px;background:var(--gray-100);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.6rem">🛒</div>';
+
+    const priceHtml = p.price ? '<span class="price-badge">' + esc(p.currency || '$') + (p.price).toFixed ? (p.price).toFixed(2) : esc(p.price) + '</span>' : '';
+    const ratingHtml = p.rating ? '<span class="rating">★ ' + esc(p.rating) + '</span>' : '';
+
+    card.innerHTML = imgHtml + '<div style="flex:1">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center">'
+      + '<div class="prod-name">' + esc(p.product_name || 'Unknown product') + '</div>'
+      + '<div class="meta">' + priceHtml + ratingHtml + '</div>'
+      + '</div>'
+      + (p.brand ? '<div class="prod-brand">' + esc(p.brand) + '</div>' : '')
+      + '<div class="prod-source">' + esc(p.source) + (p.store_name ? ' · ' + esc(p.store_name) : '') + '</div>'
+      + '</div>';
+
+    productList.appendChild(card);
+
+    // Highlight store marker if product provides a store_name
+    if (p.store_name && map && state.stores) {
+      const match = state.stores.find(s => (s.name || '').toLowerCase().includes((p.store_name||'').toLowerCase()));
+      if (match) {
+        // find corresponding marker (approx by lat/lon)
+        const m = state.markers.find(mk => {
+          const latlng = mk.getLatLng();
+          return Math.abs(latlng.lat - match.latitude) < 0.0005 && Math.abs(latlng.lng - match.longitude) < 0.0005;
+        });
+        if (m) {
+          // store default icon for later reset
+          m.defaultIcon = m.getIcon();
+          // create a simple highlighted icon by changing color using DivIcon
+          const highlight = L.divIcon({ className: 'store-highlight', html: '<div style="width:12px;height:12px;border-radius:50%;background:#2d7a4f;border:2px solid white"></div>', iconSize: [18,18] });
+          m.setIcon(highlight);
+          m.openPopup();
+        }
+      }
+    }
+
+  });
+}
+
+/* ───────────────────────────────────────────────
+   Helpers
+─────────────────────────────────────────────── */
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function escAttr(str) {
+  return String(str ?? '').replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Allow Enter on goal input
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('goal').addEventListener('keydown', e => {
+    if (e.key === 'Enter') generateRecipe();
+  });
+});
+</script>
+</body>
+</html>

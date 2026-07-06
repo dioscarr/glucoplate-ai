@@ -7,12 +7,7 @@ from app.schemas.store import ProductAvailability, ProductSearchRequest
 
 
 class ProductLookupService:
-    """Search packaged food products using Open Food Facts.
-
-    Open Food Facts can provide product names, brands, images, barcodes,
-    ingredients, and nutrition data. It usually does not provide store-specific
-    live price or inventory.
-    """
+    """Search packaged food products using Open Food Facts."""
 
     search_url = "https://world.openfoodfacts.org/cgi/search.pl"
 

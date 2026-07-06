@@ -1,7 +1,7 @@
 import time
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
@@ -17,7 +17,7 @@ app = FastAPI(
 )
 
 app.include_router(router)
-app.mount("/static", StaticFiles(directory="app/web/static"), name="static")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.middleware("http")
@@ -34,10 +34,9 @@ async def log_requests(request: Request, call_next):
     )
     return response
 
-
-@app.get("/")
-def index() -> FileResponse:
-    return FileResponse("app/web/index.html")
+@app.get("/", include_in_schema=False)
+def root() -> RedirectResponse:
+    return RedirectResponse(url="/static/index.html")
 
 
 @app.get("/health")

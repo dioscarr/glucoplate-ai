@@ -2,6 +2,7 @@ import json
 from typing import Any
 
 from app.ai.agents.nutrition_agent import NutritionAgent
+from app.ai.json_utils import extract_json_text
 from app.ai.agents.planner_agent import PlannerAgent
 from app.ai.agents.recipe_agent import RecipeAgent
 from app.ai.agents.reviewer_agent import ReviewerAgent
@@ -70,12 +71,13 @@ class RecipeOrchestrator:
                 )
             )
 
-            payload: dict[str, Any] = json.loads(final_response)
+            payload: dict[str, Any] = json.loads(extract_json_text(final_response))
             payload["ai_provider"] = "github-copilot-sdk-agent-chain"
             return RecipeResponse.model_validate(payload)
-        except Exception:
+        except Exception as exc:
             # MVP behavior: fallback keeps the demo deployable even without Copilot SDK runtime.
-            # Production behavior should log this exception and expose diagnostic metadata safely.
+            from loguru import logger
+            logger.warning("AI generation failed, using local fallback: {}", exc)
             return self.fallback_service.generate(request)
 
     def _to_context(self, value: dict[str, Any]) -> str:
