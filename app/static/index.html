@@ -181,7 +181,7 @@
     #tab-map.active  { display: flex; flex-direction: column; padding: 0; }
 
     /* Ensure map container and map take full height */
-    .map-stores-layout { height: 100%; display: grid; grid-template-columns: 360px 1fr; }
+    .map-stores-layout { height: 100%; display: grid; grid-template-columns: 420px 1fr; }
     #map-container { flex: 1; min-height: 0; height: 100%; }
     #map { width: 100%; height: 100%; min-height: 300px; }
 
@@ -380,7 +380,12 @@
       border-radius: 8px;
       margin-bottom: .5rem;
       background: white;
-    }
+          min-width: 220px;
+          flex-wrap: nowrap;
+        }
+        .product-card { flex-direction: row; }
+        .product-card .meta { white-space: nowrap; }
+        .product-card .prod-name { max-width: 220px; overflow-wrap: break-word; }
     .product-item img, .product-card img {
       width: 64px; height: 64px;
       object-fit: contain;
@@ -524,6 +529,7 @@
               <div class="spinner" style="width:24px;height:24px;border-width:2px;margin:.75rem auto"></div>
             </div>
             <div id="product-list"><p class="muted">Click an ingredient from the recipe to look up products.</p></div>
+            <div style="margin-top:.5rem;font-size:.78rem;color:var(--gray-600)">Tip: click "Save" to add an item to a cart. If multiple carts exist you'll be prompted to choose.</div>
           </div>
 
           <div class="divider"></div>
