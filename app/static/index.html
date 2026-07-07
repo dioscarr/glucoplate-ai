@@ -828,6 +828,7 @@
     }
     [data-theme="dark"] #mini-modal-msg { color: #e8efff; }
 
+    .modal-backdrop {
       position: fixed;
       inset: 0;
       z-index: 10050;
@@ -1893,7 +1894,7 @@ async function loadCarts() {
 
     if (overlayEl) renderList(overlayEl, state.carts);
     renderCartsPage();
-    try { document.getElementById('count-carts').textContent = (state.carts||[]).length; } catch(e){}
+    try { const totalItems = (state.carts||[]).reduce((s,c)=>s+((c.items||[]).length),0); document.getElementById('count-carts').textContent = totalItems || (state.carts||[]).length; } catch(e){}
     try { document.getElementById('count-products').textContent = 0; } catch(e){}
     try { document.getElementById('count-recents').textContent = parseInt(document.getElementById('count-recents').textContent||0); } catch(e){}
     try { document.getElementById('count-stores').textContent = (state.stores||[]).length; } catch(e){}

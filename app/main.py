@@ -1,7 +1,7 @@
 import time
 
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
@@ -54,6 +54,18 @@ async def log_requests(request: Request, call_next):
         pass
 
     return response
+
+@app.get("/static/index.html", include_in_schema=False)
+def serve_index_html() -> FileResponse:
+    return FileResponse(
+        "app/static/index.html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
+
 
 @app.get("/", include_in_schema=False)
 def root() -> RedirectResponse:
