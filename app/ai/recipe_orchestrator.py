@@ -40,61 +40,69 @@ class RecipeOrchestrator:
         if not use_ai or provider == "local":
             return self.fallback_service.generate(request)
 
-        if provider in ("auto", "gemini"):
+        # Decide which provider to use based on availability and user preference.
+        from app.ai.provider_selector import select_provider
+
+        selected = select_provider(provider)
+
+        if selected == "gemini":
             try:
                 return self._generate_with_gemini(request)
             except Exception as exc:
                 from loguru import logger
 
                 logger.warning("Gemini generation failed: {}", exc)
-                if provider == "gemini":
-                    return self.fallback_service.generate(request)
+                return self.fallback_service.generate(request)
 
-        try:
-            request_context = request.model_dump_json(indent=2)
-            plan = await self.planner_agent.run(request_context)
-            draft_recipe = await self.recipe_agent.run(
-                self._to_context({"request": request.model_dump(), "plan": plan})
-            )
-            nutrition = await self.nutrition_agent.run(
-                self._to_context(
-                    {
-                        "request": request.model_dump(),
-                        "plan": plan,
-                        "draft_recipe": draft_recipe,
-                    }
+        if selected == "copilot":
+            try:
+                request_context = request.model_dump_json(indent=2)
+                plan = await self.planner_agent.run(request_context)
+                draft_recipe = await self.recipe_agent.run(
+                    self._to_context({"request": request.model_dump(), "plan": plan})
                 )
-            )
-            safety = await self.safety_agent.run(
-                self._to_context(
-                    {
-                        "request": request.model_dump(),
-                        "plan": plan,
-                        "draft_recipe": draft_recipe,
-                        "nutrition": nutrition,
-                    }
+                nutrition = await self.nutrition_agent.run(
+                    self._to_context(
+                        {
+                            "request": request.model_dump(),
+                            "plan": plan,
+                            "draft_recipe": draft_recipe,
+                        }
+                    )
                 )
-            )
-            final_response = await self.reviewer_agent.run(
-                self._to_context(
-                    {
-                        "request": request.model_dump(),
-                        "plan": plan,
-                        "draft_recipe": draft_recipe,
-                        "nutrition": nutrition,
-                        "safety": safety,
-                    }
+                safety = await self.safety_agent.run(
+                    self._to_context(
+                        {
+                            "request": request.model_dump(),
+                            "plan": plan,
+                            "draft_recipe": draft_recipe,
+                            "nutrition": nutrition,
+                        }
+                    )
                 )
-            )
+                final_response = await self.reviewer_agent.run(
+                    self._to_context(
+                        {
+                            "request": request.model_dump(),
+                            "plan": plan,
+                            "draft_recipe": draft_recipe,
+                            "nutrition": nutrition,
+                            "safety": safety,
+                        }
+                    )
+                )
 
-            payload: dict[str, Any] = json.loads(extract_json_text(final_response))
-            payload["ai_provider"] = "github-copilot-sdk-agent-chain"
-            return RecipeResponse.model_validate(payload)
-        except Exception as exc:
-            from loguru import logger
+                payload: dict[str, Any] = json.loads(extract_json_text(final_response))
+                payload["ai_provider"] = "github-copilot-sdk-agent-chain"
+                return RecipeResponse.model_validate(payload)
+            except Exception as exc:
+                from loguru import logger
 
-            logger.warning("AI generation failed, using local fallback: {}", exc)
-            return self.fallback_service.generate(request)
+                logger.warning("AI generation failed, using local fallback: {}", exc)
+                return self.fallback_service.generate(request)
+
+        # Fallback to local
+        return self.fallback_service.generate(request)
 
     def _generate_with_gemini(self, request: RecipeRequest) -> RecipeResponse:
         text = generate_text(self._gemini_prompt(request))
