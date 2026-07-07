@@ -114,6 +114,13 @@ def update_cart(cart_id: str, cart: dict):
     return {'ok': bool(updated), 'cart': updated}
 
 
+@router.delete('/carts/{cart_id}', response_model=dict)
+def delete_cart(cart_id: str):
+    svc = CartStoreService()
+    deleted = svc.delete(cart_id)
+    return {'ok': bool(deleted)}
+
+
 @router.post('/route/plan')
 def plan_route(request: dict):
     """Plan an ordered route for the provided cart with stops as store IDs or coordinates.
@@ -154,10 +161,30 @@ def normalize_ingredients_endpoint(request: dict):
 
 @router.get("/ai/health")
 async def ai_health() -> dict:
-    """Quick check whether the GitHub Copilot SDK Python package is importable."""
+    """Quick check of Copilot/Gemini provider availability."""
+    gemini_configured = False
+    try:
+        import os
+
+        gemini_configured = bool(
+            os.getenv("GEMINI_API_KEY")
+            or os.getenv("GOOGLE_API_KEY")
+            or os.getenv("GOOGLE_GEMINI_API_KEY")
+        )
+    except Exception:
+        gemini_configured = False
+
     try:
         import copilot  # type: ignore
 
-        return {"copilot_installed": True, "version": getattr(copilot, "__version__", None)}
+        return {
+            "copilot_installed": True,
+            "gemini_configured": gemini_configured,
+            "version": getattr(copilot, "__version__", None),
+        }
     except Exception as exc:  # pragma: no cover - runtime environment dependent
-        return {"copilot_installed": False, "error": str(exc)}
+        return {
+            "copilot_installed": False,
+            "gemini_configured": gemini_configured,
+            "error": str(exc),
+        }

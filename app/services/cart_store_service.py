@@ -1,6 +1,8 @@
 import json
 import os
+from datetime import datetime, timezone
 from typing import List
+from uuid import uuid4
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 CART_PATH = os.path.join(DATA_DIR, 'carts.json')
@@ -28,10 +30,12 @@ class CartStoreService:
         return _read()
 
     def create(self, cart: dict) -> dict:
-        from datetime import datetime
-        if 'id' not in cart:
-            cart['id'] = f"cart-{int(datetime.utcnow().timestamp())}"
-        cart['_created_at'] = datetime.utcnow().isoformat() + 'Z'
+        cart = dict(cart or {})
+        if not cart.get('id'):
+            cart['id'] = f"cart-{uuid4().hex[:12]}"
+        cart['_created_at'] = datetime.now(timezone.utc).isoformat()
+        if not isinstance(cart.get('items'), list):
+            cart['items'] = []
         items = _read()
         items = [cart] + items
         _write(items)
@@ -47,8 +51,15 @@ class CartStoreService:
         items = _read()
         out = []
         updated = None
+        changes = dict(changes or {})
         for c in items:
             if c.get('id') == cart_id:
+                # Keep immutable identity fields stable.
+                changes['id'] = c.get('id')
+                if c.get('_created_at') is not None:
+                    changes['_created_at'] = c.get('_created_at')
+                if 'items' in changes and not isinstance(changes.get('items'), list):
+                    changes['items'] = []
                 c.update(changes)
                 updated = c
             out.append(c)
@@ -56,6 +67,7 @@ class CartStoreService:
         return updated
 
     def delete(self, cart_id: str) -> bool:
-        items = [c for c in _read() if c.get('id') != cart_id]
+        original = _read()
+        items = [c for c in original if c.get('id') != cart_id]
         _write(items)
-        return True
+        return len(items) < len(original)

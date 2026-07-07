@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GlucoPlate AI</title>
+  <title>GlucoPlate AI — Diabetes-Friendly Recipes</title>
   <link rel="stylesheet" href="/static/vendor/leaflet.css" />
-  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><circle cx='32' cy='32' r='28' fill='%232563eb'/><text x='50%' y='56%' font-size='34' fill='white' text-anchor='middle' font-family='Arial'>🍽</text></svg>">
+  <link rel="stylesheet" href="/static/vendor/MarkerCluster.css" />
+  <link rel="stylesheet" href="/static/vendor/MarkerCluster.Default.css" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><circle cx='32' cy='32' r='28' fill='%232d7a4f'/><text x='50%' y='54%' font-size='36' fill='white' text-anchor='middle' font-family='Arial' dy='.1em'>🥗</text></svg>">
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
       /* Updated color palette: deeper teal accent, warmer highlights */
       --green:       #156b5b; /* primary brand */
@@ -26,20 +29,166 @@
       --red:         #b91c1c;
       --radius:      12px;
     }
-    body {
-      margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(56,189,248,.22), transparent 34rem),
-        radial-gradient(circle at bottom right, rgba(37,99,235,.18), transparent 32rem), var(--bg);
-      color: var(--text); min-height: 100vh;
+
+    [data-theme="dark"] {
+      /* Blue-toned dark theme */
+      --gray-50:  #0b1220;  /* app background */
+      --gray-100: #111c33;  /* cards/input bg */
+      --gray-200: #1f2f4d;  /* borders/dividers */
+      --gray-400: #9fb3d9;  /* muted text */
+      --gray-600: #c5d2ee;  /* secondary text */
+      --gray-800: #e8efff;  /* primary text */
+      --green-light: #172b4f; /* soft accent surfaces */
+      --green-mid: #4f86ff;   /* focus/accent */
+      --green: #2f6df6;       /* primary action */
+      --green-dark: #1f52c7;  /* hover/darker action */
+      --accent: #f59e0b;
     }
-    button, input, select { font: inherit; }
-    .shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    [data-theme="dark"] body {
+      background:
+        radial-gradient(circle at 15% 10%, rgba(79,134,255,.18), transparent 32rem),
+        radial-gradient(circle at 85% 85%, rgba(47,109,246,.16), transparent 28rem),
+        linear-gradient(180deg, #0c1730 0%, #0b1220 100%);
+    }
+    [data-theme="dark"] header {
+      background: linear-gradient(90deg, #1f52c7, #2f6df6);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    }
+    [data-theme="dark"] .theme-toggle { background: rgba(12, 23, 48, .45); }
+    [data-theme="dark"] .theme-toggle button.active {
+      background: #dbe8ff;
+      color: #173675;
+    }
+
+    /* Dark theme surface + contrast overrides */
+    [data-theme="dark"] .sidebar,
+    [data-theme="dark"] .main-panel,
+    [data-theme="dark"] .stores-sidebar,
+    [data-theme="dark"] .tab-bar,
+    [data-theme="dark"] .sidebar-tab,
+    [data-theme="dark"] .card,
+    [data-theme="dark"] .placeholder-card,
+    [data-theme="dark"] .store-item,
+    [data-theme="dark"] .product-item,
+    [data-theme="dark"] .product-card,
+    [data-theme="dark"] .btn-secondary,
+    [data-theme="dark"] footer {
+      background: linear-gradient(180deg, rgba(25,42,78,.92), rgba(17,28,51,.92));
+      border-color: var(--gray-200);
+      color: var(--gray-800);
+    }
+    [data-theme="dark"] .app-layout,
+    [data-theme="dark"] .map-stores-layout,
+    [data-theme="dark"] .tab-panel {
+      background: transparent;
+    }
+    [data-theme="dark"] .tab-btn { color: #c7d5f6; }
+    [data-theme="dark"] .tab-btn.active {
+      color: #eaf0ff;
+      border-bottom-color: #5a8dff;
+      background: rgba(79, 134, 255, .14);
+    }
+    [data-theme="dark"] .sidebar-tab {
+      background: linear-gradient(180deg, rgba(22,38,70,.95), rgba(15,26,49,.95));
+      border-color: #304a7d;
+    }
+    [data-theme="dark"] .stores-sidebar .btn-secondary {
+      color: #d8e6ff;
+      border-color: #3f5f98;
+      background: rgba(17, 28, 51, .7);
+    }
+    [data-theme="dark"] .stores-sidebar .btn-secondary.active,
+    [data-theme="dark"] .stores-sidebar .sidebar-tab-btn.active {
+      background: linear-gradient(90deg, #315da8, #2a4f8f) !important;
+      color: #eef4ff !important;
+      border-color: #6f95e6 !important;
+      box-shadow: 0 8px 20px rgba(17, 42, 95, .45);
+    }
+    [data-theme="dark"] .count-badge {
+      background: #0f2f6d;
+      color: #cfe0ff;
+    }
+    [data-theme="dark"] .divider,
+    [data-theme="dark"] .stores-sidebar .divider {
+      background: linear-gradient(90deg, transparent, #2f4678, transparent);
+    }
+    [data-theme="dark"] .provider-item,
+    [data-theme="dark"] .toggle-row,
+    [data-theme="dark"] .loc-pill {
+      background: #152647;
+      color: #d2e2ff;
+      border-color: #334f85;
+    }
+    [data-theme="dark"] .loc-pill.active {
+      background: #1d3a6c;
+      color: #edf3ff;
+    }
+    [data-theme="dark"] h2,
+    [data-theme="dark"] h3,
+    [data-theme="dark"] .store-item .store-name,
+    [data-theme="dark"] .product-item .prod-name,
+    [data-theme="dark"] .product-card .prod-name {
+      color: #e8efff;
+    }
+    [data-theme="dark"] [style*="background:var(--gray-50)"] {
+      background: #102040 !important;
+      border-color: #2f4b80 !important;
+    }
+    [data-theme="dark"] [style*="background:white"],
+    [data-theme="dark"] [style*="background: white"] {
+      background: linear-gradient(180deg, rgba(25,42,78,.92), rgba(17,28,51,.92)) !important;
+      color: var(--gray-800) !important;
+      border-color: var(--gray-200) !important;
+    }
+    [data-theme="dark"] input[type="text"],
+    [data-theme="dark"] input[type="number"],
+    [data-theme="dark"] select {
+      background: #0f1a31;
+      color: var(--gray-800);
+      border-color: var(--gray-200);
+    }
+    [data-theme="dark"] input:focus,
+    [data-theme="dark"] select:focus {
+      background: #14203c;
+      box-shadow: 0 0 0 4px rgba(79, 134, 255, .22);
+    }
+    [data-theme="dark"] .btn-secondary {
+      color: #dbe8ff;
+      border: 1.5px solid #7ea6ff;
+    }
+    [data-theme="dark"] .btn-secondary:hover { background: #1c2f56; }
+    [data-theme="dark"] .muted,
+    [data-theme="dark"] label,
+    [data-theme="dark"] .store-item .store-addr,
+    [data-theme="dark"] .product-item .prod-brand,
+    [data-theme="dark"] .product-card .prod-brand,
+    [data-theme="dark"] .loading-text,
+    [data-theme="dark"] footer {
+      color: var(--gray-400);
+    }
+    [data-theme="dark"] .store-item:hover {
+      background: linear-gradient(180deg, rgba(41, 64, 111, .95), rgba(27, 44, 78, .95));
+      border-color: #6f95e6;
+      box-shadow: 0 8px 20px rgba(9, 22, 49, .45);
+    }
+    [data-theme="dark"] .store-item.active {
+      background: linear-gradient(180deg, rgba(51, 81, 138, .95), rgba(36, 59, 104, .95));
+      border-color: #7ea6ff;
+      box-shadow: 0 10px 24px rgba(10, 25, 56, .5);
+    }
+    [data-theme="dark"] .placeholder-card { border-color: #35518a; }
+
+    /* ── Header ── */
     header {
-      position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between;
-      gap: 1rem; padding: 1rem clamp(1rem, 3vw, 2.25rem); backdrop-filter: blur(18px);
-      background: linear-gradient(90deg, rgba(37,99,235,.96), rgba(14,165,233,.92)); color: white;
-      box-shadow: 0 12px 35px rgba(37,99,235,.28);
       background: var(--green);
       color: white;
       padding: 1rem 2rem;
@@ -52,11 +201,33 @@
     header .logo { font-size: 1.75rem; }
     header .brand h1  { font-size: 1.2rem; font-weight: 700; letter-spacing: -.3px; }
     header .brand p   { font-size: .78rem; opacity: .8; margin-top: 2px; }
+    .theme-toggle {
+      margin-left: auto;
+      display: inline-flex;
+      gap: .35rem;
+      background: rgba(255,255,255,.14);
+      border-radius: 999px;
+      padding: .2rem;
+    }
+    .theme-toggle button {
+      border: 0;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: .35rem .55rem;
+      font-size: .85rem;
+      font-weight: 700;
+    }
+    .theme-toggle button.active {
+      background: white;
+      color: var(--green-dark);
+    }
 
     /* ── App layout: sidebar + main panel ── */
     .app-layout {
       display: grid;
-      grid-template-columns: 320px 1fr;
+      grid-template-columns: 1fr 320px;
       gap: 0;
       flex: 1;
       min-height: 0;
@@ -68,12 +239,14 @@
     /* ── Left sidebar (form) ── */
     .sidebar {
       background: white;
-      border-right: 1px solid var(--gray-200);
+      border-left: 1px solid var(--gray-200);
       padding: 1.5rem 1.25rem;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: .75rem;
+      grid-column: 2;
+      grid-row: 1;
     }
     .sidebar h2 {
       font-size: .95rem; font-weight: 700; color: var(--green);
@@ -110,6 +283,40 @@
       font-size: .83rem;
       font-weight: 600;
       color: var(--green);
+    }
+    .provider-status {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: .35rem;
+      margin-top: .35rem;
+    }
+    .provider-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .78rem;
+      color: var(--gray-600);
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: .38rem .55rem;
+    }
+    .provider-left { display: inline-flex; align-items: center; gap: .45rem; }
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      background: #9ca3af;
+      box-shadow: 0 0 0 2px rgba(156,163,175,.2);
+    }
+    .status-dot.online {
+      background: #16a34a;
+      box-shadow: 0 0 0 2px rgba(22,163,74,.24);
+    }
+    .status-dot.offline {
+      background: #dc2626;
+      box-shadow: 0 0 0 2px rgba(220,38,38,.2);
     }
     .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; }
@@ -173,6 +380,8 @@
       overflow: hidden;
       /* Ensure the main panel fills the viewport height below header */
       height: calc(100vh - 72px); /* header ~72px */
+      grid-column: 1;
+      grid-row: 1;
     }
 
     /* Tab bar */
@@ -220,6 +429,12 @@
       border-radius: var(--radius);
       padding: 1.5rem;
       box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+    [data-theme="dark"] .card,
+    [data-theme="dark"] .sidebar,
+    [data-theme="dark"] .stores-sidebar {
+      background: linear-gradient(180deg, rgba(25,42,78,.88), rgba(17,28,51,.88));
+      backdrop-filter: blur(4px);
     }
     .placeholder-card {
       display: flex; flex-direction: column;
@@ -301,6 +516,16 @@
       color: var(--green);
     }
     .ingredient-btn.looking-up { opacity: .6; cursor: wait; }
+    [data-theme="dark"] .ingredient-btn {
+      background: rgba(41, 64, 111, .7);
+      border-color: #3d5a9a;
+      color: #c7d8ff;
+    }
+    [data-theme="dark"] .ingredient-btn:hover {
+      background: #315da8;
+      border-color: #6f95e6;
+      color: #eef4ff;
+    }
 
     .sub-chip {
       display: inline-block;
@@ -339,7 +564,7 @@
     /* ── Map & Stores tab ── */
     .map-stores-layout {
       display: grid;
-      grid-template-columns: 560px 1fr; /* widened stores sidebar (2x) */
+      grid-template-columns: 620px 1fr;
       flex: 1;
       min-height: 0;
       overflow: hidden;
@@ -363,11 +588,11 @@
       padding-bottom: .25rem;
       border-bottom: 1px dashed var(--gray-100);
     }
-    /* Make each logical section scrollable to avoid long page scrolling */
+    /* Avoid nested scrollbars in sidebar sections */
     .stores-sidebar > div {
-      max-height: 240px; /* reasonable default height per section */
-      overflow: auto;
-      padding-right: 6px; /* room for scrollbar */
+      max-height: none;
+      overflow: visible;
+      padding-right: 0;
       padding-top: .6rem;
     }
     /* boxed, rounded sections */
@@ -381,6 +606,25 @@
     /* reduce heavy border/outline appearance used earlier */
     .sidebar-tab-btn { border-radius: 10px; }
     .sidebar-tab-btn:focus { outline: none; }
+    #sidebar-tab-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .35rem;
+    }
+    #sidebar-tab-buttons > .sidebar-tab-btn,
+    #open-cart-overlay-btn {
+      flex: 1 1 120px;
+      min-width: 120px;
+      width: auto;
+      white-space: nowrap;
+    }
+    #sidebar-carts .btn {
+      white-space: nowrap;
+      width: auto;
+      min-width: 86px;
+    }
+    #sidebar-carts .btn + .btn { margin-left: .25rem; }
 
     /* make counts subtle and aligned */
     .count-badge { background: rgba(45,122,79,0.06); color: var(--green); font-weight:700; padding:.12rem .36rem; border-radius:8px; margin-left:.4rem; font-size:.82rem; display:inline-block; vertical-align:middle }
@@ -401,14 +645,73 @@
     .stores-sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 8px; }
 
 
-    /* Make product and carts lists compact and scrollable */
-    #product-list, #carts-list {
-      max-height: 180px;
+    /* Let Product results expand to bottom of sidebar and scroll internally */
+    #sidebar-products {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    #sidebar-products #product-list {
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: none;
       overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+    /* Carts use pagination (no inner scrollbar) */
+    #carts-list {
+      min-height: 300px;
+      max-height: none;
+      overflow: visible;
       display: flex; flex-direction: column; gap: .4rem;
     }
+    #sidebar-carts {
+      min-height: 420px;
+    }
+    #carts-pagination {
+      margin-top: .55rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: .5rem;
+      font-size: .78rem;
+      color: var(--gray-600);
+    }
+    #carts-pagination .pager-actions { display: inline-flex; gap: .4rem; }
+    #carts-pagination .btn { width: auto; padding: .38rem .65rem; border-radius: 8px; }
+    #stores-pagination {
+      margin-top: .55rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: .5rem;
+      font-size: .78rem;
+      color: var(--gray-600);
+    }
+    #stores-pagination .pager-actions { display: inline-flex; gap: .4rem; }
+    #stores-pagination .btn { width: auto; padding: .38rem .65rem; border-radius: 8px; }
     /* Recents list: expand to available height and scroll internally */
     #recents-list { max-height: none; flex: 1 1 auto; min-height: 0; overflow: auto; display:flex; flex-direction:column; gap:.5rem }
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .45rem;
+      padding: 1.4rem .75rem;
+      text-align: center;
+      border: 1px dashed var(--gray-200);
+      border-radius: 12px;
+      color: var(--gray-400);
+    }
+    .empty-state .empty-icon { font-size: 2rem; line-height: 1; }
+    .empty-state .empty-title { font-size: .88rem; font-weight: 700; color: var(--gray-600); }
+    .empty-state .empty-hint { font-size: .78rem; }
+    [data-theme="dark"] .empty-state { border-color: #2f4678; }
+    [data-theme="dark"] .empty-state .empty-title { color: #c7d5f6; }
 
     /* Visual enhancements for items */
     .store-item { transition: transform .12s, box-shadow .12s; }
@@ -475,6 +778,53 @@
 
     /* Muted text */
     .muted { color: var(--gray-400); font-size: .85rem; }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 10050;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, .45);
+      padding: 1rem;
+    }
+    .modal-card {
+      width: min(880px, 96vw);
+      max-height: 90vh;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid var(--gray-200);
+      background: linear-gradient(180deg,#ffffff,#fbfffb);
+      box-shadow: 0 16px 40px rgba(0,0,0,.2);
+      padding: .8rem;
+    }
+    .cart-item-editor {
+      display: grid;
+      grid-template-columns: 1.4fr .8fr auto;
+      gap: .5rem;
+      align-items: center;
+      padding: .55rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      margin-bottom: .45rem;
+      background: white;
+    }
+    .cart-editor-actions {
+      display: flex;
+      gap: .4rem;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .6rem;
+    }
+    [data-theme="dark"] .modal-card,
+    [data-theme="dark"] .cart-item-editor {
+      background: linear-gradient(180deg, rgba(25,42,78,.95), rgba(17,28,51,.95));
+      border-color: #35518a;
+    }
+    [data-theme="dark"] .modal-backdrop {
+      background: rgba(3, 9, 20, .72);
+    }
 
     footer {
       text-align: center; font-size: .72rem;
@@ -482,113 +832,21 @@
       border-top: 1px solid var(--gray-200);
       background: white; flex-shrink: 0;
     }
-    .brand { display: flex; gap: .8rem; align-items: center; min-width: 0; }
-    .logo { width: 46px; height: 46px; border-radius: 16px; display:grid; place-items:center; font-size:1.55rem; background: rgba(255,255,255,.18); box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
-    h1 { margin:0; font-size: clamp(1.1rem, 2.6vw, 1.65rem); letter-spacing: -.04em; }
-    .tagline { margin:.12rem 0 0; font-size:.78rem; opacity:.82; white-space: nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .theme-toggle { display:flex; align-items:center; gap:.35rem; padding:.3rem; border-radius:999px; background:rgba(255,255,255,.18); }
-    .theme-toggle button { border:0; cursor:pointer; color:white; background:transparent; border-radius:999px; padding:.45rem .65rem; font-weight:800; }
-    .theme-toggle button.active { background:white; color:var(--primary-dark); }
-    .layout { display:grid; grid-template-columns: 360px 1fr; gap:1rem; padding:1rem; flex:1; min-height:0; }
-    .panel, .card { background: var(--panel); border:1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-    .sidebar { padding: 1rem; display:flex; flex-direction:column; gap:.8rem; align-self:start; }
-    .section-title { font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:.08em; font-size:.78rem; }
-    .field { display:flex; flex-direction:column; gap:.35rem; }
-    label { color: var(--muted); font-weight:800; font-size:.78rem; }
-    input, select { width:100%; border:1px solid var(--line); border-radius: 14px; background: var(--card); color:var(--text); padding:.72rem .85rem; outline:none; }
-    input:focus, select:focus { border-color: var(--primary-2); box-shadow: 0 0 0 4px rgba(56,189,248,.18); }
-    .row { display:grid; grid-template-columns: 1fr 1fr; gap:.7rem; }
-    .provider-row { display:grid; grid-template-columns:1fr; gap:.55rem; padding:.75rem; border-radius:18px; background:var(--soft); border:1px solid var(--line); }
-    .btn { width:100%; border:0; cursor:pointer; border-radius:16px; padding:.85rem 1rem; color:white; font-weight:900; background: linear-gradient(135deg,var(--primary),var(--primary-2)); box-shadow: 0 12px 28px rgba(37,99,235,.28); transition: transform .15s, filter .15s; }
-    .btn:hover { filter: brightness(1.04); transform: translateY(-1px); }
-    .btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
-    .btn.secondary { background: var(--card); color: var(--primary); border: 1px solid var(--line); box-shadow:none; }
-    .muted { color:var(--muted); font-size:.86rem; line-height:1.5; }
-    .main { min-width:0; display:flex; flex-direction:column; gap:1rem; }
-    .tabs { display:flex; gap:.5rem; padding:.45rem; border-radius:22px; background: var(--panel); border:1px solid var(--line); box-shadow: var(--shadow); }
-    .tab { flex:1; border:0; cursor:pointer; padding:.82rem; border-radius:17px; color:var(--muted); background:transparent; font-weight:900; }
-    .tab.active { color:white; background:linear-gradient(135deg,var(--primary),var(--primary-2)); }
-    .view { display:none; min-height:0; }
-    .view.active { display:block; }
-    .recipe-grid { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:1rem; }
-    .card { padding:1rem; }
-    .empty { min-height:320px; display:grid; place-items:center; text-align:center; border-style:dashed; color:var(--muted); }
-    .recipe-title { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; }
-    h2 { margin:.1rem 0 .4rem; font-size:clamp(1.35rem,3vw,2rem); letter-spacing:-.045em; }
-    h3 { margin:.2rem 0 .65rem; font-size:.85rem; text-transform:uppercase; color:var(--muted); letter-spacing:.08em; }
-    .badge { display:inline-flex; align-items:center; gap:.35rem; border-radius:999px; padding:.3rem .65rem; font-size:.75rem; font-weight:900; background:var(--soft); color:var(--primary); white-space:nowrap; }
-    .nutrition { display:grid; grid-template-columns: repeat(4,1fr); gap:.6rem; margin:1rem 0; }
-    .nut { background:var(--soft); border:1px solid var(--line); border-radius:16px; padding:.8rem; text-align:center; }
-    .nut strong { display:block; color:var(--primary); font-size:1.2rem; }
-    ul, ol { padding-left:1.1rem; line-height:1.65; }
-    .chips { display:flex; flex-wrap:wrap; gap:.45rem; }
-    .chip { border:1px solid var(--line); background:var(--soft); color:var(--primary); padding:.42rem .7rem; border-radius:999px; cursor:pointer; font-weight:800; }
-    .safety { border-radius:16px; padding:.85rem; background:rgba(22,163,74,.1); color:var(--good); border:1px solid rgba(22,163,74,.25); }
-    .map-grid { display:grid; grid-template-columns: 420px 1fr; gap:1rem; height: calc(100vh - 170px); min-height:560px; }
-    .side-stack { display:flex; flex-direction:column; gap:.85rem; overflow:auto; padding-right:.15rem; }
-    #map { min-height:420px; height:100%; border-radius:var(--radius); border:1px solid var(--line); box-shadow:var(--shadow); overflow:hidden; }
-    .search-box { display:flex; gap:.5rem; }
-    .list { display:flex; flex-direction:column; gap:.65rem; }
-    .item { display:flex; gap:.75rem; align-items:flex-start; border:1px solid var(--line); background:var(--card); border-radius:18px; padding:.75rem; }
-    .item img { width:68px; height:68px; object-fit:contain; border-radius:14px; background:var(--soft); flex-shrink:0; }
-    .item-title { font-weight:900; font-size:1rem; }
-    .source { color:var(--primary); font-weight:900; font-size:.82rem; }
-    .footer { text-align:center; color:var(--muted); font-size:.78rem; padding:1rem; }
-    .spinner { width:32px; height:32px; border-radius:999px; border:3px solid var(--line); border-top-color:var(--primary); animation:spin .8s linear infinite; margin:auto; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    @media(max-width:900px){ .layout{grid-template-columns:1fr; padding:.75rem;} .recipe-grid,.map-grid{grid-template-columns:1fr; height:auto;} #map{height:420px;} header{align-items:flex-start;} .theme-toggle{flex-shrink:0;} .nutrition{grid-template-columns:repeat(2,1fr);} .tagline{white-space:normal;} }
   </style>
-  <script>
-    // Ensure setTheme exists so inline onclick in header doesn't fail
-    function setTheme(theme) {
-      try {
-        document.documentElement.dataset.theme = theme;
-        localStorage.setItem('glucoplate-theme', theme);
-        var lb = document.getElementById('lightBtn');
-        var db = document.getElementById('darkBtn');
-        if (lb) lb.classList.toggle('active', theme === 'light');
-        if (db) db.classList.toggle('active', theme === 'dark');
-        var ts = document.getElementById('themeStatus'); if (ts) ts.textContent = theme[0].toUpperCase() + theme.slice(1);
-      } catch (e) { /* no-op */ }
-    }
-    // apply saved or system preference immediately
-    try { setTheme(localStorage.getItem('glucoplate-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')); window.setTheme = setTheme; } catch(e) {}
-  </script>
 </head>
 <body>
-<div class="shell">
-  <header>
-    <div class="brand"><div class="logo">🍽</div><div><h1>GlucoPlate AI</h1><p class="tagline">Blue-theme wellness recipes, product lookup, maps, and AI provider fallbacks</p></div></div>
-    <div class="theme-toggle" aria-label="Theme selector"><button id="lightBtn" onclick="setTheme('light')">☀</button><button id="darkBtn" onclick="setTheme('dark')">🌙</button></div>
-  </header>
 
-  <div class="layout">
-    <aside class="panel sidebar">
-      <div class="section-title">Recipe Builder</div>
-      <div class="provider-row">
-        <label for="provider">AI Provider</label>
-        <select id="provider"><option value="auto">Automatic / Hosted fallback</option><option value="copilot">GitHub Copilot SDK</option><option value="gemini">Google Gemini</option><option value="local">Local Demo</option></select>
-        <p class="muted" id="provider-note">Hosted demo uses available providers and falls back safely.</p>
-      </div>
-      <div class="field"><label for="goal">What do you want to eat?</label><input id="goal" value="quick Dominican-style dinner" /></div>
-      <div class="row"><div class="field"><label for="servings">Servings</label><input id="servings" type="number" value="2" min="1" max="12" /></div><div class="field"><label for="max_carbs">Max carbs</label><input id="max_carbs" type="number" value="45" min="0" max="150" /></div></div>
-      <div class="field"><label for="culture">Cultural style</label><input id="culture" value="Dominican" /></div>
-      <div class="field"><label for="preferences">Preferences</label><input id="preferences" value="low sodium, high protein" /></div>
-      <div class="field"><label for="avoid">Avoid ingredients</label><input id="avoid" placeholder="peanuts, shellfish" /></div>
-      <button class="btn" id="generateBtn" onclick="generateRecipe()">Generate Recipe</button>
-      <button class="btn secondary" onclick="useCurrentLocation()">📍 Use My Location</button>
-      <p class="muted" id="locStatus">Default location: Cortland, NY. Click ingredients to search products.</p>
-    </aside>
-
-    <main class="main">
-      <nav class="tabs"><button id="recipeTab" class="tab active" onclick="showView('recipe')">🍽 Recipe</button><button id="shopTab" class="tab" onclick="showView('shop')">🛒 Products & Map</button></nav>
-      <section id="recipeView" class="view active"><div class="recipe-grid"><div id="recipeCard" class="card empty"><div><div style="font-size:3rem">🥗</div><h2>Ready when you are</h2><p class="muted">Generate a diabetes-conscious recipe with a provider-aware AI flow.</p></div></div><div class="card"><h3>System Status</h3><div class="list"><div class="item"><div><div class="item-title">AI Gateway</div><div class="source" id="aiStatus">Auto / fallback ready</div></div></div><div class="item"><div><div class="item-title">Product Images</div><div class="source">OpenFoodFacts / external images</div></div></div><div class="item"><div><div class="item-title">Theme</div><div class="source" id="themeStatus">Light</div></div></div></div></div></div></section>
-      <section id="shopView" class="view"><div class="map-grid"><div class="side-stack"><div class="card"><h3>Product Lookup</h3><div class="search-box"><input id="productQuery" placeholder="Search products like cacao, peanut butter" /><button class="btn" style="width:auto" onclick="searchProducts(document.getElementById('productQuery').value)">Search</button></div><div id="productList" class="list" style="margin-top:.8rem"><p class="muted">Click an ingredient or search manually.</p></div></div><div class="card"><h3>Nearby Stores</h3><button class="btn secondary" onclick="searchStores()">Refresh stores</button><div id="storeList" class="list" style="margin-top:.8rem"><p class="muted">Store search may fall back if the external API is limited.</p></div></div></div><div id="map"></div></div></section>
-    </main>
+<header>
+  <span class="logo">🥗</span>
+  <div class="brand">
+    <h1>GlucoPlate AI</h1>
+    <p>Diabetes-friendly recipe generation &amp; grocery discovery</p>
   </div>
-</div>
-  <div class="footer">GlucoPlate AI · General wellness support only · Not medical advice · Estimates are approximate</div>
-</div>
+  <div class="theme-toggle" aria-label="Theme selector">
+    <button id="lightBtn" type="button" onclick="setTheme('light')">☀</button>
+    <button id="darkBtn" type="button" onclick="setTheme('dark')">🌙</button>
+  </div>
+</header>
 
 <div class="app-layout">
 
@@ -602,6 +860,16 @@
         <input type="checkbox" id="use_ai" checked />
         <span class="slider"></span>
       </label>
+    </div>
+    <div class="provider-status">
+      <div class="provider-item">
+        <span class="provider-left"><span id="copilot-dot" class="status-dot"></span>Copilot</span>
+        <span id="copilot-status">Checking…</span>
+      </div>
+      <div class="provider-item">
+        <span class="provider-left"><span id="gemini-dot" class="status-dot"></span>Gemini</span>
+        <span id="gemini-status">Checking…</span>
+      </div>
     </div>
 
     <div class="field">
@@ -687,12 +955,12 @@
                 <input id="sidebar-search" placeholder="Search stores, products, carts" style="padding:.35rem .4rem;border-radius:6px;border:0;background:transparent;font-size:.88rem;width:100%" oninput="sidebarFilter(this.value)" />
               </div>
             </div>
-            <div style="display:flex;gap:.25rem;flex-wrap:wrap">
+            <div id="sidebar-tab-buttons">
               <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('stores')" id="tab-stores-btn">🏬 Stores <span id="count-stores" class="count-badge">0</span></button>
               <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('products')" id="tab-products-btn">🛒 Products <span id="count-products" class="count-badge">0</span></button>
               <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('recents')" id="tab-recents-btn">🕘 Recents <span id="count-recents" class="count-badge">0</span></button>
-                            <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('carts')" id="tab-carts-btn">🧾 Carts <span id="count-carts" class="count-badge">0</span></button>
-                            <button class="btn" id="open-cart-overlay-btn" onclick="toggleCartOverlay()" style="margin-left:.5rem">View Carts</button>
+              <button class="btn btn-secondary sidebar-tab-btn" onclick="switchSidebarTab('carts')" id="tab-carts-btn">🧾 Carts <span id="count-carts" class="count-badge">0</span></button>
+              <button class="btn" id="open-cart-overlay-btn" onclick="toggleCartOverlay()">View Carts</button>
             </div>
           </div>
 
@@ -705,6 +973,13 @@
               <button class="btn btn-secondary" id="toggle-stores-btn" onclick="toggleSection('stores')">Collapse</button>
             </div>
             <div id="store-list"><p class="muted">Use your location to find nearby grocery stores.</p></div>
+            <div id="stores-pagination" style="display:none">
+              <span id="stores-page-label">Page 1 of 1</span>
+              <div class="pager-actions">
+                <button class="btn btn-secondary" id="stores-prev-btn" onclick="changeStoresPage(-1)">Prev</button>
+                <button class="btn btn-secondary" id="stores-next-btn" onclick="changeStoresPage(1)">Next</button>
+              </div>
+            </div>
           </div>
 
           <!-- Tab: Product lookup -->
@@ -731,6 +1006,13 @@
               </div>
             </div>
             <div id="carts-list"><p class="muted">Carts are shown on the map overlay ("View Carts").</p></div>
+            <div id="carts-pagination" style="display:none">
+              <span id="carts-page-label">Page 1 of 1</span>
+              <div class="pager-actions">
+                <button class="btn btn-secondary" id="carts-prev-btn" onclick="changeCartsPage(-1)">Prev</button>
+                <button class="btn btn-secondary" id="carts-next-btn" onclick="changeCartsPage(1)">Next</button>
+              </div>
+            </div>
           </div>
 
 
@@ -774,9 +1056,58 @@
   GlucoPlate AI · For general wellness support only · Not medical advice · Estimates are approximate
 </footer>
 
-<script src="/static/vendor/leaflet.js"></script>
-<script>
+<div id="cart-modal-backdrop" class="modal-backdrop" onclick="onCartModalBackdrop(event)">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cart-modal-heading">
+    <div class="cart-editor-actions">
+      <strong id="cart-modal-heading" style="font-size:1rem">Edit Cart</strong>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="exportActiveCart()">Export / Print</button>
+        <button class="btn btn-secondary" onclick="saveCartModal()">Save</button>
+        <button class="btn btn-secondary" onclick="showDeleteCartConfirm()">Delete Cart</button>
+        <button class="btn" onclick="closeCartModal()">Close</button>
+      </div>
+    </div>
+    <div id="cart-modal-delete-confirm" style="display:none;margin-bottom:.6rem;padding:.6rem;border:1px solid var(--gray-200);border-radius:10px">
+      <div style="margin-bottom:.45rem;font-weight:600">Delete this cart?</div>
+      <div style="display:flex;gap:.4rem;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="hideDeleteCartConfirm()">Cancel</button>
+        <button class="btn" onclick="deleteActiveCartFromModal()">Yes, delete</button>
+      </div>
+    </div>
+    <div id="cart-modal-feedback" class="muted" style="display:none;margin-bottom:.6rem"></div>
+    <div class="field" style="margin-bottom:.6rem">
+      <label for="cart-modal-title">Cart name</label>
+      <input id="cart-modal-title" type="text" placeholder="Cart name" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:.5rem;margin-bottom:.6rem">
+      <input id="cart-modal-new-item" type="text" placeholder="Add item name (e.g. Greek yogurt)" />
+      <button class="btn btn-secondary" onclick="addItemToCartModal()">+ Add Item</button>
+    </div>
+    <div id="cart-modal-items"></div>
+  </div>
+</div>
 
+<script src="/static/vendor/leaflet.js"></script>
+<script src="/static/vendor/leaflet.markercluster.js"></script>
+<script>
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('glucoplate-theme', theme);
+  const lightBtn = document.getElementById('lightBtn');
+  const darkBtn = document.getElementById('darkBtn');
+  if (lightBtn) lightBtn.classList.toggle('active', theme === 'light');
+  if (darkBtn) darkBtn.classList.toggle('active', theme === 'dark');
+}
+
+(function initTheme() {
+  const preferred = localStorage.getItem('glucoplate-theme')
+    || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  setTheme(preferred);
+})();
+
+/* ───────────────────────────────────────────────
+   State
+─────────────────────────────────────────────── */
 const state = {
   latitude: 43.0481,
   longitude: -76.1474,
@@ -784,6 +1115,12 @@ const state = {
   recipe: null,
   stores: [],
   markers: [],
+  storesPage: 1,
+  storesPageSize: 8,
+  carts: [],
+  cartsPage: 1,
+  cartsPageSize: 6,
+  activeCart: null,
 };
 
 /* ───────────────────────────────────────────────
@@ -831,6 +1168,31 @@ function switchTab(tab) {
   if (tab === 'map') {
     initMap();
     setTimeout(() => map && map.invalidateSize(), 100);
+  }
+}
+
+async function loadProviderStatus() {
+  const copilotDot = document.getElementById('copilot-dot');
+  const geminiDot = document.getElementById('gemini-dot');
+  const copilotStatus = document.getElementById('copilot-status');
+  const geminiStatus = document.getElementById('gemini-status');
+  if (!copilotDot || !geminiDot || !copilotStatus || !geminiStatus) return;
+
+  const setStatus = (dotEl, textEl, ok, text) => {
+    dotEl.classList.remove('online', 'offline');
+    dotEl.classList.add(ok ? 'online' : 'offline');
+    textEl.textContent = text;
+  };
+
+  try {
+    const res = await fetch('/api/ai/health');
+    if (!res.ok) throw new Error('health not reachable');
+    const health = await res.json();
+    setStatus(copilotDot, copilotStatus, !!health.copilot_installed, health.copilot_installed ? 'Online' : 'Offline');
+    setStatus(geminiDot, geminiStatus, !!health.gemini_configured, health.gemini_configured ? 'Configured' : 'Missing key');
+  } catch (_) {
+    setStatus(copilotDot, copilotStatus, false, 'Offline');
+    setStatus(geminiDot, geminiStatus, false, 'Offline');
   }
 }
 
@@ -1007,7 +1369,9 @@ async function useCurrentLocation() {
 
 async function searchStores() {
   const storeList = document.getElementById('store-list');
+  const storesPager = document.getElementById('stores-pagination');
   storeList.innerHTML = '<div class="spinner" style="width:24px;height:24px;border-width:2px;margin:.75rem auto"></div>';
+  if (storesPager) storesPager.style.display = 'none';
 
   try {
     const res = await fetch('/api/stores/search', {
@@ -1017,6 +1381,7 @@ async function searchStores() {
     });
     const stores = await res.json();
     state.stores = stores;
+    state.storesPage = 1;
     // update stores count badge
     try { document.getElementById('count-stores').textContent = (state.stores||[]).length; } catch(e){}
     // Enrich stores with website/meta where available (lightweight)
@@ -1037,8 +1402,13 @@ async function searchStores() {
 
 function renderStores(stores) {
   const storeList = document.getElementById('store-list');
+  const storesPager = document.getElementById('stores-pagination');
+  const storesPageLabel = document.getElementById('stores-page-label');
+  const storesPrev = document.getElementById('stores-prev-btn');
+  const storesNext = document.getElementById('stores-next-btn');
   if (!stores.length) {
     storeList.innerHTML = '<p class="muted">No stores found nearby.</p>';
+    if (storesPager) storesPager.style.display = 'none';
     return;
   }
 
@@ -1046,44 +1416,8 @@ function renderStores(stores) {
     if (map && state.clusterGroup) { state.clusterGroup.clearLayers(); } else if (map) { state.markers.forEach(m => m.remove()); }
   state.markers = [];
 
-  storeList.innerHTML = '';
+  // Map marker for all stores
   stores.forEach(store => {
-    // Sidebar item
-    const item = document.createElement('div');
-    item.className = 'store-item';
-    item.innerHTML =
-      '<div class="store-name">' + esc(store.name) + '</div>' +
-      (store.address ? '<div class="store-addr">' + esc(store.address) + '</div>' : '') +
-      (store.store_type ? '<div class="store-type">' + esc(store.store_type) + '</div>' : '');
-    item.addEventListener('click', () => {
-        if (!map) return;
-        // highlight clicked list item
-        document.querySelectorAll('.store-item').forEach(el => el.classList.remove('active'));
-        item.classList.add('active');
-
-        // find marker for this store and center/open popup
-        const marker = state.markers.find(mk => mk.storeId === store.id);
-        if (marker) {
-          // If clustered and clusterGroup supports zoomToShowLayer, use it for smoother expansion
-          if (state.clusterGroup && typeof state.clusterGroup.zoomToShowLayer === 'function') {
-            state.clusterGroup.zoomToShowLayer(marker, () => {
-              try { marker.openPopup(); } catch (e) {}
-            });
-          } else if (state.clusterGroup && typeof map.once === 'function') {
-            // fallback: setView then open popup on moveend
-            map.setView([store.latitude, store.longitude], 16);
-            map.once('moveend', () => { try { marker.openPopup(); } catch (e) {} });
-          } else {
-            map.setView([store.latitude, store.longitude], 16);
-            try { marker.openPopup(); } catch (e) {}
-          }
-        } else {
-          map.setView([store.latitude, store.longitude], 16);
-        }
-      });
-      storeList.appendChild(item);
-
-      // Map marker
       if (map) {
         // use clustering if available
         // use a circle marker to avoid missing image assets
@@ -1106,6 +1440,51 @@ function renderStores(stores) {
             }
           }
   });
+
+  const totalPages = Math.max(1, Math.ceil(stores.length / state.storesPageSize));
+  state.storesPage = Math.min(Math.max(1, state.storesPage), totalPages);
+  const start = (state.storesPage - 1) * state.storesPageSize;
+  const pageItems = stores.slice(start, start + state.storesPageSize);
+
+  storeList.innerHTML = '';
+  pageItems.forEach(store => {
+    const item = document.createElement('div');
+    item.className = 'store-item';
+    item.innerHTML =
+      '<div class="store-name">' + esc(store.name) + '</div>' +
+      (store.address ? '<div class="store-addr">' + esc(store.address) + '</div>' : '') +
+      (store.store_type ? '<div class="store-type">' + esc(store.store_type) + '</div>' : '');
+    item.addEventListener('click', () => {
+      if (!map) return;
+      document.querySelectorAll('#store-list .store-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+      const marker = state.markers.find(mk => mk.storeId === store.id);
+      if (marker) {
+        if (state.clusterGroup && typeof state.clusterGroup.zoomToShowLayer === 'function') {
+          state.clusterGroup.zoomToShowLayer(marker, () => { try { marker.openPopup(); } catch (e) {} });
+        } else if (state.clusterGroup && typeof map.once === 'function') {
+          map.setView([store.latitude, store.longitude], 16);
+          map.once('moveend', () => { try { marker.openPopup(); } catch (e) {} });
+        } else {
+          map.setView([store.latitude, store.longitude], 16);
+          try { marker.openPopup(); } catch (e) {}
+        }
+      } else {
+        map.setView([store.latitude, store.longitude], 16);
+      }
+    });
+    storeList.appendChild(item);
+  });
+
+  if (storesPager) storesPager.style.display = (totalPages > 1) ? 'flex' : 'none';
+  if (storesPageLabel) storesPageLabel.textContent = 'Page ' + state.storesPage + ' of ' + totalPages;
+  if (storesPrev) storesPrev.disabled = state.storesPage <= 1;
+  if (storesNext) storesNext.disabled = state.storesPage >= totalPages;
+}
+
+function changeStoresPage(delta) {
+  state.storesPage = Math.max(1, (state.storesPage || 1) + delta);
+  renderStores(state.stores || []);
 }
 
 /* ───────────────────────────────────────────────
@@ -1382,33 +1761,36 @@ async function loadCarts() {
     }
 
     const list = await res.json();
+    state.carts = Array.isArray(list) ? list : [];
 
-    if (!list || !list.length) {
+    if (!state.carts.length) {
       if (overlayEl) overlayEl.innerHTML = '<p class="muted">No carts yet.</p>';
       if (sidebarEl) sidebarEl.innerHTML = '<p class="muted">No carts yet.</p>';
+      const pager = document.getElementById('carts-pagination');
+      if (pager) pager.style.display = 'none';
       return;
     }
 
-    const renderList = (el) => {
+    const renderList = (el, sourceList) => {
       el.innerHTML = '';
-      list.forEach(c => {
+      sourceList.forEach(c => {
         const d = document.createElement('div');
         d.className = 'store-item';
         // Layout: [icon] [title + count] [open] [edit] [delete]
         d.innerHTML = '<div style="display:grid;grid-template-columns:48px 1fr auto auto auto;gap:12px;align-items:center">'
           + '<div style="width:40px;height:40px;border-radius:8px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:1.2rem">🧾</div>'
           + '<div><div style="font-weight:700;font-size:1rem">' + esc(c.title || 'Cart') + '</div><div style="font-size:.75rem;color:var(--gray-400)">'+(c.items?.length||0)+' items</div></div>'
-          + '<div><button class="btn btn-secondary" onclick="viewCart(\''+escAttr(c.id)+'\')">Open</button></div>'
-          + '<div><button class="btn btn-secondary" onclick="editCartName(\''+escAttr(c.id)+'\')">Edit</button></div>'
+          + '<div><button class="btn btn-secondary" onclick="openCartModal(\''+escAttr(c.id)+'\')">Open</button></div>'
+          + '<div><button class="btn btn-secondary" onclick="openCartModal(\''+escAttr(c.id)+'\')">Edit</button></div>'
           + '<div><button class="btn btn-secondary" onclick="deleteCart(\''+escAttr(c.id)+'\')">Delete</button></div>'
           + '</div>';
         el.appendChild(d);
       });
     };
 
-    if (overlayEl) renderList(overlayEl);
-    if (sidebarEl) renderList(sidebarEl);
-    try { document.getElementById('count-carts').textContent = (list||[]).length; } catch(e){}
+    if (overlayEl) renderList(overlayEl, state.carts);
+    renderCartsPage();
+    try { document.getElementById('count-carts').textContent = (state.carts||[]).length; } catch(e){}
     try { document.getElementById('count-products').textContent = 0; } catch(e){}
     try { document.getElementById('count-recents').textContent = parseInt(document.getElementById('count-recents').textContent||0); } catch(e){}
     try { document.getElementById('count-stores').textContent = (state.stores||[]).length; } catch(e){}
@@ -1418,41 +1800,241 @@ async function loadCarts() {
     if (sidebarEl) sidebarEl.innerHTML = '<p class="muted">Could not load carts.</p>';
     console.warn('loadCarts failed', e);
   }
+
+  function renderCartsPage() {
+    const sidebarEl = document.getElementById('carts-list');
+    const pager = document.getElementById('carts-pagination');
+    const pageLabel = document.getElementById('carts-page-label');
+    const prevBtn = document.getElementById('carts-prev-btn');
+    const nextBtn = document.getElementById('carts-next-btn');
+    if (!sidebarEl) return;
+
+    const list = Array.isArray(state.carts) ? state.carts : [];
+    if (!list.length) {
+      sidebarEl.innerHTML = '<p class="muted">No carts yet.</p>';
+      if (pager) pager.style.display = 'none';
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(list.length / state.cartsPageSize));
+    state.cartsPage = Math.min(Math.max(1, state.cartsPage), totalPages);
+    const start = (state.cartsPage - 1) * state.cartsPageSize;
+    const pageItems = list.slice(start, start + state.cartsPageSize);
+
+    sidebarEl.innerHTML = '';
+    pageItems.forEach(c => {
+      const d = document.createElement('div');
+      d.className = 'store-item';
+      d.innerHTML = '<div style="display:grid;grid-template-columns:48px 1fr auto auto auto;gap:12px;align-items:center">'
+        + '<div style="width:40px;height:40px;border-radius:8px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:1.2rem">🧾</div>'
+        + '<div><div style="font-weight:700;font-size:1rem">' + esc(c.title || 'Cart') + '</div><div style="font-size:.75rem;color:var(--gray-400)">'+(c.items?.length||0)+' items</div></div>'
+        + '<div><button class="btn btn-secondary" onclick="openCartModal(\''+escAttr(c.id)+'\')">Open</button></div>'
+        + '<div><button class="btn btn-secondary" onclick="openCartModal(\''+escAttr(c.id)+'\')">Edit</button></div>'
+        + '<div><button class="btn btn-secondary" onclick="deleteCart(\''+escAttr(c.id)+'\')">Delete</button></div>'
+        + '</div>';
+      sidebarEl.appendChild(d);
+    });
+
+    if (pager) pager.style.display = (totalPages > 1) ? 'flex' : 'none';
+    if (pageLabel) pageLabel.textContent = 'Page ' + state.cartsPage + ' of ' + totalPages;
+    if (prevBtn) prevBtn.disabled = state.cartsPage <= 1;
+    if (nextBtn) nextBtn.disabled = state.cartsPage >= totalPages;
+  }
+
+  function changeCartsPage(delta) {
+    state.cartsPage = Math.max(1, (state.cartsPage || 1) + delta);
+    renderCartsPage();
+  }
 }
 
 function deleteCart(cartId) {
-  if (!confirm('Delete this cart?')) return;
-  fetch('/api/carts/' + encodeURIComponent(cartId), { method: 'DELETE' }).then(res => {
-    if (!res.ok) { alert('Failed to delete'); return; }
-    loadCarts();
-  }).catch(e => { console.warn('deleteCart failed', e); alert('Delete failed'); });
+  openCartModal(cartId).then(() => showDeleteCartConfirm());
 }
 
 
 async function viewCart(cartId) {
-  const res = await fetch('/api/carts/' + encodeURIComponent(cartId));
-  const cart = await res.json();
-  // show cart items in product-list area
-  const productList = document.getElementById('product-list');
-  if (!cart || !cart.items || !cart.items.length) { productList.innerHTML = '<p class="muted">Cart is empty.</p>'; return; }
-  productList.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem"><div style="font-size:.85rem;color:var(--gray-600)">Viewing cart: <strong>' + esc(cart.title) + '</strong></div><div><button class="btn btn-secondary" onclick="exportCart(\''+escAttr(cart.id)+'\')">Export / Print</button></div></div>';
-  cart.items.forEach(it => {
-    const div = document.createElement('div');
-    div.className = 'product-card';
-    const title = it.product_name || it.product || it.ingredient || (it.raw && (it.raw.product_name || it.raw.name)) || 'Item';
-    const src = it.image_url || (it.raw && (it.raw.image_url || it.raw.image)) || null;
-    div.innerHTML = (src?'<img src="'+esc(src)+'"/>':'<div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center">🛒</div>') + '<div style="flex:1"><div class="prod-name">'+esc(title)+'</div><div class="prod-source">'+esc(it.store_name||'')+'</div></div>';
-    productList.appendChild(div);
-  });
+  return openCartModal(cartId);
 }
 
 function editCartName(cartId) {
-  const newName = prompt('New name for cart:');
-  if (!newName) return;
-  fetch('/api/carts/' + encodeURIComponent(cartId)).then(r=>r.json()).then(cart=>{
-    cart.title = newName;
-    return fetch('/api/carts/' + encodeURIComponent(cartId), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(cart) });
-  }).then(()=>{ loadCarts(); alert('Cart renamed'); }).catch(e=>alert('Failed to rename cart: '+e.message));
+  return openCartModal(cartId);
+}
+
+function getCartItemName(item) {
+  return item.product_name || item.product || item.ingredient || (item.raw && (item.raw.product_name || item.raw.name)) || '';
+}
+
+function setCartItemName(item, name) {
+  item.product_name = name;
+  if (item.raw && typeof item.raw === 'object') {
+    if (item.raw.product_name != null) item.raw.product_name = name;
+    if (item.raw.name != null) item.raw.name = name;
+  }
+}
+
+async function openCartModal(cartId) {
+  try {
+    const res = await fetch('/api/carts/' + encodeURIComponent(cartId));
+    if (!res.ok) throw new Error('Failed to load cart');
+    const cart = await res.json();
+    state.activeCart = cart && typeof cart === 'object' ? cart : null;
+    if (!state.activeCart || !state.activeCart.id) throw new Error('Cart not found');
+    if (!Array.isArray(state.activeCart.items)) state.activeCart.items = [];
+    renderCartModal();
+    const backdrop = document.getElementById('cart-modal-backdrop');
+    if (backdrop) backdrop.style.display = 'flex';
+  } catch (e) {
+    alert('Could not open cart: ' + e.message);
+  }
+}
+
+function closeCartModal() {
+  const backdrop = document.getElementById('cart-modal-backdrop');
+  if (backdrop) backdrop.style.display = 'none';
+  state.activeCart = null;
+  hideDeleteCartConfirm();
+  clearCartModalFeedback();
+}
+
+function onCartModalBackdrop(event) {
+  if (event.target && event.target.id === 'cart-modal-backdrop') closeCartModal();
+}
+
+function renderCartModal() {
+  const cart = state.activeCart;
+  if (!cart) return;
+  const titleEl = document.getElementById('cart-modal-title');
+  const itemsEl = document.getElementById('cart-modal-items');
+  if (!titleEl || !itemsEl) return;
+  hideDeleteCartConfirm();
+  clearCartModalFeedback();
+  titleEl.value = cart.title || '';
+  itemsEl.innerHTML = '';
+  if (!cart.items.length) {
+    itemsEl.innerHTML = '<p class="muted">No items yet. Add one above.</p>';
+    return;
+  }
+  cart.items.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'cart-item-editor';
+    row.innerHTML =
+      '<input type="text" value="' + esc(getCartItemName(item)) + '" placeholder="Item name" oninput="updateCartModalItemName(' + idx + ', this.value)" />'
+      + '<input type="text" value="' + esc(item.store_name || '') + '" placeholder="Store" oninput="updateCartModalItemStore(' + idx + ', this.value)" />'
+      + '<button class="btn btn-secondary" onclick="removeCartModalItem(' + idx + ')">Remove</button>';
+    itemsEl.appendChild(row);
+  });
+}
+
+function updateCartModalItemName(index, value) {
+  if (!state.activeCart || !Array.isArray(state.activeCart.items)) return;
+  const item = state.activeCart.items[index];
+  if (!item) return;
+  setCartItemName(item, value);
+}
+
+function updateCartModalItemStore(index, value) {
+  if (!state.activeCart || !Array.isArray(state.activeCart.items)) return;
+  const item = state.activeCart.items[index];
+  if (!item) return;
+  item.store_name = value;
+}
+
+function removeCartModalItem(index) {
+  if (!state.activeCart || !Array.isArray(state.activeCart.items)) return;
+  state.activeCart.items.splice(index, 1);
+  renderCartModal();
+}
+
+function showDeleteCartConfirm() {
+  const el = document.getElementById('cart-modal-delete-confirm');
+  if (el) el.style.display = 'block';
+  clearCartModalFeedback();
+}
+
+function hideDeleteCartConfirm() {
+  const el = document.getElementById('cart-modal-delete-confirm');
+  if (el) el.style.display = 'none';
+}
+
+function setCartModalFeedback(msg, isError) {
+  const el = document.getElementById('cart-modal-feedback');
+  if (!el) return;
+  if (!msg) {
+    el.style.display = 'none';
+    el.textContent = '';
+    return;
+  }
+  el.style.display = 'block';
+  el.style.color = isError ? '#dc2626' : 'var(--green)';
+  el.textContent = msg;
+}
+
+function clearCartModalFeedback() {
+  setCartModalFeedback('', false);
+}
+
+function addItemToCartModal() {
+  if (!state.activeCart || !Array.isArray(state.activeCart.items)) return;
+  const input = document.getElementById('cart-modal-new-item');
+  const name = (input && input.value || '').trim();
+  if (!name) return;
+  state.activeCart.items.push({ product_name: name, store_name: '' });
+  if (input) input.value = '';
+  renderCartModal();
+}
+
+async function saveCartModal() {
+  if (!state.activeCart || !state.activeCart.id) return;
+  const titleEl = document.getElementById('cart-modal-title');
+  state.activeCart.title = titleEl ? titleEl.value.trim() : state.activeCart.title;
+  if (!state.activeCart.title) {
+    alert('Cart name is required.');
+    return;
+  }
+  try {
+    const res = await fetch('/api/carts/' + encodeURIComponent(state.activeCart.id), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state.activeCart),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || !payload.ok || !payload.cart) throw new Error('Failed to save cart');
+    state.activeCart = payload.cart;
+    await loadCarts();
+    closeCartModal();
+    alert('Cart updated');
+  } catch (e) {
+    alert('Failed to save cart: ' + e.message);
+  }
+}
+
+async function deleteActiveCartFromModal() {
+  const cart = state.activeCart;
+  if (!cart || !cart.id) return;
+  try {
+    const res = await fetch('/api/carts/' + encodeURIComponent(cart.id), { method: 'DELETE' });
+    const payload = await res.json().catch(() => ({ ok: false }));
+    let deleted = !!(res.ok && payload.ok);
+    if (!deleted) {
+      // Fallback check: if cart no longer exists, treat as successful delete.
+      const checkRes = await fetch('/api/carts/' + encodeURIComponent(cart.id));
+      const check = checkRes.ok ? await checkRes.json().catch(() => ({})) : {};
+      deleted = !(check && check.id);
+    }
+    if (!deleted) throw new Error('Delete failed');
+    if (localStorage.getItem('default_cart_id') === cart.id) {
+      localStorage.removeItem('default_cart_id');
+    }
+    closeCartModal();
+    await loadCarts();
+  } catch (e) {
+    setCartModalFeedback('Delete failed: ' + e.message, true);
+  }
+}
+
+function exportActiveCart() {
+  if (!state.activeCart || !state.activeCart.id) return;
+  exportCart(state.activeCart.id);
 }
 
 // Sidebar tab switching
@@ -1464,7 +2046,7 @@ function switchSidebarTab(name) {
   // show target
   const target = document.getElementById('sidebar-'+name);
   if (!target) return;
-  target.style.display = 'block';
+  target.style.display = (name === 'products') ? 'flex' : 'block';
   setTimeout(()=>{ target.classList.remove('hide'); target.classList.add('show'); }, 20);
   // activate corresponding button
   const btn = document.getElementById('tab-'+name+'-btn'); if (btn) btn.classList.add('active');
@@ -1551,12 +2133,17 @@ async function saveProductToCart(product) {
   // default-save behavior: try default cart from localStorage
   const defaultCartId = localStorage.getItem('default_cart_id');
   if (defaultCartId) {
-    cartId = defaultCartId;
+    const exists = (carts || []).some(c => c && c.id === defaultCartId);
+    if (exists) cartId = defaultCartId;
+    else localStorage.removeItem('default_cart_id');
   } else if (!carts || !carts.length) {
     // create a quick default cart
     const title = 'Quick Cart';
     const createRes = await fetch('/api/carts', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ title, items: [] }) });
     const created = await createRes.json();
+    if (!createRes.ok || !created.ok || !created.cart || !created.cart.id) {
+      throw new Error('Could not create default cart');
+    }
     cartId = created.cart.id;
     // set as default
     localStorage.setItem('default_cart_id', cartId);
@@ -1581,8 +2168,11 @@ async function saveProductToCart(product) {
   }
 
   // add item to cart
+  if (!cartId) throw new Error('No cart selected');
   const cartRes = await fetch('/api/carts/' + encodeURIComponent(cartId));
+  if (!cartRes.ok) throw new Error('Could not load selected cart');
   const cart = await cartRes.json();
+  if (!cart || !cart.id) throw new Error('Selected cart no longer exists');
   cart.items = cart.items || [];
   // normalize product shape to ensure displayable fields
   const normalized = {
@@ -1595,7 +2185,11 @@ async function saveProductToCart(product) {
     raw: product
   };
   cart.items.push(normalized);
-  await fetch('/api/carts/' + encodeURIComponent(cartId), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(cart) });
+  const saveRes = await fetch('/api/carts/' + encodeURIComponent(cartId), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(cart) });
+  const savePayload = await saveRes.json().catch(() => ({ ok: false }));
+  if (!saveRes.ok || !savePayload.ok || !savePayload.cart) {
+    throw new Error('Failed to save product to cart');
+  }
   // inform user and offer to change default
   const savedMsg = 'Saved to cart "' + (cart.title || cart.id) + '"';
   if (!localStorage.getItem('default_cart_id')) {
@@ -1661,6 +2255,7 @@ function viewRecent(id) {
 }
 
 loadRecents();
+loadProviderStatus();
 </script>
 </body>
 </html>
