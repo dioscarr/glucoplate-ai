@@ -778,7 +778,56 @@
 
     /* Muted text */
     .muted { color: var(--gray-400); font-size: .85rem; }
-    .modal-backdrop {
+
+    /* ── Toast notification ── */
+    #toast-container {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      z-index: 20000;
+      display: flex;
+      flex-direction: column;
+      gap: .45rem;
+      pointer-events: none;
+    }
+    .toast {
+      padding: .65rem 1rem;
+      border-radius: 10px;
+      font-size: .88rem;
+      font-weight: 600;
+      color: white;
+      background: #1a3d6c;
+      box-shadow: 0 6px 18px rgba(0,0,0,.25);
+      animation: toastIn .2s ease;
+      pointer-events: auto;
+    }
+    .toast.toast-ok  { background: #1a7a50; }
+    .toast.toast-err { background: #991b1b; }
+    @keyframes toastIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: none; } }
+
+    /* ── Mini modal (prompt / alert replacement) ── */
+    #mini-modal-backdrop {
+      position: fixed; inset: 0; z-index: 15000;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.45); padding: 1rem;
+    }
+    #mini-modal-card {
+      width: min(420px, 96vw);
+      border-radius: 12px;
+      border: 1px solid var(--gray-200);
+      background: linear-gradient(180deg,#ffffff,#fbfffb);
+      box-shadow: 0 16px 40px rgba(0,0,0,.22);
+      padding: 1.1rem;
+    }
+    #mini-modal-msg { font-size: .95rem; font-weight: 600; margin-bottom: .75rem; }
+    #mini-modal-input { width:100%; margin-bottom:.75rem; display:none; }
+    #mini-modal-actions { display:flex; gap:.5rem; justify-content:flex-end; }
+    [data-theme="dark"] #mini-modal-card {
+      background: linear-gradient(180deg, rgba(25,42,78,.97), rgba(17,28,51,.97));
+      border-color: #35518a;
+    }
+    [data-theme="dark"] #mini-modal-msg { color: #e8efff; }
+
       position: fixed;
       inset: 0;
       z-index: 10050;
@@ -1056,6 +1105,16 @@
   GlucoPlate AI · For general wellness support only · Not medical advice · Estimates are approximate
 </footer>
 
+<div id="toast-container"></div>
+
+<div id="mini-modal-backdrop" onclick="onMiniModalBackdrop(event)">
+  <div id="mini-modal-card">
+    <div id="mini-modal-msg"></div>
+    <input id="mini-modal-input" type="text" class="field" placeholder="" />
+    <div id="mini-modal-actions"></div>
+  </div>
+</div>
+
 <div id="cart-modal-backdrop" class="modal-backdrop" onclick="onCartModalBackdrop(event)">
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cart-modal-heading">
     <div class="cart-editor-actions">
@@ -1201,7 +1260,7 @@ async function loadProviderStatus() {
 ─────────────────────────────────────────────── */
 async function generateRecipe() {
   const goal = document.getElementById('goal').value.trim();
-  if (!goal) { alert('Please describe what you want to eat.'); return; }
+  if (!goal) { showToast('Please describe what you want to eat.', 'err'); return; }
 
   const useAi   = document.getElementById('use_ai').checked;
   const servings = parseInt(document.getElementById('servings').value) || 2;
@@ -1565,8 +1624,10 @@ async function renderProducts(products, ingredient) {
       ? '<div style="font-size:.78rem;color:var(--gray-500);margin-top:.4rem">Source unavailable — <button class="btn btn-secondary" style="padding:.25rem .4rem;font-size:.78rem" onclick="lookupIngredient(document.querySelector(\'.ingredient-btn.looking-up\') || document.querySelector(\'.ingredient-btn\'),\'' + escAttr(ingredient) + '\')">Try again</button></div>'
       : '';
 
-    // Add Save to Cart button
-    const saveBtn = '<button class="btn btn-secondary" style="padding:.35rem .5rem;font-size:.8rem" onclick="saveProductToCart(' + escAttr(JSON.stringify(p)) + ')">Save</button>';
+    // Add Save to Cart button — store product as HTML-encoded data attribute to avoid
+    // quote injection into onclick="" that breaks JS parsing.
+    const safeJson = JSON.stringify(p).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    const saveBtn = '<button class="btn btn-secondary" style="padding:.35rem .5rem;font-size:.8rem" data-product="' + safeJson + '" onclick="handleSaveProduct(this)">Save</button>';
 
     card.innerHTML = imgHtml + '<div style="flex:1">'
       + '<div style="display:flex;justify-content:space-between;align-items:center">'
@@ -1617,6 +1678,51 @@ function escAttr(str) {
   return String(str ?? '').replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/* ───────────────────────────────────────────────
+   Toast & Mini-modal helpers (replace alert/confirm/prompt)
+─────────────────────────────────────────────── */
+function showToast(msg, type = 'info', durationMs = 2800) {
+  const c = document.getElementById('toast-container');
+  if (!c) return;
+  const t = document.createElement('div');
+  t.className = 'toast' + (type === 'ok' ? ' toast-ok' : type === 'err' ? ' toast-err' : '');
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 320); }, durationMs);
+}
+
+let _miniResolve = null;
+function showMiniModal(msg, { input = false, placeholder = '', confirmLabel = 'OK', cancelLabel = null } = {}) {
+  return new Promise(resolve => {
+    _miniResolve = resolve;
+    document.getElementById('mini-modal-msg').textContent = msg;
+    const inp = document.getElementById('mini-modal-input');
+    inp.style.display = input ? 'block' : 'none';
+    inp.value = '';
+    inp.placeholder = placeholder || '';
+    const acts = document.getElementById('mini-modal-actions');
+    acts.innerHTML = '';
+    if (cancelLabel) {
+      const c = document.createElement('button');
+      c.className = 'btn btn-secondary'; c.textContent = cancelLabel;
+      c.onclick = () => closeMiniModal(null);
+      acts.appendChild(c);
+    }
+    const ok = document.createElement('button');
+    ok.className = 'btn'; ok.textContent = confirmLabel;
+    ok.onclick = () => closeMiniModal(input ? inp.value.trim() : true);
+    acts.appendChild(ok);
+    document.getElementById('mini-modal-backdrop').style.display = 'flex';
+    if (input) setTimeout(() => inp.focus(), 60);
+  });
+}
+function closeMiniModal(value) {
+  document.getElementById('mini-modal-backdrop').style.display = 'none';
+  if (_miniResolve) { _miniResolve(value); _miniResolve = null; }
+}
+function onMiniModalBackdrop(e) { if (e.target.id === 'mini-modal-backdrop') closeMiniModal(null); }
+
+
 // Allow Enter on goal input
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('goal').addEventListener('keydown', e => {
@@ -1641,7 +1747,7 @@ document.addEventListener('DOMContentLoaded', () => {
 /* Image generation: call /api/recipes/gallery and render thumbnails */
 async function generateImages() {
   const recipe = state.recipe;
-  if (!recipe) { alert('Generate a recipe first.'); return; }
+  if (!recipe) { showToast('Generate a recipe first.', 'err'); return; }
   const gallery = document.getElementById('image-gallery');
   gallery.style.display = 'block';
   gallery.innerHTML = '<div class="spinner"></div><p class="loading-text">Generating images (may take 20-60s)…</p>';
@@ -1723,7 +1829,7 @@ function toggleCartOverlay(show) {
 
 
 async function createCartPrompt() {
-  const name = prompt('Name for new cart (e.g. Weekend groceries):');
+  const name = await showMiniModal('Name for new cart:', { input: true, placeholder: 'e.g. Weekend groceries', confirmLabel: 'Create', cancelLabel: 'Cancel' });
   if (!name) return;
   const cart = { title: name, items: [] };
   try {
@@ -1731,16 +1837,13 @@ async function createCartPrompt() {
     let payload = null;
     try { payload = await res.json(); } catch (e) { /* ignore */ }
     if (res.ok && payload && payload.ok) {
-      // open overlay and refresh lists
-      toggleCartOverlay(true);
       await loadCarts();
-      alert('Cart created');
+      showToast('Cart created', 'ok');
     } else {
-      const t = payload && payload.cart ? JSON.stringify(payload.cart) : await res.text().catch(()=>res.statusText);
-      alert('Failed to create cart: ' + t);
+      showToast('Failed to create cart', 'err');
     }
   } catch (e) {
-    alert('Failed to create cart: ' + e.message);
+    showToast('Failed to create cart: ' + e.message, 'err');
   }
 }
 
@@ -1884,7 +1987,7 @@ async function openCartModal(cartId) {
     const backdrop = document.getElementById('cart-modal-backdrop');
     if (backdrop) backdrop.style.display = 'flex';
   } catch (e) {
-    alert('Could not open cart: ' + e.message);
+    showToast('Could not open cart: ' + e.message, 'err');
   }
 }
 
@@ -1988,7 +2091,7 @@ async function saveCartModal() {
   const titleEl = document.getElementById('cart-modal-title');
   state.activeCart.title = titleEl ? titleEl.value.trim() : state.activeCart.title;
   if (!state.activeCart.title) {
-    alert('Cart name is required.');
+    showToast('Cart name is required.', 'err'); return;
     return;
   }
   try {
@@ -2002,9 +2105,9 @@ async function saveCartModal() {
     state.activeCart = payload.cart;
     await loadCarts();
     closeCartModal();
-    alert('Cart updated');
+    showToast('Cart saved ✓', 'ok');
   } catch (e) {
-    alert('Failed to save cart: ' + e.message);
+    showToast('Failed to save cart: ' + e.message, 'err');
   }
 }
 
@@ -2124,6 +2227,22 @@ function exportCart(cartId) {
 
 function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+function handleSaveProduct(btn) {
+  let product;
+  try {
+    product = JSON.parse(btn.dataset.product);
+  } catch (e) {
+    showToast('Could not read product data.', 'err');
+    return;
+  }
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  saveProductToCart(product)
+    .then(() => { btn.textContent = '✓ Saved'; })
+    .catch(e => { btn.textContent = origText; btn.disabled = false; showToast('Save failed: ' + e.message, 'err'); });
+}
+
 async function saveProductToCart(product) {
   // let user choose a cart if multiple exist
   const cartsRes = await fetch('/api/carts');
@@ -2151,20 +2270,16 @@ async function saveProductToCart(product) {
   } else if (carts.length === 1) {
     cartId = carts[0].id;
   } else {
-    // let user pick or use default prompt
-    const useDefault = confirm('Save to default cart? Press Cancel to choose another cart.');
-    if (useDefault) {
-      // if no default, pick first and set
-      const pickCart = carts[0];
-      cartId = pickCart.id;
-      localStorage.setItem('default_cart_id', cartId);
-    } else {
-      const names = carts.map((c,i) => (i+1) + ': ' + (c.title || c.id)).join('\n');
-      const pick = prompt('Choose cart by number:\n' + names + '\nEnter number:');
-      const idx = parseInt(pick) - 1;
-      if (isNaN(idx) || idx < 0 || idx >= carts.length) { alert('Invalid selection'); return; }
-      cartId = carts[idx].id;
-    }
+    // Let user pick a cart via mini-modal select
+    const cartNames = carts.map((c, i) => (i + 1) + '. ' + (c.title || c.id)).join('\n');
+    const pick = await showMiniModal('Choose a cart:\n' + cartNames, {
+      input: true, placeholder: 'Enter number (1–' + carts.length + ')',
+      confirmLabel: 'Select', cancelLabel: 'Cancel'
+    });
+    if (!pick) return;
+    const idx = parseInt(pick) - 1;
+    if (isNaN(idx) || idx < 0 || idx >= carts.length) { showToast('Invalid selection', 'err'); return; }
+    cartId = carts[idx].id;
   }
 
   // add item to cart
@@ -2193,18 +2308,15 @@ async function saveProductToCart(product) {
   // inform user and offer to change default
   const savedMsg = 'Saved to cart "' + (cart.title || cart.id) + '"';
   if (!localStorage.getItem('default_cart_id')) {
-    if (confirm(savedMsg + '\nSet this as your default cart for quick saves?')) {
-      localStorage.setItem('default_cart_id', cartId);
-    }
+    localStorage.setItem('default_cart_id', cartId);
   }
-  alert(savedMsg);
   loadCarts();
 }
 
 async function planCartRoute(cartId) {
   const res = await fetch('/api/carts/' + encodeURIComponent(cartId));
   const cart = await res.json();
-  if (!cart || !cart.items || !cart.items.length) { alert('Cart empty'); return; }
+  if (!cart || !cart.items || !cart.items.length) { showToast('Cart is empty.', 'err'); return; }
   // map products to stores (use first matching store from state.stores)
   const stops = [];
   cart.items.forEach(it => {
@@ -2213,7 +2325,7 @@ async function planCartRoute(cartId) {
       if (match) stops.push(match);
     }
   });
-  if (!stops.length) { alert('No store locations available for items in this cart. Try searching products from the map first.'); return; }
+  if (!stops.length) { showToast('No store locations for items in this cart.', 'err'); return; }
   // use current location as start
   const payload = { start_lat: state.latitude, start_lng: state.longitude, stops: stops };
   const planRes = await fetch('/api/route/plan', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
@@ -2227,7 +2339,7 @@ async function planCartRoute(cartId) {
     map.fitBounds(bounds, { padding: [40,40] });
   }
   // show summary
-  alert('Planned route: ' + (plan.total_distance_m ? (Math.round(plan.total_distance_m) + ' m') : 'distance unknown'));
+  showToast('Route planned: ' + (plan.total_distance_m ? Math.round(plan.total_distance_m) + ' m' : 'distance unknown'), 'ok');
 }
 
 // Load carts on startup
@@ -2238,17 +2350,43 @@ async function loadRecents() {
     const res = await fetch('/api/recipes/recents');
     if (!res.ok) return;
     const list = await res.json();
+    // Update count badge
+    try { document.getElementById('count-recents').textContent = (list || []).length; } catch(e) {}
+
+    // Populate sidebar recents list (#recents-list in Stores & Map tab)
+    const sidebarEl = document.getElementById('recents-list');
+    if (sidebarEl) {
+      if (!list || !list.length) {
+        sidebarEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🕘</div><div class="empty-title">No recents yet</div><div class="empty-hint">Generated recipes will appear here</div></div>';
+      } else {
+        sidebarEl.innerHTML = list.map(r =>
+          '<div class="card" style="margin-bottom:.35rem;padding:.55rem">'
+          + '<div style="font-weight:700;font-size:.9rem">' + esc(r.title) + '</div>'
+          + '<div style="font-size:.75rem;color:var(--gray-400);margin-top:1px">' + esc(new Date(r.created_at).toLocaleString()) + '</div>'
+          + (r.summary ? '<div style="margin-top:.35rem;font-size:.8rem">' + esc(r.summary) + '</div>' : '')
+          + '<div style="margin-top:.45rem"><button class="btn btn-secondary" style="padding:.3rem .6rem;font-size:.8rem" onclick="viewRecent(\'' + escAttr(r.id) + '\')">Open</button></div>'
+          + '</div>'
+        ).join('');
+      }
+    }
+
+    // Populate recipe-tab recents section
     const el = document.getElementById('recents-section');
+    if (!el) return;
     if (!list || !list.length) { el.innerHTML = ''; return; }
-    el.innerHTML = '<h3>Recents</h3>' + list.map(r => '<div class="card" style="margin-bottom:.5rem;padding:.6rem"><strong>' + esc(r.title) + '</strong><div style="font-size:.8rem;color:var(--gray-500)">' + esc(new Date(r.created_at).toLocaleString()) + '</div><div style="margin-top:.5rem;color:var(--gray-700)">' + esc(r.summary) + '</div><div style="margin-top:.5rem"><button class="btn btn-secondary" onclick="viewRecent(\'' + escAttr(r.id) + '\')">Open</button></div></div>' ).join('');
-    try { document.getElementById('count-recents').textContent = (list||[]).length; } catch(e) {}
+    el.innerHTML = '<h3>Recents</h3>' + list.map(r =>
+      '<div class="card" style="margin-bottom:.5rem;padding:.6rem"><strong>' + esc(r.title) + '</strong>'
+      + '<div style="font-size:.8rem;color:var(--gray-500)">' + esc(new Date(r.created_at).toLocaleString()) + '</div>'
+      + '<div style="margin-top:.5rem;color:var(--gray-700)">' + esc(r.summary) + '</div>'
+      + '<div style="margin-top:.5rem"><button class="btn btn-secondary" onclick="viewRecent(\'' + escAttr(r.id) + '\')">Open</button></div></div>'
+    ).join('');
   } catch (e) { /* ignore */ }
 }
 
 function viewRecent(id) {
   fetch('/api/recipes/recents').then(r=>r.json()).then(list=>{
     const entry = (list||[]).find(x=>x.id===id);
-    if (!entry) { alert('Recent not found'); return; }
+    if (!entry) { showToast('Recent not found', 'err'); return; }
     // render the full recipe stored inside
     if (entry.recipe) renderRecipe(entry.recipe);
   });
