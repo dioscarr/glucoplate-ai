@@ -1,5 +1,1037 @@
 [
   {
+    "id": "mem-1783396155",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-07T03:49:15.764773+00:00"
+  },
+  {
+    "id": "mem-1783396155",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-07T03:49:15.748355+00:00"
+  },
+  {
+    "id": "mem-1783387145",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-07T01:19:05.302209+00:00"
+  },
+  {
+    "id": "mem-1783387145",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-07T01:19:05.277955+00:00"
+  },
+  {
+    "id": "mem-1783315975",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:32:55.780507+00:00"
+  },
+  {
+    "id": "mem-1783315959",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:32:39.086851+00:00"
+  },
+  {
+    "id": "mem-1783315656",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:27:36.911874+00:00"
+  },
+  {
+    "id": "mem-1783315639",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:27:19.765031+00:00"
+  },
+  {
+    "id": "mem-1783315228",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:20:28.521962+00:00"
+  },
+  {
+    "id": "mem-1783315228",
+    "fact": "POST /api/recipes/generate (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:20:28.498593+00:00"
+  },
+  {
+    "id": "mem-1783315126",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:18:46.418943+00:00"
+  },
+  {
+    "id": "mem-1783315126",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:18:46.403208+00:00"
+  },
+  {
+    "id": "mem-1783315092",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:18:12.911288+00:00"
+  },
+  {
+    "id": "mem-1783315088",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:18:08.677296+00:00"
+  },
+  {
+    "id": "mem-1783315067",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:17:47.689521+00:00"
+  },
+  {
+    "id": "mem-1783315050",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:17:30.243850+00:00"
+  },
+  {
+    "id": "mem-1783315044",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T05:17:24.647749+00:00"
+  },
+  {
+    "id": "mem-1783313287",
+    "fact": "POST /api/carts (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:48:07.066612+00:00"
+  },
+  {
+    "id": "mem-1783313273",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:47:53.928144+00:00"
+  },
+  {
+    "id": "mem-1783313261",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:47:41.020659+00:00"
+  },
+  {
+    "id": "mem-1783313259",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:47:39.716887+00:00"
+  },
+  {
+    "id": "mem-1783313259",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:47:39.047759+00:00"
+  },
+  {
+    "id": "mem-1783313212",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:46:52.480349+00:00"
+  },
+  {
+    "id": "mem-1783313206",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:46:46.457507+00:00"
+  },
+  {
+    "id": "mem-1783313202",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:46:42.505170+00:00"
+  },
+  {
+    "id": "mem-1783313198",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:46:38.219961+00:00"
+  },
+  {
+    "id": "mem-1783313186",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:46:26.061443+00:00"
+  },
+  {
+    "id": "mem-1783313180",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:46:20.651187+00:00"
+  },
+  {
+    "id": "mem-1783313142",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:45:42.303841+00:00"
+  },
+  {
+    "id": "mem-1783313139",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:45:39.134672+00:00"
+  },
+  {
+    "id": "mem-1783313136",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:45:36.908770+00:00"
+  },
+  {
+    "id": "mem-1783313136",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:45:36.293352+00:00"
+  },
+  {
+    "id": "mem-1783313090",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:44:50.436889+00:00"
+  },
+  {
+    "id": "mem-1783313081",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:44:41.718010+00:00"
+  },
+  {
+    "id": "mem-1783313067",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:44:27.753453+00:00"
+  },
+  {
+    "id": "mem-1783313065",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:44:25.179223+00:00"
+  },
+  {
+    "id": "mem-1783313064",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:44:24.881542+00:00"
+  },
+  {
+    "id": "mem-1783313049",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:44:09.885065+00:00"
+  },
+  {
+    "id": "mem-1783313048",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:44:08.489001+00:00"
+  },
+  {
+    "id": "mem-1783313037",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:43:57.748841+00:00"
+  },
+  {
+    "id": "mem-1783313033",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:43:53.537818+00:00"
+  },
+  {
+    "id": "mem-1783313030",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:43:50.383651+00:00"
+  },
+  {
+    "id": "mem-1783313025",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:43:45.098439+00:00"
+  },
+  {
+    "id": "mem-1783313011",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:43:31.272723+00:00"
+  },
+  {
+    "id": "mem-1783313009",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:43:29.618108+00:00"
+  },
+  {
+    "id": "mem-1783313006",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:43:26.786487+00:00"
+  },
+  {
+    "id": "mem-1783312966",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:42:46.156262+00:00"
+  },
+  {
+    "id": "mem-1783312960",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:42:40.339639+00:00"
+  },
+  {
+    "id": "mem-1783312957",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:42:37.853771+00:00"
+  },
+  {
+    "id": "mem-1783312956",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:42:36.679003+00:00"
+  },
+  {
+    "id": "mem-1783312951",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:42:31.597133+00:00"
+  },
+  {
+    "id": "mem-1783312951",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:42:31.125505+00:00"
+  },
+  {
+    "id": "mem-1783312926",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:42:06.775752+00:00"
+  },
+  {
+    "id": "mem-1783312897",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:41:37.303524+00:00"
+  },
+  {
+    "id": "mem-1783312897",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:41:37.289976+00:00"
+  },
+  {
+    "id": "mem-1783312893",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:41:33.359977+00:00"
+  },
+  {
+    "id": "mem-1783312880",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:41:20.012077+00:00"
+  },
+  {
+    "id": "mem-1783312842",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:40:42.681731+00:00"
+  },
+  {
+    "id": "mem-1783312841",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:40:41.086662+00:00"
+  },
+  {
+    "id": "mem-1783312832",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:40:32.129122+00:00"
+  },
+  {
+    "id": "mem-1783312827",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:40:27.416865+00:00"
+  },
+  {
+    "id": "mem-1783312810",
+    "fact": "POST /api/carts (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:40:10.048708+00:00"
+  },
+  {
+    "id": "mem-1783312752",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:39:12.517256+00:00"
+  },
+  {
+    "id": "mem-1783312735",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:38:55.975090+00:00"
+  },
+  {
+    "id": "mem-1783312695",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:38:15.098574+00:00"
+  },
+  {
+    "id": "mem-1783312693",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:38:13.188739+00:00"
+  },
+  {
+    "id": "mem-1783312684",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:38:04.286374+00:00"
+  },
+  {
+    "id": "mem-1783312682",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:38:02.787147+00:00"
+  },
+  {
+    "id": "mem-1783312679",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:37:59.666312+00:00"
+  },
+  {
+    "id": "mem-1783312667",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:37:47.776237+00:00"
+  },
+  {
+    "id": "mem-1783312654",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:37:34.136086+00:00"
+  },
+  {
+    "id": "mem-1783312588",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:36:28.926630+00:00"
+  },
+  {
+    "id": "mem-1783312579",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:36:19.565664+00:00"
+  },
+  {
+    "id": "mem-1783312577",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:36:17.162695+00:00"
+  },
+  {
+    "id": "mem-1783312574",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:36:14.255724+00:00"
+  },
+  {
+    "id": "mem-1783312571",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:36:11.415220+00:00"
+  },
+  {
+    "id": "mem-1783312568",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:36:08.064803+00:00"
+  },
+  {
+    "id": "mem-1783312552",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:35:52.387991+00:00"
+  },
+  {
+    "id": "mem-1783312544",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:35:44.378701+00:00"
+  },
+  {
+    "id": "mem-1783312542",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:35:42.099501+00:00"
+  },
+  {
+    "id": "mem-1783312538",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:35:38.599718+00:00"
+  },
+  {
+    "id": "mem-1783312420",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:33:40.163024+00:00"
+  },
+  {
+    "id": "mem-1783312417",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:33:37.422713+00:00"
+  },
+  {
+    "id": "mem-1783312413",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:33:33.975158+00:00"
+  },
+  {
+    "id": "mem-1783312403",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:33:23.809278+00:00"
+  },
+  {
+    "id": "mem-1783312399",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:33:19.970280+00:00"
+  },
+  {
+    "id": "mem-1783312394",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:33:14.189461+00:00"
+  },
+  {
+    "id": "mem-1783312147",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:29:07.791843+00:00"
+  },
+  {
+    "id": "mem-1783312138",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:28:58.131348+00:00"
+  },
+  {
+    "id": "mem-1783312135",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:28:55.255552+00:00"
+  },
+  {
+    "id": "mem-1783312117",
+    "fact": "POST /api/recipes/generate (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:28:37.763442+00:00"
+  },
+  {
+    "id": "mem-1783312092",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:28:12.497511+00:00"
+  },
+  {
+    "id": "mem-1783312077",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:27:57.079208+00:00"
+  },
+  {
+    "id": "mem-1783312017",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:26:57.108608+00:00"
+  },
+  {
+    "id": "mem-1783312003",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:26:43.639261+00:00"
+  },
+  {
+    "id": "mem-1783311973",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:26:13.197011+00:00"
+  },
+  {
+    "id": "mem-1783311973",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:26:13.182409+00:00"
+  },
+  {
+    "id": "mem-1783311951",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:25:51.841372+00:00"
+  },
+  {
+    "id": "mem-1783311933",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:25:33.892433+00:00"
+  },
+  {
+    "id": "mem-1783311741",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:22:21.606332+00:00"
+  },
+  {
+    "id": "mem-1783311741",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:22:21.591613+00:00"
+  },
+  {
+    "id": "mem-1783311706",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:21:46.622515+00:00"
+  },
+  {
+    "id": "mem-1783311699",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:21:39.972722+00:00"
+  },
+  {
+    "id": "mem-1783311699",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:21:39.353098+00:00"
+  },
+  {
+    "id": "mem-1783311693",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:21:33.333735+00:00"
+  },
+  {
+    "id": "mem-1783311688",
+    "fact": "POST /api/recipes/generate (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:21:28.766556+00:00"
+  },
+  {
+    "id": "mem-1783311660",
+    "fact": "POST /api/recipes/generate (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:21:00.346133+00:00"
+  },
+  {
+    "id": "mem-1783311642",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:20:42.404931+00:00"
+  },
+  {
+    "id": "mem-1783311642",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:20:42.391150+00:00"
+  },
+  {
+    "id": "mem-1783311634",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:20:34.860998+00:00"
+  },
+  {
+    "id": "mem-1783311623",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:20:23.012567+00:00"
+  },
+  {
+    "id": "mem-1783311614",
+    "fact": "POST /api/products/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:20:14.530169+00:00"
+  },
+  {
+    "id": "mem-1783311610",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:20:10.537609+00:00"
+  },
+  {
+    "id": "mem-1783311609",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:20:09.348163+00:00"
+  },
+  {
+    "id": "mem-1783311609",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:20:09.017221+00:00"
+  },
+  {
+    "id": "mem-1783311594",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:19:54.012067+00:00"
+  },
+  {
+    "id": "mem-1783311463",
+    "fact": "POST /api/recipes/generate (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:17:43.129209+00:00"
+  },
+  {
+    "id": "mem-1783311424",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:17:04.950476+00:00"
+  },
+  {
+    "id": "mem-1783311420",
+    "fact": "POST /api/recipes/recents (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:17:00.843762+00:00"
+  },
+  {
+    "id": "mem-1783311420",
+    "fact": "POST /api/recipes/generate (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:17:00.827106+00:00"
+  },
+  {
+    "id": "mem-1783311410",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:16:50.530837+00:00"
+  },
+  {
+    "id": "mem-1783311338",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:15:38.894203+00:00"
+  },
+  {
+    "id": "mem-1783311321",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:15:21.598482+00:00"
+  },
+  {
+    "id": "mem-1783311320",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:15:20.595513+00:00"
+  },
+  {
+    "id": "mem-1783311314",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:15:14.937955+00:00"
+  },
+  {
+    "id": "mem-1783310945",
+    "fact": "POST /api/recipes/generate (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:09:05.920895+00:00"
+  },
+  {
+    "id": "mem-1783310882",
+    "fact": "POST /api/recipes/generate (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:08:02.846347+00:00"
+  },
+  {
+    "id": "mem-1783310837",
+    "fact": "POST /api/stores/enrich (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:07:17.829298+00:00"
+  },
+  {
+    "id": "mem-1783310819",
+    "fact": "POST /api/stores/search (payload unreadable)",
+    "tags": [
+      "api_event"
+    ],
+    "created_at": "2026-07-06T04:06:59.969171+00:00"
+  },
+  {
     "id": "mem-1783310531",
     "fact": "POST /api/stores/enrich (payload unreadable)",
     "tags": [
