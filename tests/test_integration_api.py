@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import urllib.error
-from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -65,7 +64,10 @@ def test_recipe_save_and_list_are_file_backed_but_test_isolated(tmp_path, monkey
     assert list_response.json()[0]["title"] == "Test Plate"
 
 
-def test_cart_create_get_update_delete_are_integrated_and_test_isolated(tmp_path, monkeypatch) -> None:
+def test_cart_create_get_update_delete_are_integrated_and_test_isolated(
+    tmp_path,
+    monkeypatch,
+) -> None:
     monkeypatch.setattr(cart_store_service, "CART_PATH", str(tmp_path / "carts.json"))
 
     create_response = client.post(
@@ -108,7 +110,12 @@ def test_store_search_falls_back_when_overpass_is_unavailable(monkeypatch) -> No
 
     response = client.post(
         "/api/stores/search",
-        json={"latitude": 43.0481, "longitude": -76.1474, "radius_meters": 5000, "query": "grocery"},
+        json={
+            "latitude": 43.0481,
+            "longitude": -76.1474,
+            "radius_meters": 5000,
+            "query": "grocery",
+        },
     )
 
     assert response.status_code == 200
