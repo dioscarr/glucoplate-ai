@@ -8,447 +8,116 @@
   <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><circle cx='32' cy='32' r='28' fill='%230f766e'/><text x='50%' y='55%' font-size='34' fill='white' text-anchor='middle' font-family='Arial'>🥗</text></svg>" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-
     :root {
-      --bg: #f5faf7;
-      --bg-strong: #e9f7ef;
-      --surface: rgba(255, 255, 255, .86);
-      --surface-solid: #ffffff;
-      --surface-soft: #f8fcfa;
-      --text: #10231d;
-      --muted: #62736c;
-      --line: rgba(16, 35, 29, .1);
-      --brand: #0f766e;
-      --brand-2: #16a34a;
-      --brand-dark: #115e59;
-      --accent: #f59e0b;
-      --danger: #b91c1c;
-      --success: #15803d;
-      --shadow: 0 24px 80px rgba(15, 76, 65, .14);
-      --shadow-soft: 0 14px 35px rgba(15, 76, 65, .1);
-      --radius-xl: 28px;
-      --radius-lg: 20px;
-      --radius-md: 14px;
-      --radius-sm: 10px;
+      --bg: #f5faf7; --bg-strong: #e9f7ef; --surface: rgba(255,255,255,.88); --surface-solid:#fff; --surface-soft:#f8fcfa;
+      --text:#10231d; --muted:#62736c; --line:rgba(16,35,29,.1); --brand:#0f766e; --brand-2:#16a34a; --brand-dark:#115e59;
+      --accent:#f59e0b; --danger:#b91c1c; --success:#15803d; --shadow:0 24px 80px rgba(15,76,65,.14); --shadow-soft:0 14px 35px rgba(15,76,65,.1);
+      --radius-xl:28px; --radius-lg:20px; --radius-md:14px;
     }
-
     [data-theme="dark"] {
-      --bg: #08111f;
-      --bg-strong: #0e2035;
-      --surface: rgba(15, 28, 51, .86);
-      --surface-solid: #111c33;
-      --surface-soft: #162540;
-      --text: #edf7ff;
-      --muted: #9fb3c8;
-      --line: rgba(203, 228, 255, .14);
-      --brand: #38bdf8;
-      --brand-2: #34d399;
-      --brand-dark: #0ea5e9;
-      --accent: #fbbf24;
-      --danger: #f87171;
-      --success: #4ade80;
-      --shadow: 0 24px 90px rgba(0, 0, 0, .38);
-      --shadow-soft: 0 16px 36px rgba(0, 0, 0, .3);
+      --bg:#08111f; --bg-strong:#0e2035; --surface:rgba(15,28,51,.9); --surface-solid:#111c33; --surface-soft:#162540;
+      --text:#edf7ff; --muted:#9fb3c8; --line:rgba(203,228,255,.14); --brand:#38bdf8; --brand-2:#34d399; --brand-dark:#0ea5e9;
+      --accent:#fbbf24; --danger:#f87171; --success:#4ade80; --shadow:0 24px 90px rgba(0,0,0,.38); --shadow-soft:0 16px 36px rgba(0,0,0,.3);
     }
-
+    html { scroll-behavior: smooth; }
     body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(22, 163, 74, .18), transparent 32rem),
-        radial-gradient(circle at 85% 12%, rgba(245, 158, 11, .15), transparent 26rem),
-        linear-gradient(135deg, var(--bg), var(--bg-strong));
+      margin:0; min-height:100vh; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--text);
+      background:radial-gradient(circle at top left, rgba(22,163,74,.18), transparent 32rem), radial-gradient(circle at 85% 12%, rgba(245,158,11,.15), transparent 26rem), linear-gradient(135deg,var(--bg),var(--bg-strong));
     }
-
-    [data-theme="dark"] body {
-      background:
-        radial-gradient(circle at top left, rgba(56, 189, 248, .2), transparent 31rem),
-        radial-gradient(circle at 85% 12%, rgba(52, 211, 153, .16), transparent 26rem),
-        linear-gradient(135deg, #07101f, #0b1729 55%, #08111f);
-    }
-
-    button, input, textarea { font: inherit; }
-    button { cursor: pointer; }
-
-    .shell {
-      width: min(1480px, calc(100vw - 32px));
-      margin: 0 auto;
-      padding: 22px 0 32px;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-      padding: 14px 16px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: var(--surface);
-      backdrop-filter: blur(18px);
-      box-shadow: var(--shadow-soft);
-      position: sticky;
-      top: 14px;
-      z-index: 50;
-    }
-
-    .brand-lockup { display: flex; align-items: center; gap: 12px; min-width: 0; }
-    .brand-icon {
-      width: 44px; height: 44px; border-radius: 16px;
-      display: grid; place-items: center;
-      background: linear-gradient(135deg, var(--brand), var(--brand-2));
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 10px 24px rgba(15, 118, 110, .25);
-      color: white;
-      font-size: 1.45rem;
-    }
-    .brand-title { font-weight: 900; letter-spacing: -.04em; font-size: 1.05rem; }
-    .brand-subtitle { font-size: .78rem; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 12px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .55);
-      color: var(--muted);
-      font-size: .82rem;
-      font-weight: 750;
-    }
-    [data-theme="dark"] .pill { background: rgba(255, 255, 255, .04); }
-    .dot { width: 9px; height: 9px; border-radius: 50%; background: #94a3b8; box-shadow: 0 0 0 4px rgba(148, 163, 184, .14); }
-    .dot.ok { background: var(--success); box-shadow: 0 0 0 4px rgba(34, 197, 94, .14); }
-    .dot.warn { background: var(--accent); box-shadow: 0 0 0 4px rgba(245, 158, 11, .18); }
-
-    .theme-btn, .ghost-btn, .primary-btn, .secondary-btn {
-      border: 0;
-      border-radius: 999px;
-      font-weight: 850;
-      transition: transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
-    }
-    .theme-btn, .ghost-btn {
-      padding: 10px 12px;
-      background: var(--surface-soft);
-      color: var(--text);
-      border: 1px solid var(--line);
-    }
-    .primary-btn {
-      padding: 13px 18px;
-      background: linear-gradient(135deg, var(--brand), var(--brand-2));
-      color: white;
-      box-shadow: 0 14px 30px rgba(15, 118, 110, .22);
-    }
-    .secondary-btn {
-      padding: 11px 14px;
-      color: var(--brand-dark);
-      background: rgba(22, 163, 74, .1);
-      border: 1px solid rgba(22, 163, 74, .18);
-    }
-    [data-theme="dark"] .secondary-btn { color: #d9f99d; background: rgba(52, 211, 153, .1); border-color: rgba(52, 211, 153, .2); }
-    .primary-btn:hover, .secondary-btn:hover, .ghost-btn:hover, .theme-btn:hover { transform: translateY(-1px); }
-    .primary-btn:disabled { opacity: .65; cursor: wait; transform: none; }
-
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
-      gap: 22px;
-      align-items: stretch;
-      margin-top: 22px;
-    }
-
-    .hero-card, .composer, .panel, .result-card, .side-card {
-      border: 1px solid var(--line);
-      background: var(--surface);
-      backdrop-filter: blur(18px);
-      border-radius: var(--radius-xl);
-      box-shadow: var(--shadow);
-    }
-
-    .hero-card {
-      padding: clamp(28px, 4vw, 54px);
-      overflow: hidden;
-      position: relative;
-      min-height: 420px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .hero-card::after {
-      content: "";
-      position: absolute;
-      right: -90px; bottom: -120px;
-      width: 360px; height: 360px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(22, 163, 74, .22), transparent 68%);
-      pointer-events: none;
-    }
-    .eyebrow {
-      display: inline-flex;
-      width: fit-content;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      color: var(--brand-dark);
-      background: rgba(22, 163, 74, .12);
-      border: 1px solid rgba(22, 163, 74, .18);
-      font-size: .82rem;
-      font-weight: 850;
-    }
-    [data-theme="dark"] .eyebrow { color: #bbf7d0; }
-    .hero h1 {
-      margin: 22px 0 14px;
-      max-width: 850px;
-      font-size: clamp(2.4rem, 5vw, 5.4rem);
-      line-height: .95;
-      letter-spacing: -.075em;
-    }
-    .hero h1 span { color: var(--brand-dark); }
-    [data-theme="dark"] .hero h1 span { color: #67e8f9; }
-    .hero-copy {
-      max-width: 720px;
-      color: var(--muted);
-      font-size: clamp(1rem, 1.7vw, 1.18rem);
-      line-height: 1.7;
-    }
-    .journey-row {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 28px;
-      position: relative;
-      z-index: 1;
-    }
-    .journey-step {
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      background: rgba(255, 255, 255, .55);
-    }
-    [data-theme="dark"] .journey-step { background: rgba(255, 255, 255, .04); }
-    .journey-step strong { display: block; font-size: .9rem; margin-bottom: 4px; }
-    .journey-step span { color: var(--muted); font-size: .78rem; line-height: 1.4; }
-
-    .composer { padding: 18px; align-self: stretch; }
-    .composer-header {
-      padding: 18px 18px 14px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, rgba(15, 118, 110, .12), rgba(245, 158, 11, .1));
-      border: 1px solid var(--line);
-      margin-bottom: 16px;
-    }
-    .composer-header h2 { margin: 0; letter-spacing: -.035em; font-size: 1.45rem; }
-    .composer-header p { margin: 8px 0 0; color: var(--muted); line-height: 1.5; font-size: .92rem; }
-
-    .field { display: flex; flex-direction: column; gap: 7px; margin-bottom: 13px; }
-    .field label { color: var(--text); font-size: .78rem; font-weight: 850; letter-spacing: .01em; }
-    .field small { color: var(--muted); font-size: .75rem; }
-    input, textarea {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-md);
-      padding: 13px 14px;
-      background: var(--surface-solid);
-      color: var(--text);
-      outline: none;
-      transition: box-shadow .15s ease, border-color .15s ease, transform .15s ease;
-    }
-    textarea { resize: vertical; min-height: 74px; }
-    input:focus, textarea:focus { border-color: rgba(15, 118, 110, .55); box-shadow: 0 0 0 5px rgba(15, 118, 110, .12); }
-    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-
-    .composer-actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; margin-top: 16px; }
-    .ai-toggle {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--line);
-      background: var(--surface-soft);
-      color: var(--muted);
-      font-size: .84rem;
-      font-weight: 800;
-    }
-    .ai-toggle input { width: auto; accent-color: var(--brand); }
-
-    .workspace {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 420px;
-      gap: 22px;
-      margin-top: 22px;
-      align-items: start;
-    }
-
-    .panel { padding: 18px; }
-    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-    .panel-title h2, .panel-title h3 { margin: 0; letter-spacing: -.035em; }
-    .panel-title p { margin: 4px 0 0; color: var(--muted); font-size: .86rem; }
-
-    .empty-state {
-      min-height: 390px;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      border: 1px dashed var(--line);
-      border-radius: 24px;
-      background: rgba(255, 255, 255, .45);
-      padding: 30px;
-    }
-    [data-theme="dark"] .empty-state { background: rgba(255, 255, 255, .035); }
-    .empty-state .empty-icon { font-size: 4rem; margin-bottom: 12px; }
-    .empty-state h2 { margin: 0 0 8px; letter-spacing: -.04em; }
-    .empty-state p { margin: 0 auto; color: var(--muted); max-width: 540px; line-height: 1.6; }
-
-    .loading-card { display: none; min-height: 390px; place-items: center; text-align: center; }
-    .spinner {
-      width: 52px; height: 52px;
-      border-radius: 50%;
-      border: 4px solid rgba(15, 118, 110, .14);
-      border-top-color: var(--brand);
-      animation: spin .85s linear infinite;
-      margin: 0 auto 18px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .result-card { display: none; padding: 0; overflow: hidden; }
-    .recipe-hero {
-      padding: 28px;
-      background: linear-gradient(135deg, rgba(15, 118, 110, .16), rgba(245, 158, 11, .1));
-      border-bottom: 1px solid var(--line);
-    }
-    .recipe-hero h2 { margin: 12px 0 10px; font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1; letter-spacing: -.06em; }
-    .recipe-hero p { margin: 0; color: var(--muted); line-height: 1.65; max-width: 780px; }
-    .badge-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .badge {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      font-size: .75rem;
-      font-weight: 900;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, .6);
-      color: var(--muted);
-    }
-    [data-theme="dark"] .badge { background: rgba(255, 255, 255, .05); }
-    .badge.ai { color: var(--brand-dark); background: rgba(22, 163, 74, .12); }
-    [data-theme="dark"] .badge.ai { color: #bbf7d0; }
-    .badge.warn { color: var(--accent); background: rgba(245, 158, 11, .12); }
-
-    .recipe-body { padding: 24px; display: grid; gap: 18px; }
-    .metric-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
-    .metric {
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--surface-soft);
-      padding: 14px 10px;
-      text-align: center;
-    }
-    .metric strong { display: block; font-size: 1.15rem; letter-spacing: -.035em; }
-    .metric span { display: block; color: var(--muted); font-size: .68rem; font-weight: 850; text-transform: uppercase; margin-top: 4px; }
-
-    .content-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 16px; }
-    .section-card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      background: var(--surface-soft);
-      padding: 18px;
-    }
-    .section-card h3 { margin: 0 0 12px; letter-spacing: -.03em; }
-    .chip-list { display: flex; flex-wrap: wrap; gap: 9px; }
-    .chip {
-      border: 1px solid var(--line);
-      background: var(--surface-solid);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 9px 12px;
-      font-size: .85rem;
-      font-weight: 800;
-    }
-    .chip.clickable:hover { border-color: rgba(15, 118, 110, .55); color: var(--brand-dark); transform: translateY(-1px); }
-    .steps { margin: 0; padding-left: 1.3rem; color: var(--text); }
-    .steps li { margin: 0 0 10px; line-height: 1.6; }
-    .safety-box {
-      border-radius: var(--radius-lg);
-      padding: 16px;
-      border: 1px solid rgba(22, 163, 74, .22);
-      background: rgba(22, 163, 74, .1);
-      color: var(--text);
-      line-height: 1.55;
-    }
-    .safety-box.warn { border-color: rgba(185, 28, 28, .25); background: rgba(185, 28, 28, .08); }
-
-    .side-stack { display: grid; gap: 16px; }
-    .side-card { padding: 18px; }
-    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .location-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
-
-    .list { display: grid; gap: 10px; max-height: 460px; overflow: auto; padding-right: 4px; }
-    .item-card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      padding: 14px;
-      background: var(--surface-soft);
-    }
-    .item-card strong { display: block; margin-bottom: 5px; }
-    .item-card p { margin: 0; color: var(--muted); font-size: .84rem; line-height: 1.45; }
-    .item-meta { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 9px; }
-    .mini-tag { font-size: .72rem; font-weight: 850; color: var(--brand-dark); background: rgba(22, 163, 74, .1); border-radius: 999px; padding: 5px 8px; }
-    [data-theme="dark"] .mini-tag { color: #bbf7d0; }
-
-    #map {
-      height: 320px;
-      border-radius: 22px;
-      border: 1px solid var(--line);
-      overflow: hidden;
-      background: var(--surface-soft);
-    }
-
-    .toast-region {
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      display: grid;
-      gap: 10px;
-      z-index: 200;
-    }
-    .toast {
-      padding: 12px 14px;
-      border-radius: 16px;
-      color: white;
-      background: #10231d;
-      box-shadow: var(--shadow-soft);
-      font-size: .9rem;
-      font-weight: 800;
-      max-width: 360px;
-    }
-    .toast.ok { background: var(--success); }
-    .toast.err { background: var(--danger); }
-
-    .footer {
-      margin-top: 22px;
-      color: var(--muted);
-      font-size: .82rem;
-      text-align: center;
-      line-height: 1.6;
-    }
-
-    @media (max-width: 1180px) {
-      .hero, .workspace { grid-template-columns: 1fr; }
-      .composer { order: -1; }
-    }
-    @media (max-width: 760px) {
-      .shell { width: min(100vw - 20px, 1480px); padding-top: 10px; }
-      .topbar { border-radius: 22px; align-items: flex-start; flex-direction: column; position: static; }
-      .top-actions { width: 100%; justify-content: stretch; }
-      .top-actions > * { flex: 1; justify-content: center; }
-      .hero-card { min-height: auto; }
-      .journey-row, .form-grid, .content-grid, .metric-grid, .quick-actions { grid-template-columns: 1fr; }
-      .composer-actions { grid-template-columns: 1fr; }
+    [data-theme="dark"] body { background:radial-gradient(circle at top left, rgba(56,189,248,.2), transparent 31rem), radial-gradient(circle at 85% 12%, rgba(52,211,153,.16), transparent 26rem), linear-gradient(135deg,#07101f,#0b1729 55%,#08111f); }
+    button,input,textarea { font:inherit; } button { cursor:pointer; }
+    .shell { width:min(1480px, calc(100vw - 32px)); margin:0 auto; padding:22px 0 32px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:14px 16px; border:1px solid var(--line); border-radius:999px; background:var(--surface); backdrop-filter:blur(18px); box-shadow:var(--shadow-soft); position:sticky; top:14px; z-index:50; }
+    .brand-lockup { display:flex; align-items:center; gap:12px; min-width:0; }
+    .brand-icon { width:44px; height:44px; border-radius:16px; display:grid; place-items:center; background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:white; font-size:1.45rem; box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 10px 24px rgba(15,118,110,.25); }
+    .brand-title { font-weight:900; letter-spacing:-.04em; font-size:1.05rem; }
+    .brand-subtitle { font-size:.78rem; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .top-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .pill { display:inline-flex; align-items:center; gap:8px; padding:9px 12px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.55); color:var(--muted); font-size:.82rem; font-weight:750; }
+    [data-theme="dark"] .pill { background:rgba(255,255,255,.04); }
+    .dot { width:9px; height:9px; border-radius:50%; background:#94a3b8; box-shadow:0 0 0 4px rgba(148,163,184,.14); }
+    .dot.ok { background:var(--success); box-shadow:0 0 0 4px rgba(34,197,94,.14); } .dot.warn { background:var(--accent); box-shadow:0 0 0 4px rgba(245,158,11,.18); }
+    .theme-btn,.ghost-btn,.primary-btn,.secondary-btn { border:0; border-radius:999px; font-weight:850; transition:transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease; }
+    .theme-btn,.ghost-btn { padding:10px 12px; background:var(--surface-soft); color:var(--text); border:1px solid var(--line); }
+    .ghost-btn { text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+    .primary-btn { padding:13px 18px; background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:white; box-shadow:0 14px 30px rgba(15,118,110,.22); }
+    .secondary-btn { padding:11px 14px; color:var(--brand-dark); background:rgba(22,163,74,.1); border:1px solid rgba(22,163,74,.18); }
+    [data-theme="dark"] .secondary-btn { color:#d9f99d; background:rgba(52,211,153,.1); border-color:rgba(52,211,153,.2); }
+    .primary-btn:hover,.secondary-btn:hover,.ghost-btn:hover,.theme-btn:hover { transform:translateY(-1px); } .primary-btn:disabled { opacity:.65; cursor:wait; transform:none; }
+    .mobile-jumpbar { display:flex; gap:8px; overflow:auto; padding:12px 2px 0; scrollbar-width:none; }
+    .mobile-jumpbar::-webkit-scrollbar { display:none; }
+    .mobile-jumpbar button { flex:0 0 auto; border:1px solid var(--line); background:var(--surface); color:var(--text); border-radius:999px; padding:10px 12px; font-weight:850; box-shadow:var(--shadow-soft); }
+    .hero { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr); gap:22px; align-items:stretch; margin-top:22px; }
+    .hero-card,.composer,.panel,.result-card,.side-card { border:1px solid var(--line); background:var(--surface); backdrop-filter:blur(18px); border-radius:var(--radius-xl); box-shadow:var(--shadow); }
+    .hero-card { padding:clamp(28px,4vw,54px); overflow:hidden; position:relative; min-height:420px; display:flex; flex-direction:column; justify-content:space-between; }
+    .hero-card::after { content:""; position:absolute; right:-90px; bottom:-120px; width:360px; height:360px; border-radius:50%; background:radial-gradient(circle, rgba(22,163,74,.22), transparent 68%); pointer-events:none; }
+    .eyebrow { display:inline-flex; width:fit-content; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; color:var(--brand-dark); background:rgba(22,163,74,.12); border:1px solid rgba(22,163,74,.18); font-size:.82rem; font-weight:850; }
+    [data-theme="dark"] .eyebrow { color:#bbf7d0; }
+    .hero h1 { margin:22px 0 14px; max-width:850px; font-size:clamp(2.4rem,5vw,5.4rem); line-height:.95; letter-spacing:-.075em; }
+    .hero h1 span { color:var(--brand-dark); } [data-theme="dark"] .hero h1 span { color:#67e8f9; }
+    .hero-copy { max-width:720px; color:var(--muted); font-size:clamp(1rem,1.7vw,1.18rem); line-height:1.7; }
+    .journey-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:28px; position:relative; z-index:1; }
+    .journey-step { padding:14px; border:1px solid var(--line); border-radius:var(--radius-lg); background:rgba(255,255,255,.55); }
+    [data-theme="dark"] .journey-step { background:rgba(255,255,255,.04); }
+    .journey-step strong { display:block; font-size:.9rem; margin-bottom:4px; } .journey-step span { color:var(--muted); font-size:.78rem; line-height:1.4; }
+    .composer { padding:18px; align-self:stretch; scroll-margin-top:95px; }
+    .composer-header { padding:18px 18px 14px; border-radius:22px; background:linear-gradient(135deg, rgba(15,118,110,.12), rgba(245,158,11,.1)); border:1px solid var(--line); margin-bottom:16px; }
+    .composer-header h2 { margin:0; letter-spacing:-.035em; font-size:1.45rem; } .composer-header p { margin:8px 0 0; color:var(--muted); line-height:1.5; font-size:.92rem; }
+    .field { display:flex; flex-direction:column; gap:7px; margin-bottom:13px; } .field label { color:var(--text); font-size:.78rem; font-weight:850; letter-spacing:.01em; } .field small { color:var(--muted); font-size:.75rem; }
+    input,textarea { width:100%; border:1px solid var(--line); border-radius:var(--radius-md); padding:13px 14px; background:var(--surface-solid); color:var(--text); outline:none; transition:box-shadow .15s ease, border-color .15s ease; }
+    textarea { resize:vertical; min-height:74px; } input:focus,textarea:focus { border-color:rgba(15,118,110,.55); box-shadow:0 0 0 5px rgba(15,118,110,.12); }
+    .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .composer-actions { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; margin-top:16px; }
+    .ai-toggle { display:flex; align-items:center; gap:10px; padding:12px; border-radius:var(--radius-lg); border:1px solid var(--line); background:var(--surface-soft); color:var(--muted); font-size:.84rem; font-weight:800; }
+    .ai-toggle input { width:auto; accent-color:var(--brand); }
+    .workspace { display:grid; grid-template-columns:minmax(0,1fr) 420px; gap:22px; margin-top:22px; align-items:start; }
+    .panel,.side-card { padding:18px; scroll-margin-top:95px; }
+    .panel-title { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    .panel-title h2,.panel-title h3 { margin:0; letter-spacing:-.035em; } .panel-title p { margin:4px 0 0; color:var(--muted); font-size:.86rem; }
+    .empty-state { min-height:390px; display:grid; place-items:center; text-align:center; border:1px dashed var(--line); border-radius:24px; background:rgba(255,255,255,.45); padding:30px; }
+    [data-theme="dark"] .empty-state { background:rgba(255,255,255,.035); } .empty-state .empty-icon { font-size:4rem; margin-bottom:12px; } .empty-state h2 { margin:0 0 8px; letter-spacing:-.04em; } .empty-state p { margin:0 auto; color:var(--muted); max-width:540px; line-height:1.6; }
+    .loading-card { display:none; min-height:390px; place-items:center; text-align:center; }
+    .spinner { width:52px; height:52px; border-radius:50%; border:4px solid rgba(15,118,110,.14); border-top-color:var(--brand); animation:spin .85s linear infinite; margin:0 auto 18px; } @keyframes spin { to { transform:rotate(360deg); } }
+    .result-card { display:none; padding:0; overflow:hidden; }
+    .recipe-hero { padding:28px; background:linear-gradient(135deg, rgba(15,118,110,.16), rgba(245,158,11,.1)); border-bottom:1px solid var(--line); }
+    .recipe-hero h2 { margin:12px 0 10px; font-size:clamp(1.8rem,3vw,3rem); line-height:1; letter-spacing:-.06em; } .recipe-hero p { margin:0; color:var(--muted); line-height:1.65; max-width:780px; }
+    .badge-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .badge { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border-radius:999px; font-size:.75rem; font-weight:900; border:1px solid var(--line); background:rgba(255,255,255,.6); color:var(--muted); }
+    [data-theme="dark"] .badge { background:rgba(255,255,255,.05); } .badge.ai { color:var(--brand-dark); background:rgba(22,163,74,.12); } [data-theme="dark"] .badge.ai { color:#bbf7d0; } .badge.warn { color:var(--accent); background:rgba(245,158,11,.12); }
+    .recipe-body { padding:24px; display:grid; gap:18px; } .metric-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:10px; }
+    .metric { border:1px solid var(--line); border-radius:18px; background:var(--surface-soft); padding:14px 10px; text-align:center; } .metric strong { display:block; font-size:1.15rem; letter-spacing:-.035em; } .metric span { display:block; color:var(--muted); font-size:.68rem; font-weight:850; text-transform:uppercase; margin-top:4px; }
+    .content-grid { display:grid; grid-template-columns:.9fr 1.1fr; gap:16px; }
+    .section-card { border:1px solid var(--line); border-radius:var(--radius-lg); background:var(--surface-soft); padding:18px; } .section-card h3 { margin:0 0 12px; letter-spacing:-.03em; }
+    .chip-list { display:flex; flex-wrap:wrap; gap:9px; } .chip { border:1px solid var(--line); background:var(--surface-solid); color:var(--text); border-radius:999px; padding:9px 12px; font-size:.85rem; font-weight:800; } .chip.clickable:hover { border-color:rgba(15,118,110,.55); color:var(--brand-dark); transform:translateY(-1px); }
+    .steps { margin:0; padding-left:1.3rem; color:var(--text); } .steps li { margin:0 0 10px; line-height:1.6; }
+    .safety-box { border-radius:var(--radius-lg); padding:16px; border:1px solid rgba(22,163,74,.22); background:rgba(22,163,74,.1); color:var(--text); line-height:1.55; } .safety-box.warn { border-color:rgba(185,28,28,.25); background:rgba(185,28,28,.08); }
+    .side-stack { display:grid; gap:16px; } .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .list { display:grid; gap:10px; max-height:460px; overflow:auto; padding-right:4px; } .item-card { border:1px solid var(--line); border-radius:var(--radius-lg); padding:14px; background:var(--surface-soft); } .item-card strong { display:block; margin-bottom:5px; } .item-card p { margin:0; color:var(--muted); font-size:.84rem; line-height:1.45; } .item-meta { display:flex; gap:7px; flex-wrap:wrap; margin-top:9px; } .mini-tag { font-size:.72rem; font-weight:850; color:var(--brand-dark); background:rgba(22,163,74,.1); border-radius:999px; padding:5px 8px; } [data-theme="dark"] .mini-tag { color:#bbf7d0; }
+    #map { height:320px; border-radius:22px; border:1px solid var(--line); overflow:hidden; background:var(--surface-soft); }
+    .toast-region { position:fixed; right:20px; bottom:88px; display:grid; gap:10px; z-index:200; } .toast { padding:12px 14px; border-radius:16px; color:white; background:#10231d; box-shadow:var(--shadow-soft); font-size:.9rem; font-weight:800; max-width:360px; } .toast.ok { background:var(--success); } .toast.err { background:var(--danger); }
+    .footer { margin-top:22px; color:var(--muted); font-size:.82rem; text-align:center; line-height:1.6; }
+    .mobile-dock { display:none; position:fixed; left:10px; right:10px; bottom:10px; z-index:300; border:1px solid var(--line); border-radius:24px; background:var(--surface); backdrop-filter:blur(18px); box-shadow:0 18px 50px rgba(0,0,0,.25); padding:8px; grid-template-columns:repeat(5,1fr); gap:6px; padding-bottom:calc(8px + env(safe-area-inset-bottom)); }
+    .mobile-dock button { border:0; border-radius:18px; padding:9px 5px; background:transparent; color:var(--muted); font-size:.72rem; font-weight:900; display:grid; gap:2px; place-items:center; }
+    .mobile-dock button.active { background:linear-gradient(135deg, rgba(15,118,110,.18), rgba(22,163,74,.16)); color:var(--text); }
+    .mobile-dock span { font-size:1.12rem; line-height:1; }
+    @media (max-width:1180px) { .hero,.workspace { grid-template-columns:1fr; } .composer { order:-1; } }
+    @media (max-width:760px) {
+      body { padding-bottom:94px; }
+      .shell { width:min(100vw - 20px,1480px); padding-top:10px; }
+      .topbar { border-radius:22px; align-items:flex-start; flex-direction:column; position:static; }
+      .top-actions { width:100%; justify-content:stretch; } .top-actions > * { flex:1; justify-content:center; }
+      .brand-subtitle { white-space:normal; }
+      .hero { gap:14px; margin-top:14px; }
+      .hero-card { min-height:auto; padding:24px; }
+      .hero h1 { font-size:2.35rem; }
+      .journey-row,.form-grid,.content-grid,.metric-grid,.quick-actions { grid-template-columns:1fr; }
+      .composer-actions { grid-template-columns:1fr; }
+      .workspace { margin-top:14px; gap:14px; }
+      .panel-title { align-items:flex-start; flex-direction:column; }
+      .panel-title .secondary-btn { width:100%; }
+      .mobile-dock { display:grid; }
+      .toast-region { left:14px; right:14px; bottom:96px; } .toast { max-width:none; }
+      .mobile-jumpbar { position:sticky; top:0; z-index:40; padding:10px 0; background:linear-gradient(180deg,var(--bg),rgba(255,255,255,0)); }
     }
   </style>
 </head>
@@ -457,17 +126,22 @@
     <header class="topbar">
       <div class="brand-lockup">
         <div class="brand-icon">🥗</div>
-        <div>
-          <div class="brand-title">GlucoPlate AI</div>
-          <div class="brand-subtitle">Carb-aware recipes, groceries, stores, and safer food planning</div>
-        </div>
+        <div><div class="brand-title">GlucoPlate AI</div><div class="brand-subtitle">Carb-aware recipes, groceries, stores, and safer food planning</div></div>
       </div>
       <div class="top-actions">
         <div class="pill"><span id="gemini-dot" class="dot"></span><span id="provider-status">Checking AI</span></div>
         <button class="theme-btn" type="button" onclick="toggleTheme()">Theme</button>
-        <a class="ghost-btn" href="/static/index.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center">Classic UI</a>
+        <a class="ghost-btn" href="/static/index.html">Classic UI</a>
       </div>
     </header>
+
+    <nav class="mobile-jumpbar" aria-label="Mobile section shortcuts">
+      <button type="button" onclick="jumpToSection('composerSection')">🍽 Plate</button>
+      <button type="button" onclick="jumpToSection('recipeWorkspace')">📋 Recipe</button>
+      <button type="button" onclick="jumpToSection('productSection')">🛒 Products</button>
+      <button type="button" onclick="jumpToSection('storesSection')">🏬 Stores</button>
+      <button type="button" onclick="jumpToSection('mapSection')">🗺 Map</button>
+    </nav>
 
     <main>
       <section class="hero" aria-labelledby="hero-title">
@@ -475,10 +149,7 @@
           <div>
             <div class="eyebrow">✨ Modern AI meal-planning workspace</div>
             <h1 id="hero-title">From meal idea to <span>safer plate</span> to grocery plan.</h1>
-            <p class="hero-copy">
-              Generate culturally aware, diabetes-conscious recipes with nutrition estimates,
-              safety review, ingredient lookup, nearby grocery discovery, and cart planning in one connected flow.
-            </p>
+            <p class="hero-copy">Generate culturally aware, diabetes-conscious recipes with nutrition estimates, safety review, ingredient lookup, nearby grocery discovery, and cart planning in one connected flow.</p>
           </div>
           <div class="journey-row" aria-label="Product journey">
             <div class="journey-step"><strong>1. Describe</strong><span>Goal, culture, servings, carbs, and avoid list.</span></div>
@@ -488,128 +159,46 @@
           </div>
         </div>
 
-        <aside class="composer" aria-label="Recipe composer">
-          <div class="composer-header">
-            <h2>Build today’s plate</h2>
-            <p>Start with what you actually want to eat. GlucoPlate will keep the structure, safety, and shopping flow organized.</p>
-          </div>
-
-          <div class="field">
-            <label for="goal">Meal goal</label>
-            <textarea id="goal" placeholder="quick Dominican-style dinner">quick Dominican-style dinner</textarea>
-            <small>Example: quick Dominican-style dinner, high-protein lunch, family-friendly salmon bowl.</small>
-          </div>
-
-          <div class="form-grid">
-            <div class="field">
-              <label for="servings">Servings</label>
-              <input id="servings" type="number" min="1" max="12" value="2" />
-            </div>
-            <div class="field">
-              <label for="maxCarbs">Max carbs / serving</label>
-              <input id="maxCarbs" type="number" min="0" max="150" value="45" />
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="culture">Cultural style</label>
-            <input id="culture" type="text" value="Dominican" placeholder="Dominican, Mediterranean, Latin, Caribbean" />
-          </div>
-
-          <div class="field">
-            <label for="preferences">Preferences</label>
-            <input id="preferences" type="text" value="low sodium, high protein" placeholder="low sodium, high protein, budget friendly" />
-          </div>
-
-          <div class="field">
-            <label for="avoid">Avoid ingredients</label>
-            <input id="avoid" type="text" placeholder="sugar, shellfish, peanuts" />
-          </div>
-
-          <div class="composer-actions">
-            <label class="ai-toggle"><input id="useAi" type="checkbox" checked /> Use best available AI provider</label>
-            <button id="generateBtn" class="primary-btn" type="button" onclick="generateRecipe()">Generate plate →</button>
-          </div>
+        <aside id="composerSection" class="composer" aria-label="Recipe composer">
+          <div class="composer-header"><h2>Build today’s plate</h2><p>Start with what you actually want to eat. GlucoPlate keeps the structure, safety, and shopping flow organized.</p></div>
+          <div class="field"><label for="goal">Meal goal</label><textarea id="goal" placeholder="quick Dominican-style dinner">quick Dominican-style dinner</textarea><small>Example: quick Dominican-style dinner, high-protein lunch, family-friendly salmon bowl.</small></div>
+          <div class="form-grid"><div class="field"><label for="servings">Servings</label><input id="servings" type="number" min="1" max="12" value="2" /></div><div class="field"><label for="maxCarbs">Max carbs / serving</label><input id="maxCarbs" type="number" min="0" max="150" value="45" /></div></div>
+          <div class="field"><label for="culture">Cultural style</label><input id="culture" type="text" value="Dominican" placeholder="Dominican, Mediterranean, Latin, Caribbean" /></div>
+          <div class="field"><label for="preferences">Preferences</label><input id="preferences" type="text" value="low sodium, high protein" placeholder="low sodium, high protein, budget friendly" /></div>
+          <div class="field"><label for="avoid">Avoid ingredients</label><input id="avoid" type="text" placeholder="sugar, shellfish, peanuts" /></div>
+          <div class="composer-actions"><label class="ai-toggle"><input id="useAi" type="checkbox" checked /> Use best available AI provider</label><button id="generateBtn" class="primary-btn" type="button" onclick="generateRecipe()">Generate plate →</button></div>
         </aside>
       </section>
 
       <section class="workspace" aria-label="GlucoPlate workspace">
-        <section class="panel" aria-labelledby="recipe-panel-title">
-          <div class="panel-title">
-            <div>
-              <h2 id="recipe-panel-title">Recipe workspace</h2>
-              <p>Nutrition, ingredients, substitutions, and safety review stay together.</p>
-            </div>
-            <button class="secondary-btn" type="button" onclick="saveCurrentRecipe()">Save recipe</button>
-          </div>
-
-          <div id="emptyState" class="empty-state">
-            <div>
-              <div class="empty-icon">🍽️</div>
-              <h2>Your next plate starts here</h2>
-              <p>Generate a recipe to unlock the full flow: clickable ingredients, product lookup, nearby stores, carts, and route planning.</p>
-            </div>
-          </div>
-
-          <div id="loadingState" class="loading-card">
-            <div>
-              <div class="spinner"></div>
-              <h2>Designing your plate…</h2>
-              <p class="hero-copy" style="font-size:.95rem">Balancing culture, carbs, substitutions, and safety review.</p>
-            </div>
-          </div>
-
+        <section id="recipeWorkspace" class="panel" aria-labelledby="recipe-panel-title">
+          <div class="panel-title"><div><h2 id="recipe-panel-title">Recipe workspace</h2><p>Nutrition, ingredients, substitutions, and safety review stay together.</p></div><button class="secondary-btn" type="button" onclick="saveCurrentRecipe()">Save recipe</button></div>
+          <div id="emptyState" class="empty-state"><div><div class="empty-icon">🍽️</div><h2>Your next plate starts here</h2><p>Generate a recipe to unlock clickable ingredients, product lookup, nearby stores, carts, and route planning.</p></div></div>
+          <div id="loadingState" class="loading-card"><div><div class="spinner"></div><h2>Designing your plate…</h2><p class="hero-copy" style="font-size:.95rem">Balancing culture, carbs, substitutions, and safety review.</p></div></div>
           <article id="resultCard" class="result-card"></article>
         </section>
 
         <aside class="side-stack" aria-label="Shopping tools">
-          <section class="side-card">
-            <div class="panel-title">
-              <div>
-                <h3>Shopping control center</h3>
-                <p>Connect ingredients to products, stores, carts, and route planning.</p>
-              </div>
-            </div>
-            <div class="quick-actions">
-              <button class="secondary-btn" type="button" onclick="useLocation()">📍 Use location</button>
-              <button class="secondary-btn" type="button" onclick="createCartFromRecipe()">🧾 Build cart</button>
-              <button class="secondary-btn" type="button" onclick="findStores()">🏬 Find stores</button>
-              <button class="secondary-btn" type="button" onclick="planRoute()">🗺 Plan route</button>
-            </div>
-            <p id="locationStatus" class="hero-copy" style="font-size:.84rem;margin:12px 0 0">Location not set. Store search will use Syracuse, NY as a demo fallback.</p>
-          </section>
-
-          <section class="side-card">
-            <div class="panel-title">
-              <div>
-                <h3>Products</h3>
-                <p>Click an ingredient to search product metadata.</p>
-              </div>
-            </div>
-            <div id="productList" class="list"><div class="item-card"><p>No product searches yet.</p></div></div>
-          </section>
-
-          <section class="side-card">
-            <div class="panel-title">
-              <div>
-                <h3>Nearby stores</h3>
-                <p>Powered by OpenStreetMap when available.</p>
-              </div>
-            </div>
-            <div id="storeList" class="list"><div class="item-card"><p>Use location or generate a recipe first.</p></div></div>
-            <div id="map" style="margin-top:12px"></div>
-          </section>
+          <section id="shoppingSection" class="side-card"><div class="panel-title"><div><h3>Shopping control center</h3><p>Connect ingredients to products, stores, carts, and route planning.</p></div></div><div class="quick-actions"><button class="secondary-btn" type="button" onclick="useLocation()">📍 Use location</button><button class="secondary-btn" type="button" onclick="createCartFromRecipe()">🧾 Build cart</button><button class="secondary-btn" type="button" onclick="findStores()">🏬 Find stores</button><button class="secondary-btn" type="button" onclick="planRoute()">🗺 Plan route</button></div><p id="locationStatus" class="hero-copy" style="font-size:.84rem;margin:12px 0 0">Location not set. Store search will use Syracuse, NY as a demo fallback.</p></section>
+          <section id="productSection" class="side-card"><div class="panel-title"><div><h3>Products</h3><p>Click an ingredient to search product metadata.</p></div></div><div id="productList" class="list"><div class="item-card"><p>No product searches yet.</p></div></div></section>
+          <section id="storesSection" class="side-card"><div class="panel-title"><div><h3>Nearby stores</h3><p>Powered by OpenStreetMap when available.</p></div></div><div id="storeList" class="list"><div class="item-card"><p>Use location or generate a recipe first.</p></div></div></section>
+          <section id="mapSection" class="side-card"><div class="panel-title"><div><h3>Map</h3><p>Store pins appear after store search.</p></div></div><div id="map"></div></section>
         </aside>
       </section>
     </main>
 
-    <footer class="footer">
-      GlucoPlate AI is for general wellness planning and software architecture demonstration only. It does not diagnose, treat, or replace clinician guidance.
-    </footer>
+    <footer class="footer">GlucoPlate AI is for general wellness planning and software architecture demonstration only. It does not diagnose, treat, or replace clinician guidance.</footer>
   </div>
 
-  <div id="toastRegion" class="toast-region" aria-live="polite"></div>
+  <nav class="mobile-dock" aria-label="Mobile app navigation">
+    <button type="button" data-target="composerSection" onclick="jumpToSection('composerSection')"><span>🍽</span>Plate</button>
+    <button type="button" data-target="recipeWorkspace" onclick="jumpToSection('recipeWorkspace')"><span>📋</span>Recipe</button>
+    <button type="button" data-target="productSection" onclick="jumpToSection('productSection')"><span>🛒</span>Products</button>
+    <button type="button" data-target="storesSection" onclick="jumpToSection('storesSection')"><span>🏬</span>Stores</button>
+    <button type="button" data-target="mapSection" onclick="jumpToSection('mapSection')"><span>🗺</span>Map</button>
+  </nav>
 
+  <div id="toastRegion" class="toast-region" aria-live="polite"></div>
   <script src="/static/vendor/leaflet.js"></script>
   <script>
     let currentRecipe = null;
@@ -620,344 +209,45 @@
 
     function qs(id) { return document.getElementById(id); }
     function splitList(value) { return (value || '').split(',').map(v => v.trim()).filter(Boolean); }
-
-    function toast(message, type = '') {
-      const region = qs('toastRegion');
-      const el = document.createElement('div');
-      el.className = `toast ${type}`;
-      el.textContent = message;
-      region.appendChild(el);
-      setTimeout(() => el.remove(), 4200);
+    function jumpToSection(id) {
+      const el = qs(id);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelectorAll('.mobile-dock button').forEach(btn => btn.classList.toggle('active', btn.dataset.target === id));
+      if (id === 'mapSection' && map) setTimeout(() => map.invalidateSize(), 250);
     }
-
-    function toggleTheme() {
-      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('glucoplate-theme', next);
-    }
-
-    function initTheme() {
-      const saved = localStorage.getItem('glucoplate-theme');
-      const preferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', saved || preferred);
-    }
-
-    function nutritionValue(value, suffix = '') {
-      if (value === null || value === undefined || value === '') return '—';
-      return `${Math.round(Number(value))}${suffix}`;
-    }
-
-    async function checkProviderHealth() {
-      try {
-        const res = await fetch('/api/ai/health');
-        const health = await res.json();
-        const dot = qs('gemini-dot');
-        if (health.gemini_configured || health.copilot_installed) {
-          dot.className = 'dot ok';
-          qs('provider-status').textContent = health.gemini_configured ? 'Gemini ready' : 'Copilot ready';
-        } else {
-          dot.className = 'dot warn';
-          qs('provider-status').textContent = 'Local fallback ready';
-        }
-      } catch {
-        qs('gemini-dot').className = 'dot warn';
-        qs('provider-status').textContent = 'Fallback mode';
-      }
-    }
-
+    function toast(message, type = '') { const region = qs('toastRegion'); const el = document.createElement('div'); el.className = `toast ${type}`; el.textContent = message; region.appendChild(el); setTimeout(() => el.remove(), 4200); }
+    function toggleTheme() { const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', next); localStorage.setItem('glucoplate-theme', next); }
+    function initTheme() { const saved = localStorage.getItem('glucoplate-theme'); const preferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', saved || preferred); }
+    function nutritionValue(value, suffix = '') { if (value === null || value === undefined || value === '') return '—'; return `${Math.round(Number(value))}${suffix}`; }
+    async function checkProviderHealth() { try { const res = await fetch('/api/ai/health'); const health = await res.json(); const dot = qs('gemini-dot'); if (health.gemini_configured || health.copilot_installed) { dot.className = 'dot ok'; qs('provider-status').textContent = health.gemini_configured ? 'Gemini ready' : 'Copilot ready'; } else { dot.className = 'dot warn'; qs('provider-status').textContent = 'Local fallback ready'; } } catch { qs('gemini-dot').className = 'dot warn'; qs('provider-status').textContent = 'Fallback mode'; } }
     async function generateRecipe() {
-      const btn = qs('generateBtn');
-      btn.disabled = true;
-      qs('emptyState').style.display = 'none';
-      qs('resultCard').style.display = 'none';
-      qs('loadingState').style.display = 'grid';
-
-      const payload = {
-        goal: qs('goal').value.trim() || 'balanced dinner',
-        servings: Number(qs('servings').value || 2),
-        max_carbs_per_serving: Number(qs('maxCarbs').value || 45),
-        preferences: splitList(qs('preferences').value),
-        avoid_ingredients: splitList(qs('avoid').value),
-        culture: qs('culture').value.trim() || null
-      };
-
-      try {
-        const res = await fetch(`/api/recipes/generate?use_ai=${qs('useAi').checked}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(`Recipe request failed with ${res.status}`);
-        currentRecipe = await res.json();
-        renderRecipe(currentRecipe);
-        toast('Recipe generated. Ingredients are now clickable.', 'ok');
-      } catch (err) {
-        qs('emptyState').style.display = 'grid';
-        toast(err.message || 'Recipe generation failed.', 'err');
-      } finally {
-        btn.disabled = false;
-        qs('loadingState').style.display = 'none';
-      }
+      const btn = qs('generateBtn'); btn.disabled = true; qs('emptyState').style.display = 'none'; qs('resultCard').style.display = 'none'; qs('loadingState').style.display = 'grid';
+      const payload = { goal: qs('goal').value.trim() || 'balanced dinner', servings: Number(qs('servings').value || 2), max_carbs_per_serving: Number(qs('maxCarbs').value || 45), preferences: splitList(qs('preferences').value), avoid_ingredients: splitList(qs('avoid').value), culture: qs('culture').value.trim() || null };
+      try { const res = await fetch(`/api/recipes/generate?use_ai=${qs('useAi').checked}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(payload) }); if (!res.ok) throw new Error(`Recipe request failed with ${res.status}`); currentRecipe = await res.json(); renderRecipe(currentRecipe); toast('Recipe generated. Ingredients are now clickable.', 'ok'); jumpToSection('recipeWorkspace'); }
+      catch (err) { qs('emptyState').style.display = 'grid'; toast(err.message || 'Recipe generation failed.', 'err'); }
+      finally { btn.disabled = false; qs('loadingState').style.display = 'none'; }
     }
-
     function renderRecipe(recipe) {
-      const n = recipe.nutrition_estimate || {};
-      const safety = recipe.safety_review || {};
-      const approved = safety.approved !== false;
-      const provider = recipe.ai_provider || 'unknown';
-      const ingredients = recipe.ingredients || [];
-      const steps = recipe.steps || [];
-      const substitutions = recipe.substitutions || [];
-
-      qs('resultCard').innerHTML = `
-        <div class="recipe-hero">
-          <div class="badge-row">
-            <span class="badge ai">${provider.includes('fallback') ? '🧭 Reliable fallback' : '🤖 AI generated'}</span>
-            <span class="badge">${qs('servings').value} servings</span>
-            <span class="badge warn">≤ ${qs('maxCarbs').value}g carbs target</span>
-          </div>
-          <h2>${escapeHtml(recipe.title || 'Balanced Plate')}</h2>
-          <p>${escapeHtml(recipe.summary || 'A balanced diabetes-conscious meal idea.')}</p>
-        </div>
-        <div class="recipe-body">
-          <div class="metric-grid">
-            ${metric('Calories', nutritionValue(n.calories))}
-            ${metric('Protein', nutritionValue(n.protein_g, 'g'))}
-            ${metric('Carbs', nutritionValue(n.carbs_g, 'g'))}
-            ${metric('Fiber', nutritionValue(n.fiber_g, 'g'))}
-            ${metric('Sugar', nutritionValue(n.sugar_g, 'g'))}
-            ${metric('Fat', nutritionValue(n.fat_g, 'g'))}
-            ${metric('Sodium', nutritionValue(n.sodium_mg, 'mg'))}
-          </div>
-          <div class="content-grid">
-            <div class="section-card">
-              <h3>Ingredients</h3>
-              <div class="chip-list">
-                ${ingredients.map(i => `<button class="chip clickable" type="button" onclick="searchProduct('${escapeAttr(i)}')">${escapeHtml(i)}</button>`).join('')}
-              </div>
-            </div>
-            <div class="section-card">
-              <h3>Steps</h3>
-              <ol class="steps">${steps.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol>
-            </div>
-          </div>
-          <div class="content-grid">
-            <div class="section-card">
-              <h3>Smart substitutions</h3>
-              <div class="chip-list">${substitutions.map(s => `<span class="chip">${escapeHtml(s)}</span>`).join('')}</div>
-            </div>
-            <div class="safety-box ${approved ? '' : 'warn'}">
-              <strong>${approved ? 'Safety review passed' : 'Safety review needs attention'}</strong><br />
-              ${(safety.warnings || []).map(w => `⚠️ ${escapeHtml(w)}<br />`).join('')}
-              ${escapeHtml(safety.disclaimer || 'For general wellness support only. Not medical advice.')}
-            </div>
-          </div>
-        </div>
-      `;
+      const n = recipe.nutrition_estimate || {}; const safety = recipe.safety_review || {}; const approved = safety.approved !== false; const provider = recipe.ai_provider || 'unknown'; const ingredients = recipe.ingredients || []; const steps = recipe.steps || []; const substitutions = recipe.substitutions || [];
+      qs('resultCard').innerHTML = `<div class="recipe-hero"><div class="badge-row"><span class="badge ai">${provider.includes('fallback') ? '🧭 Reliable fallback' : '🤖 AI generated'}</span><span class="badge">${qs('servings').value} servings</span><span class="badge warn">≤ ${qs('maxCarbs').value}g carbs target</span></div><h2>${escapeHtml(recipe.title || 'Balanced Plate')}</h2><p>${escapeHtml(recipe.summary || 'A balanced diabetes-conscious meal idea.')}</p></div><div class="recipe-body"><div class="metric-grid">${metric('Calories', nutritionValue(n.calories))}${metric('Protein', nutritionValue(n.protein_g, 'g'))}${metric('Carbs', nutritionValue(n.carbs_g, 'g'))}${metric('Fiber', nutritionValue(n.fiber_g, 'g'))}${metric('Sugar', nutritionValue(n.sugar_g, 'g'))}${metric('Fat', nutritionValue(n.fat_g, 'g'))}${metric('Sodium', nutritionValue(n.sodium_mg, 'mg'))}</div><div class="content-grid"><div class="section-card"><h3>Ingredients</h3><div class="chip-list">${ingredients.map(i => `<button class="chip clickable" type="button" onclick="searchProduct('${escapeAttr(i)}')">${escapeHtml(i)}</button>`).join('')}</div></div><div class="section-card"><h3>Steps</h3><ol class="steps">${steps.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol></div></div><div class="content-grid"><div class="section-card"><h3>Smart substitutions</h3><div class="chip-list">${substitutions.map(s => `<span class="chip">${escapeHtml(s)}</span>`).join('')}</div></div><div class="safety-box ${approved ? '' : 'warn'}"><strong>${approved ? 'Safety review passed' : 'Safety review needs attention'}</strong><br />${(safety.warnings || []).map(w => `⚠️ ${escapeHtml(w)}<br />`).join('')}${escapeHtml(safety.disclaimer || 'For general wellness support only. Not medical advice.')}</div></div></div>`;
       qs('resultCard').style.display = 'block';
     }
-
-    function metric(label, value) {
-      return `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`;
-    }
-
-    async function searchProduct(ingredient) {
-      qs('productList').innerHTML = `<div class="item-card"><p>Searching products for ${escapeHtml(ingredient)}…</p></div>`;
-      try {
-        const res = await fetch('/api/products/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ingredient })
-        });
-        if (!res.ok) throw new Error(`Product search failed with ${res.status}`);
-        const products = await res.json();
-        renderProducts(products);
-        toast(`Product lookup complete for ${ingredient}.`, 'ok');
-      } catch (err) {
-        toast(err.message || 'Product search failed.', 'err');
-      }
-    }
-
-    function renderProducts(products) {
-      if (!products || !products.length) {
-        qs('productList').innerHTML = '<div class="item-card"><p>No products found.</p></div>';
-        return;
-      }
-      qs('productList').innerHTML = products.slice(0, 8).map(p => `
-        <div class="item-card">
-          <strong>${escapeHtml(p.product_name || p.ingredient || 'Unknown product')}</strong>
-          <p>${escapeHtml(p.brand || 'Brand unavailable')}</p>
-          <div class="item-meta">
-            <span class="mini-tag">${escapeHtml(p.source || 'source unknown')}</span>
-            <span class="mini-tag">${escapeHtml(p.availability || 'unknown availability')}</span>
-            ${p.barcode ? `<span class="mini-tag">${escapeHtml(p.barcode)}</span>` : ''}
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function getDemoLocation() {
-      return currentLocation || { latitude: 43.0481, longitude: -76.1474, label: 'Syracuse demo location' };
-    }
-
-    function useLocation() {
-      if (!navigator.geolocation) {
-        currentLocation = getDemoLocation();
-        updateLocationStatus();
-        toast('Geolocation unavailable. Using Syracuse demo location.', 'err');
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          currentLocation = {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            label: 'Current location'
-          };
-          updateLocationStatus();
-          findStores();
-        },
-        () => {
-          currentLocation = getDemoLocation();
-          updateLocationStatus();
-          toast('Could not access location. Using Syracuse demo location.', 'err');
-        },
-        { enableHighAccuracy: true, timeout: 8000 }
-      );
-    }
-
-    function updateLocationStatus() {
-      const loc = getDemoLocation();
-      qs('locationStatus').textContent = `${loc.label}: ${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`;
-    }
-
-    async function findStores() {
-      const loc = getDemoLocation();
-      updateLocationStatus();
-      qs('storeList').innerHTML = '<div class="item-card"><p>Finding nearby stores…</p></div>';
-      try {
-        const res = await fetch('/api/stores/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude: loc.latitude, longitude: loc.longitude, radius_meters: 5000, query: 'grocery' })
-        });
-        if (!res.ok) throw new Error(`Store search failed with ${res.status}`);
-        currentStores = await res.json();
-        renderStores(currentStores, loc);
-        toast('Nearby stores loaded.', 'ok');
-      } catch (err) {
-        toast(err.message || 'Store search failed.', 'err');
-      }
-    }
-
-    function renderStores(stores, loc) {
-      if (!stores || !stores.length) {
-        qs('storeList').innerHTML = '<div class="item-card"><p>No stores found.</p></div>';
-        return;
-      }
-      qs('storeList').innerHTML = stores.slice(0, 8).map(s => `
-        <div class="item-card">
-          <strong>${escapeHtml(s.name || 'Nearby store')}</strong>
-          <p>${escapeHtml(s.address || s.store_type || 'Address unavailable')}</p>
-          <div class="item-meta"><span class="mini-tag">${escapeHtml(s.source || 'openstreetmap')}</span>${s.opening_hours ? `<span class="mini-tag">${escapeHtml(s.opening_hours)}</span>` : ''}</div>
-        </div>
-      `).join('');
-      renderMap(stores, loc);
-    }
-
-    function renderMap(stores, loc) {
-      if (!window.L) return;
-      if (!map) {
-        map = L.map('map', { scrollWheelZoom: false }).setView([loc.latitude, loc.longitude], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
-      }
-      map.setView([loc.latitude, loc.longitude], 13);
-      if (storeLayer) storeLayer.remove();
-      storeLayer = L.layerGroup().addTo(map);
-      L.marker([loc.latitude, loc.longitude]).bindPopup('Start location').addTo(storeLayer);
-      stores.slice(0, 25).forEach(s => {
-        if (s.latitude && s.longitude) {
-          L.marker([s.latitude, s.longitude]).bindPopup(escapeHtml(s.name || 'Store')).addTo(storeLayer);
-        }
-      });
-      setTimeout(() => map.invalidateSize(), 120);
-    }
-
-    async function createCartFromRecipe() {
-      if (!currentRecipe) {
-        toast('Generate a recipe first, then build a cart.', 'err');
-        return;
-      }
-      try {
-        const res = await fetch('/api/carts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: `${currentRecipe.title || 'GlucoPlate'} cart`,
-            items: (currentRecipe.ingredients || []).map(name => ({ name, quantity: 1 }))
-          })
-        });
-        if (!res.ok) throw new Error(`Cart creation failed with ${res.status}`);
-        await res.json();
-        toast('Cart created from recipe ingredients.', 'ok');
-      } catch (err) {
-        toast(err.message || 'Cart creation failed.', 'err');
-      }
-    }
-
-    async function saveCurrentRecipe() {
-      if (!currentRecipe) {
-        toast('Generate a recipe first.', 'err');
-        return;
-      }
-      try {
-        const res = await fetch('/api/recipes/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentRecipe)
-        });
-        if (!res.ok) throw new Error(`Save failed with ${res.status}`);
-        toast('Recipe saved.', 'ok');
-      } catch (err) {
-        toast(err.message || 'Recipe save failed.', 'err');
-      }
-    }
-
-    async function planRoute() {
-      if (!currentStores.length) {
-        await findStores();
-      }
-      const loc = getDemoLocation();
-      const stops = currentStores.slice(0, 4);
-      if (!stops.length) {
-        toast('Find stores first, then plan route.', 'err');
-        return;
-      }
-      try {
-        const res = await fetch('/api/route/plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ start_lat: loc.latitude, start_lng: loc.longitude, stops })
-        });
-        if (!res.ok) throw new Error(`Route planning failed with ${res.status}`);
-        const route = await res.json();
-        toast(`Route ready with ${route.ordered_stops?.length || 0} stops.`, 'ok');
-      } catch (err) {
-        toast(err.message || 'Route planning failed.', 'err');
-      }
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
-    }
+    function metric(label, value) { return `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`; }
+    async function searchProduct(ingredient) { qs('productList').innerHTML = `<div class="item-card"><p>Searching products for ${escapeHtml(ingredient)}…</p></div>`; jumpToSection('productSection'); try { const res = await fetch('/api/products/search', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ ingredient }) }); if (!res.ok) throw new Error(`Product search failed with ${res.status}`); renderProducts(await res.json()); toast(`Product lookup complete for ${ingredient}.`, 'ok'); } catch (err) { toast(err.message || 'Product search failed.', 'err'); } }
+    function renderProducts(products) { if (!products || !products.length) { qs('productList').innerHTML = '<div class="item-card"><p>No products found.</p></div>'; return; } qs('productList').innerHTML = products.slice(0,8).map(p => `<div class="item-card"><strong>${escapeHtml(p.product_name || p.ingredient || 'Unknown product')}</strong><p>${escapeHtml(p.brand || 'Brand unavailable')}</p><div class="item-meta"><span class="mini-tag">${escapeHtml(p.source || 'source unknown')}</span><span class="mini-tag">${escapeHtml(p.availability || 'unknown availability')}</span>${p.barcode ? `<span class="mini-tag">${escapeHtml(p.barcode)}</span>` : ''}</div></div>`).join(''); }
+    function getDemoLocation() { return currentLocation || { latitude:43.0481, longitude:-76.1474, label:'Syracuse demo location' }; }
+    function useLocation() { if (!navigator.geolocation) { currentLocation = getDemoLocation(); updateLocationStatus(); toast('Geolocation unavailable. Using Syracuse demo location.', 'err'); return; } navigator.geolocation.getCurrentPosition(pos => { currentLocation = { latitude:pos.coords.latitude, longitude:pos.coords.longitude, label:'Current location' }; updateLocationStatus(); findStores(); }, () => { currentLocation = getDemoLocation(); updateLocationStatus(); toast('Could not access location. Using Syracuse demo location.', 'err'); }, { enableHighAccuracy:true, timeout:8000 }); }
+    function updateLocationStatus() { const loc = getDemoLocation(); qs('locationStatus').textContent = `${loc.label}: ${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`; }
+    async function findStores() { const loc = getDemoLocation(); updateLocationStatus(); jumpToSection('storesSection'); qs('storeList').innerHTML = '<div class="item-card"><p>Finding nearby stores…</p></div>'; try { const res = await fetch('/api/stores/search', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ latitude:loc.latitude, longitude:loc.longitude, radius_meters:5000, query:'grocery' }) }); if (!res.ok) throw new Error(`Store search failed with ${res.status}`); currentStores = await res.json(); renderStores(currentStores, loc); toast('Nearby stores loaded.', 'ok'); } catch (err) { toast(err.message || 'Store search failed.', 'err'); } }
+    function renderStores(stores, loc) { if (!stores || !stores.length) { qs('storeList').innerHTML = '<div class="item-card"><p>No stores found.</p></div>'; return; } qs('storeList').innerHTML = stores.slice(0,8).map(s => `<div class="item-card"><strong>${escapeHtml(s.name || 'Nearby store')}</strong><p>${escapeHtml(s.address || s.store_type || 'Address unavailable')}</p><div class="item-meta"><span class="mini-tag">${escapeHtml(s.source || 'openstreetmap')}</span>${s.opening_hours ? `<span class="mini-tag">${escapeHtml(s.opening_hours)}</span>` : ''}</div></div>`).join(''); renderMap(stores, loc); }
+    function renderMap(stores, loc) { if (!window.L) return; if (!map) { map = L.map('map', { scrollWheelZoom:false }).setView([loc.latitude, loc.longitude], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap' }).addTo(map); } map.setView([loc.latitude, loc.longitude], 13); if (storeLayer) storeLayer.remove(); storeLayer = L.layerGroup().addTo(map); L.marker([loc.latitude, loc.longitude]).bindPopup('Start location').addTo(storeLayer); stores.slice(0,25).forEach(s => { if (s.latitude && s.longitude) L.marker([s.latitude, s.longitude]).bindPopup(escapeHtml(s.name || 'Store')).addTo(storeLayer); }); setTimeout(() => map.invalidateSize(), 120); }
+    async function createCartFromRecipe() { if (!currentRecipe) { toast('Generate a recipe first, then build a cart.', 'err'); jumpToSection('composerSection'); return; } try { const res = await fetch('/api/carts', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ name:`${currentRecipe.title || 'GlucoPlate'} cart`, items:(currentRecipe.ingredients || []).map(name => ({ name, quantity:1 })) }) }); if (!res.ok) throw new Error(`Cart creation failed with ${res.status}`); await res.json(); toast('Cart created from recipe ingredients.', 'ok'); } catch (err) { toast(err.message || 'Cart creation failed.', 'err'); } }
+    async function saveCurrentRecipe() { if (!currentRecipe) { toast('Generate a recipe first.', 'err'); jumpToSection('composerSection'); return; } try { const res = await fetch('/api/recipes/save', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(currentRecipe) }); if (!res.ok) throw new Error(`Save failed with ${res.status}`); toast('Recipe saved.', 'ok'); } catch (err) { toast(err.message || 'Recipe save failed.', 'err'); } }
+    async function planRoute() { if (!currentStores.length) await findStores(); const loc = getDemoLocation(); const stops = currentStores.slice(0,4); if (!stops.length) { toast('Find stores first, then plan route.', 'err'); return; } jumpToSection('mapSection'); try { const res = await fetch('/api/route/plan', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ start_lat:loc.latitude, start_lng:loc.longitude, stops }) }); if (!res.ok) throw new Error(`Route planning failed with ${res.status}`); const route = await res.json(); toast(`Route ready with ${route.ordered_stops?.length || 0} stops.`, 'ok'); } catch (err) { toast(err.message || 'Route planning failed.', 'err'); } }
+    function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c])); }
     function escapeAttr(value) { return escapeHtml(value).replace(/`/g, '&#96;'); }
-
-    initTheme();
-    checkProviderHealth();
-    updateLocationStatus();
+    initTheme(); checkProviderHealth(); updateLocationStatus(); jumpToSection('composerSection');
   </script>
 </body>
 </html>
