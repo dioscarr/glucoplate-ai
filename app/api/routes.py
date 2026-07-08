@@ -1,19 +1,19 @@
 from fastapi import APIRouter, Query
 
+from app.core.secrets import get_secret
 from app.schemas.recipe import RecipeRequest, RecipeResponse
+from app.schemas.recipe_image import RecipeImageRequest
 from app.schemas.store import ProductAvailability, ProductSearchRequest, Store, StoreSearchRequest
+from app.services.cart_store_service import CartStoreService
+from app.services.gallery_job_service import GalleryJobService
+from app.services.ingredient_normalizer import normalize_ingredients
 from app.services.price_availability_service import PriceAvailabilityService
 from app.services.recipe_generator import generate_recipe
-from app.services.store_locator_service import StoreLocatorService
-from app.services.recipe_gallery_service import RecipeGalleryService
 from app.services.recipe_store_service import RecipeStoreService
-from app.services.cart_store_service import CartStoreService
-from app.services.store_locator_service import StoreLocatorService
+from app.services.recents_service import RecentsService
 from app.services.route_service import RouteService
+from app.services.store_locator_service import StoreLocatorService
 from app.services.web_scraper_service import fetch_metadata
-from app.services.ingredient_normalizer import normalize_ingredients
-from app.schemas.recipe_image import RecipeImageRequest, RecipeGalleryResponse
-from app.schemas.store import StoreSearchRequest, Store
 
 router = APIRouter(prefix="/api")
 
@@ -36,18 +36,18 @@ def search_products_endpoint(request: ProductSearchRequest) -> list[ProductAvail
     return PriceAvailabilityService().search(request)
 
 
-from app.services.gallery_job_service import GalleryJobService
-
-
 @router.post("/recipes/gallery")
 def enqueue_recipe_gallery(request: RecipeImageRequest):
-    """Enqueue an image generation job and return a job_id. Use GET /api/recipes/gallery/{job_id} to poll."""
+    """Enqueue an image generation job and return a job_id.
+
+    Use GET /api/recipes/gallery/{job_id} to poll.
+    """
     job_svc = GalleryJobService()
-    job_id = job_svc.enqueue(request.dict() if hasattr(request, 'dict') else dict(request))
+    job_id = job_svc.enqueue(request.dict() if hasattr(request, "dict") else dict(request))
     return {"ok": True, "job_id": job_id}
 
 
-@router.get('/recipes/gallery/{job_id}')
+@router.get("/recipes/gallery/{job_id}")
 def get_gallery_job(job_id: str):
     job_svc = GalleryJobService()
     job = job_svc.get(job_id)
@@ -70,73 +70,71 @@ def list_recipes_endpoint():
     return svc.list()
 
 
-# Recents: simple file-backed list of generated recipe summaries
-from app.services.recents_service import RecentsService
-
-
-@router.post('/recipes/recents')
+@router.post("/recipes/recents")
 def add_recent(recipe: dict):
+    """Add a generated recipe summary to recents."""
     svc = RecentsService()
     entry = svc.add(recipe)
-    return {'ok': True, 'recent': entry}
+    return {"ok": True, "recent": entry}
 
 
-@router.get('/recipes/recents')
+@router.get("/recipes/recents")
 def list_recents(limit: int = 20):
     svc = RecentsService()
     return svc.list(limit=limit)
 
 
-@router.post('/carts', response_model=dict)
+@router.post("/carts", response_model=dict)
 def create_cart(cart: dict):
     svc = CartStoreService()
     created = svc.create(cart)
-    return {'ok': True, 'cart': created}
+    return {"ok": True, "cart": created}
 
 
-@router.get('/carts', response_model=list)
+@router.get("/carts", response_model=list)
 def list_carts():
     svc = CartStoreService()
     return svc.list()
 
 
-@router.get('/carts/{cart_id}', response_model=dict)
+@router.get("/carts/{cart_id}", response_model=dict)
 def get_cart(cart_id: str):
     svc = CartStoreService()
     c = svc.get(cart_id)
     return c or {}
 
 
-@router.put('/carts/{cart_id}', response_model=dict)
+@router.put("/carts/{cart_id}", response_model=dict)
 def update_cart(cart_id: str, cart: dict):
     svc = CartStoreService()
     updated = svc.update(cart_id, cart)
-    return {'ok': bool(updated), 'cart': updated}
+    return {"ok": bool(updated), "cart": updated}
 
 
-@router.delete('/carts/{cart_id}', response_model=dict)
+@router.delete("/carts/{cart_id}", response_model=dict)
 def delete_cart(cart_id: str):
     svc = CartStoreService()
     deleted = svc.delete(cart_id)
-    return {'ok': bool(deleted)}
+    return {"ok": bool(deleted)}
 
 
-@router.post('/route/plan')
+@router.post("/route/plan")
 def plan_route(request: dict):
     """Plan an ordered route for the provided cart with stops as store IDs or coordinates.
+
     Request should include: start_lat, start_lng, stops: [{id, latitude, longitude, ...}]
     """
-    start_lat = request.get('start_lat')
-    start_lng = request.get('start_lng')
-    stops = [Store(**s) for s in request.get('stops', [])]
+    start_lat = request.get("start_lat")
+    start_lng = request.get("start_lng")
+    stops = [Store(**s) for s in request.get("stops", [])]
     rs = RouteService()
     return rs.plan_route(start_lat, start_lng, stops)
 
 
-@router.post('/stores/enrich')
+@router.post("/stores/enrich")
 def enrich_stores(request: dict):
-    """Given a list of stores (from OSM), enrich with website meta tags where available."""
-    stores = [Store(**s) for s in request.get('stores', [])]
+    """Given a list of stores from OSM, enrich with website meta tags when available."""
+    stores = [Store(**s) for s in request.get("stores", [])]
     enriched = []
     for s in stores:
         meta = {}
@@ -146,33 +144,23 @@ def enrich_stores(request: dict):
             except Exception:
                 meta = {}
         store = s.dict()
-        store['meta'] = meta
+        store["meta"] = meta
         enriched.append(store)
     return enriched
 
 
-@router.post('/ingredients/normalize')
+@router.post("/ingredients/normalize")
 def normalize_ingredients_endpoint(request: dict):
     """Normalize a list of ingredient strings into structured search terms."""
-    ingredients = request.get('ingredients') or []
+    ingredients = request.get("ingredients") or []
     result = normalize_ingredients(ingredients)
-    return {'normalized': result}
+    return {"normalized": result}
 
 
 @router.get("/ai/health")
 async def ai_health() -> dict:
     """Quick check of Copilot/Gemini provider availability."""
-    gemini_configured = False
-    try:
-        import os
-
-        gemini_configured = bool(
-            os.getenv("GEMINI_API_KEY")
-            or os.getenv("GOOGLE_API_KEY")
-            or os.getenv("GOOGLE_GEMINI_API_KEY")
-        )
-    except Exception:
-        gemini_configured = False
+    gemini_configured = bool(get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GEMINI_API_KEY"))
 
     try:
         import copilot  # type: ignore

@@ -1,5 +1,6 @@
-import os
 from typing import Literal
+
+from app.core.secrets import get_secret
 
 
 def _has_copilot() -> bool:
@@ -18,7 +19,7 @@ def _has_copilot() -> bool:
 
 
 def _has_gemini() -> bool:
-    return bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE_GEMINI_API_KEY"))
+    return bool(get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GEMINI_API_KEY"))
 
 
 def select_provider(prefer: str | None = "auto") -> Literal["copilot", "gemini", "local"]:
