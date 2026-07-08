@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.ai.recipe_orchestrator import RecipeOrchestrator
+from app.core.secrets import get_secret
 from app.schemas.recipe import RecipeRequest, RecipeResponse
 from app.schemas.store import ProductAvailability, ProductSearchRequest, Store, StoreSearchRequest
 from app.services.fallback_recipe_service import FallbackRecipeService
@@ -80,6 +81,20 @@ def test_recipe_orchestrator_exposes_expected_agent_chain() -> None:
     assert orchestrator.fallback_service is not None
 
 
+def test_secret_provider_reads_first_available_secret_name(monkeypatch) -> None:
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-google-key")
+
+    assert get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY") == "test-google-key"
+
+
+def test_secret_provider_returns_none_when_secret_is_missing(monkeypatch) -> None:
+    monkeypatch.delenv("MISSING_SECRET_A", raising=False)
+    monkeypatch.delenv("MISSING_SECRET_B", raising=False)
+
+    assert get_secret("MISSING_SECRET_A", "MISSING_SECRET_B") is None
+
+
 def test_static_ui_does_not_reintroduce_browser_dialogs() -> None:
     index_html = (ROOT / "app" / "static" / "index.html").read_text(encoding="utf-8")
 
@@ -103,3 +118,13 @@ def test_documentation_booklet_exists_for_architecture_context() -> None:
     assert "High-Level System Design" in text
     assert "Twenty Product Use Cases" in text
     assert "Architectural Design" in text
+
+
+def test_deployment_secrets_document_explains_github_usage() -> None:
+    doc = ROOT / "docs" / "DEPLOYMENT_SECRETS.md"
+
+    assert doc.exists()
+    text = doc.read_text(encoding="utf-8")
+    assert "GitHub Secrets" in text
+    assert "CI_NOTIFICATION_WEBHOOK_URL" in text
+    assert "GEMINI_API_KEY" in text
