@@ -68,7 +68,7 @@ async def log_requests(request: Request, call_next):
 
 @app.get("/", include_in_schema=False)
 def root() -> RedirectResponse:
-    return RedirectResponse(url="/static/modern.html")
+    return RedirectResponse(url="/static/index.html")
 
 
 @app.get("/health")
