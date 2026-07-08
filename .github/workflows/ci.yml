@@ -73,29 +73,30 @@ jobs:
       - name: Send CI notification
         if: env.CI_NOTIFICATION_WEBHOOK_URL != ''
         run: |
-          STATUS="success"
-          if [ "$INTEGRITY_RESULT" != "success" ] || [ "$INTEGRATION_RESULT" != "success" ]; then
-            STATUS="failure"
-          fi
-
-          MESSAGE="GlucoPlate AI CI ${STATUS}: integrity=${INTEGRITY_RESULT}, integration=${INTEGRATION_RESULT}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-
           python - <<'PY' > payload.json
           import json
           import os
 
-          message = os.environ["MESSAGE"]
+          integrity_result = os.environ["INTEGRITY_RESULT"]
+          integration_result = os.environ["INTEGRATION_RESULT"]
+          status = "success" if integrity_result == "success" and integration_result == "success" else "failure"
+          run_url = f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+          message = (
+              f"GlucoPlate AI CI {status}: "
+              f"integrity={integrity_result}, integration={integration_result}. "
+              f"Run: {run_url}"
+          )
           payload = {
               "project": "GlucoPlate AI",
               "repository": os.environ["GITHUB_REPOSITORY"],
               "workflow": os.environ["GITHUB_WORKFLOW"],
               "run_id": os.environ["GITHUB_RUN_ID"],
-              "run_url": f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              "run_url": run_url,
               "ref": os.environ["GITHUB_REF"],
               "sha": os.environ["GITHUB_SHA"],
-              "status": os.environ["STATUS"],
-              "integrity_result": os.environ["INTEGRITY_RESULT"],
-              "integration_result": os.environ["INTEGRATION_RESULT"],
+              "status": status,
+              "integrity_result": integrity_result,
+              "integration_result": integration_result,
               "content": message,
               "text": message,
           }
@@ -107,6 +108,3 @@ jobs:
             --header "Content-Type: application/json" \
             --data @payload.json \
             "$CI_NOTIFICATION_WEBHOOK_URL"
-        env:
-          STATUS: ${{ (needs.integrity.result == 'success' && needs.integration.result == 'success') && 'success' || 'failure' }}
-          MESSAGE: GlucoPlate AI CI notification
