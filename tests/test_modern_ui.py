@@ -43,6 +43,17 @@ def test_modern_product_shell_has_mobile_navigation() -> None:
     assert "mapSection" in html
 
 
+def test_modern_product_shell_has_ios_style_glass_motion() -> None:
+    html = (ROOT / "app" / "static" / "modern.html").read_text(encoding="utf-8")
+
+    assert "ambient-orb" in html
+    assert "backdrop-filter:blur" in html
+    assert "@keyframes floatOrb" in html
+    assert "@keyframes cardLift" in html
+    assert "@keyframes shimmer" in html
+    assert "@media (prefers-reduced-motion: reduce)" in html
+
+
 def test_modern_product_shell_protects_connected_user_journey() -> None:
     html = (ROOT / "app" / "static" / "modern.html").read_text(encoding="utf-8")
 
