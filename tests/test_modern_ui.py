@@ -8,54 +8,54 @@ from app.main import app
 
 
 ROOT = Path(__file__).resolve().parents[1]
+INDEX_HTML = ROOT / "app" / "static" / "index.html"
 client = TestClient(app)
 
 
-def test_root_redirects_to_modern_product_shell() -> None:
+def test_root_redirects_to_single_index_page() -> None:
     response = client.get("/", follow_redirects=False)
 
     assert response.status_code in {302, 307}
-    assert response.headers["location"] == "/static/modern.html"
+    assert response.headers["location"] == "/static/index.html"
 
 
-def test_modern_product_shell_has_core_ux_anchors() -> None:
-    html = (ROOT / "app" / "static" / "modern.html").read_text(encoding="utf-8")
+def test_index_page_has_core_ux_anchors() -> None:
+    html = INDEX_HTML.read_text(encoding="utf-8")
 
     assert "Modern AI meal-planning workspace" in html
     assert "From meal idea to" in html
     assert "Build today’s plate" in html
     assert "Recipe workspace" in html
     assert "Shopping control center" in html
-    assert "Classic UI" in html
 
 
-def test_modern_product_shell_has_mobile_navigation() -> None:
-    html = (ROOT / "app" / "static" / "modern.html").read_text(encoding="utf-8")
+def test_index_page_has_mobile_navigation() -> None:
+    html = INDEX_HTML.read_text(encoding="utf-8")
 
-    assert "mobile-dock" in html
+    assert "dock" in html
     assert "Mobile app navigation" in html
     assert "Mobile section shortcuts" in html
     assert "jumpToSection" in html
-    assert "composerSection" in html
-    assert "recipeWorkspace" in html
-    assert "productSection" in html
-    assert "storesSection" in html
+    assert "composer" in html
+    assert "recipe" in html
+    assert "products" in html
+    assert "stores" in html
     assert "mapSection" in html
 
 
-def test_modern_product_shell_has_ios_style_glass_motion() -> None:
-    html = (ROOT / "app" / "static" / "modern.html").read_text(encoding="utf-8")
+def test_index_page_has_ios_style_glass_motion() -> None:
+    html = INDEX_HTML.read_text(encoding="utf-8")
 
-    assert "ambient-orb" in html
+    assert "orb" in html
     assert "backdrop-filter:blur" in html
     assert "@keyframes floatOrb" in html
     assert "@keyframes cardLift" in html
     assert "@keyframes shimmer" in html
-    assert "@media (prefers-reduced-motion: reduce)" in html
+    assert "@media(prefers-reduced-motion:reduce)" in html
 
 
-def test_modern_product_shell_protects_connected_user_journey() -> None:
-    html = (ROOT / "app" / "static" / "modern.html").read_text(encoding="utf-8")
+def test_index_page_protects_connected_user_journey() -> None:
+    html = INDEX_HTML.read_text(encoding="utf-8")
 
     assert "/api/recipes/generate" in html
     assert "/api/products/search" in html
@@ -65,8 +65,8 @@ def test_modern_product_shell_protects_connected_user_journey() -> None:
     assert "/api/ai/health" in html
 
 
-def test_modern_product_shell_uses_toast_not_browser_dialogs() -> None:
-    html = (ROOT / "app" / "static" / "modern.html").read_text(encoding="utf-8")
+def test_index_page_uses_toast_not_browser_dialogs() -> None:
+    html = INDEX_HTML.read_text(encoding="utf-8")
 
     assert "function toast" in html
     assert "alert(" not in html
@@ -74,9 +74,13 @@ def test_modern_product_shell_uses_toast_not_browser_dialogs() -> None:
     assert "prompt(" not in html
 
 
-def test_modern_product_shell_is_served_with_no_cache_headers() -> None:
-    response = client.get("/static/modern.html")
+def test_index_page_is_served_with_no_cache_headers() -> None:
+    response = client.get("/static/index.html")
 
     assert response.status_code == 200
     assert "GlucoPlate AI" in response.text
     assert response.headers["cache-control"] == "no-cache, no-store, must-revalidate"
+
+
+def test_duplicate_modern_entry_page_does_not_exist() -> None:
+    assert not (ROOT / "app" / "static" / "modern.html").exists()
