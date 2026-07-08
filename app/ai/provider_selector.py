@@ -2,6 +2,8 @@ from typing import Literal
 
 from app.core.secrets import get_secret
 
+ProviderName = Literal["copilot", "gemini", "local"]
+
 
 def _has_copilot() -> bool:
     try:
@@ -22,24 +24,34 @@ def _has_gemini() -> bool:
     return bool(get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GEMINI_API_KEY"))
 
 
-def select_provider(prefer: str | None = "auto") -> Literal["copilot", "gemini", "local"]:
+def available_providers() -> list[ProviderName]:
+    """Return configured AI providers in preferred runtime order."""
+    providers: list[ProviderName] = []
+    if _has_gemini():
+        providers.append("gemini")
+    if _has_copilot():
+        providers.append("copilot")
+    providers.append("local")
+    return providers
+
+
+def select_provider(prefer: str | None = "auto") -> ProviderName:
     """Select the best available AI provider.
 
-    prefer: 'auto'|'copilot'|'gemini'|'local' - if 'auto', prefer Copilot then Gemini then local.
+    prefer: 'auto'|'gemini'|'copilot'|'local'.
 
-    Returns one of: 'copilot', 'gemini', or 'local'.
+    Auto mode intentionally prefers Gemini before Copilot because Gemini is the deployed
+    runtime provider configured through normal API keys. Copilot is useful for local/dev
+    experimentation, but it may appear installed while not being usable in production.
     """
     p = (prefer or "auto").lower()
+    providers = available_providers()
+
     if p == "local":
         return "local"
-    if p == "copilot":
-        return "copilot" if _has_copilot() else ("gemini" if _has_gemini() else "local")
-    if p == "gemini":
-        return "gemini" if _has_gemini() else ("copilot" if _has_copilot() else "local")
+    if p in {"gemini", "copilot"} and p in providers:
+        return p  # type: ignore[return-value]
+    if p in {"gemini", "copilot"}:
+        return providers[0]
 
-    # auto
-    if _has_copilot():
-        return "copilot"
-    if _has_gemini():
-        return "gemini"
-    return "local"
+    return providers[0]
