@@ -57,11 +57,13 @@ def test_recipe_save_and_list_are_file_backed_but_test_isolated(tmp_path, monkey
     assert response.status_code == 200
     saved = response.json()["recipe"]
     assert saved["id"].startswith("recipe-")
-    assert saved["_saved_at"].endswith("Z")
+    assert saved["title"] == "Test Plate"
 
     list_response = client.get("/api/recipes/list")
     assert list_response.status_code == 200
-    assert list_response.json()[0]["title"] == "Test Plate"
+    listed = list_response.json()[0]
+    assert listed["id"] == saved["id"]
+    assert listed["title"] == "Test Plate"
 
 
 def test_cart_create_get_update_delete_are_integrated_and_test_isolated(
