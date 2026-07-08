@@ -29,6 +29,20 @@ def test_modern_product_shell_has_core_ux_anchors() -> None:
     assert "Classic UI" in html
 
 
+def test_modern_product_shell_has_mobile_navigation() -> None:
+    html = (ROOT / "app" / "static" / "modern.html").read_text(encoding="utf-8")
+
+    assert "mobile-dock" in html
+    assert "Mobile app navigation" in html
+    assert "Mobile section shortcuts" in html
+    assert "jumpToSection" in html
+    assert "composerSection" in html
+    assert "recipeWorkspace" in html
+    assert "productSection" in html
+    assert "storesSection" in html
+    assert "mapSection" in html
+
+
 def test_modern_product_shell_protects_connected_user_journey() -> None:
     html = (ROOT / "app" / "static" / "modern.html").read_text(encoding="utf-8")
 
