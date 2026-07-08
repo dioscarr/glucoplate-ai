@@ -53,7 +53,12 @@ def test_fallback_recipe_response_matches_public_contract() -> None:
 
 def test_store_and_product_contracts_preserve_source_and_uncertainty() -> None:
     store_request = StoreSearchRequest(latitude=43.0481, longitude=-76.1474)
-    store = Store(id="1", name="Test Store", latitude=store_request.latitude, longitude=store_request.longitude)
+    store = Store(
+        id="1",
+        name="Test Store",
+        latitude=store_request.latitude,
+        longitude=store_request.longitude,
+    )
     product_request = ProductSearchRequest(ingredient="beans")
     product = ProductAvailability(ingredient=product_request.ingredient, source="openfoodfacts")
 
