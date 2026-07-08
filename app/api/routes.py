@@ -21,9 +21,13 @@ router = APIRouter(prefix="/api")
 @router.post("/recipes/generate", response_model=RecipeResponse)
 async def generate_recipe_endpoint(
     request: RecipeRequest,
-    use_ai: bool = Query(default=True, description="Use Copilot SDK provider when available."),
+    use_ai: bool = Query(default=True, description="Use configured AI provider when available."),
+    provider: str = Query(
+        default="auto",
+        description="Preferred provider: auto, gemini, copilot, or local.",
+    ),
 ) -> RecipeResponse:
-    return await generate_recipe(request, use_ai=use_ai)
+    return await generate_recipe(request, use_ai=use_ai, provider=provider)
 
 
 @router.post("/stores/search", response_model=list[Store])
@@ -160,19 +164,26 @@ def normalize_ingredients_endpoint(request: dict):
 @router.get("/ai/health")
 async def ai_health() -> dict:
     """Quick check of Copilot/Gemini provider availability."""
+    from app.ai.provider_selector import available_providers, select_provider
+
     gemini_configured = bool(get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GEMINI_API_KEY"))
 
     try:
         import copilot  # type: ignore
 
-        return {
-            "copilot_installed": True,
-            "gemini_configured": gemini_configured,
-            "version": getattr(copilot, "__version__", None),
-        }
+        copilot_installed = True
+        copilot_error = None
+        copilot_version = getattr(copilot, "__version__", None)
     except Exception as exc:  # pragma: no cover - runtime environment dependent
-        return {
-            "copilot_installed": False,
-            "gemini_configured": gemini_configured,
-            "error": str(exc),
-        }
+        copilot_installed = False
+        copilot_error = str(exc)
+        copilot_version = None
+
+    return {
+        "selected_provider": select_provider("auto"),
+        "available_providers": available_providers(),
+        "gemini_configured": gemini_configured,
+        "copilot_installed": copilot_installed,
+        "copilot_version": copilot_version,
+        "copilot_error": copilot_error,
+    }
