@@ -11,9 +11,9 @@ from app.logging_config import setup_logging
 setup_logging()
 
 app = FastAPI(
-    title="ReceiptAI",
-    description="Receipt capture, organization, search, and spending intelligence API.",
-    version="0.2.0",
+    title="GlucoPlate AI",
+    description="AI-powered recipe generation, personalization, saving, and grocery planning API.",
+    version="0.3.0",
 )
 
 app.include_router(router)
@@ -50,8 +50,8 @@ async def log_requests(request: Request, call_next):
         path = request.url.path or ""
         method = request.method or ""
         tracked_routes = [
-            "/api/receipts",
             "/api/recipes",
+            "/api/ingredients",
             "/api/carts",
             "/api/products",
             "/api/stores",
@@ -78,4 +78,4 @@ def root() -> RedirectResponse:
 
 @app.get("/health")
 def health_check() -> dict[str, str]:
-    return {"status": "healthy", "product": "ReceiptAI"}
+    return {"status": "healthy", "product": "GlucoPlate AI"}
