@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from app.core.secrets import get_secret
+from app.schemas.receipt import Receipt, ReceiptExtractRequest, ReceiptSummary
 from app.schemas.recipe import RecipeRequest, RecipeResponse
 from app.schemas.recipe_image import RecipeImageRequest
 from app.schemas.store import ProductAvailability, ProductSearchRequest, Store, StoreSearchRequest
@@ -8,6 +9,8 @@ from app.services.cart_store_service import CartStoreService
 from app.services.gallery_job_service import GalleryJobService
 from app.services.ingredient_normalizer import normalize_ingredients
 from app.services.price_availability_service import PriceAvailabilityService
+from app.services.receipt_parser_service import ReceiptParserService
+from app.services.receipt_store_service import ReceiptStoreService
 from app.services.recipe_generator import generate_recipe
 from app.services.recipe_store_service import RecipeStoreService
 from app.services.recents_service import RecentsService
@@ -16,6 +19,54 @@ from app.services.store_locator_service import StoreLocatorService
 from app.services.web_scraper_service import fetch_metadata
 
 router = APIRouter(prefix="/api")
+
+
+@router.post("/receipts/extract", response_model=Receipt)
+def extract_receipt(request: ReceiptExtractRequest) -> Receipt:
+    return ReceiptParserService().extract(request.text)
+
+
+@router.post("/receipts/save", response_model=dict)
+def save_receipt(receipt: Receipt) -> dict:
+    return {"ok": True, "receipt": ReceiptStoreService().save(receipt)}
+
+
+@router.get("/receipts", response_model=list[dict])
+def list_receipts(
+    merchant: str | None = None,
+    category: str | None = None,
+    search: str | None = None,
+) -> list[dict]:
+    return ReceiptStoreService().list(merchant=merchant, category=category, search=search)
+
+
+@router.get("/receipts/summary", response_model=ReceiptSummary)
+def receipt_summary() -> ReceiptSummary:
+    return ReceiptStoreService().summary()
+
+
+@router.get("/receipts/{receipt_id}", response_model=dict)
+def get_receipt(receipt_id: str) -> dict:
+    receipt = ReceiptStoreService().get(receipt_id)
+    if receipt is None:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+    return receipt
+
+
+@router.put("/receipts/{receipt_id}", response_model=dict)
+def update_receipt(receipt_id: str, receipt: Receipt) -> dict:
+    updated = ReceiptStoreService().update(receipt_id, receipt)
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+    return {"ok": True, "receipt": updated}
+
+
+@router.delete("/receipts/{receipt_id}", response_model=dict)
+def delete_receipt(receipt_id: str) -> dict:
+    deleted = ReceiptStoreService().delete(receipt_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+    return {"ok": True}
 
 
 @router.post("/recipes/generate", response_model=RecipeResponse)
@@ -42,10 +93,6 @@ def search_products_endpoint(request: ProductSearchRequest) -> list[ProductAvail
 
 @router.post("/recipes/gallery")
 def enqueue_recipe_gallery(request: RecipeImageRequest):
-    """Enqueue an image generation job and return a job_id.
-
-    Use GET /api/recipes/gallery/{job_id} to poll.
-    """
     job_svc = GalleryJobService()
     job_id = job_svc.enqueue(request.dict() if hasattr(request, "dict") else dict(request))
     return {"ok": True, "job_id": job_id}
@@ -53,8 +100,7 @@ def enqueue_recipe_gallery(request: RecipeImageRequest):
 
 @router.get("/recipes/gallery/{job_id}")
 def get_gallery_job(job_id: str):
-    job_svc = GalleryJobService()
-    job = job_svc.get(job_id)
+    job = GalleryJobService().get(job_id)
     if not job:
         return {"ok": False, "error": "not found"}
     return job
@@ -62,119 +108,92 @@ def get_gallery_job(job_id: str):
 
 @router.post("/recipes/save")
 def save_recipe_endpoint(recipe: dict):
-    """Save a generated recipe to the local JSON store."""
-    svc = RecipeStoreService()
-    saved = svc.save(recipe)
-    return {"ok": True, "recipe": saved}
+    return {"ok": True, "recipe": RecipeStoreService().save(recipe)}
 
 
 @router.get("/recipes/list")
 def list_recipes_endpoint():
-    svc = RecipeStoreService()
-    return svc.list()
+    return RecipeStoreService().list()
 
 
 @router.post("/recipes/recents")
 def add_recent(recipe: dict):
-    """Add a generated recipe summary to recents."""
-    svc = RecentsService()
-    entry = svc.add(recipe)
-    return {"ok": True, "recent": entry}
+    return {"ok": True, "recent": RecentsService().add(recipe)}
 
 
 @router.get("/recipes/recents")
 def list_recents(limit: int = 20):
-    svc = RecentsService()
-    return svc.list(limit=limit)
+    return RecentsService().list(limit=limit)
 
 
 @router.post("/carts", response_model=dict)
 def create_cart(cart: dict):
-    svc = CartStoreService()
-    created = svc.create(cart)
-    return {"ok": True, "cart": created}
+    return {"ok": True, "cart": CartStoreService().create(cart)}
 
 
 @router.get("/carts", response_model=list)
 def list_carts():
-    svc = CartStoreService()
-    return svc.list()
+    return CartStoreService().list()
 
 
 @router.get("/carts/{cart_id}", response_model=dict)
 def get_cart(cart_id: str):
-    svc = CartStoreService()
-    c = svc.get(cart_id)
-    return c or {}
+    return CartStoreService().get(cart_id) or {}
 
 
 @router.put("/carts/{cart_id}", response_model=dict)
 def update_cart(cart_id: str, cart: dict):
-    svc = CartStoreService()
-    updated = svc.update(cart_id, cart)
+    updated = CartStoreService().update(cart_id, cart)
     return {"ok": bool(updated), "cart": updated}
 
 
 @router.delete("/carts/{cart_id}", response_model=dict)
 def delete_cart(cart_id: str):
-    svc = CartStoreService()
-    deleted = svc.delete(cart_id)
-    return {"ok": bool(deleted)}
+    return {"ok": bool(CartStoreService().delete(cart_id))}
 
 
 @router.post("/route/plan")
 def plan_route(request: dict):
-    """Plan an ordered route for the provided cart with stops as store IDs or coordinates.
-
-    Request should include: start_lat, start_lng, stops: [{id, latitude, longitude, ...}]
-    """
     start_lat = request.get("start_lat")
     start_lng = request.get("start_lng")
-    stops = [Store(**s) for s in request.get("stops", [])]
-    rs = RouteService()
-    return rs.plan_route(start_lat, start_lng, stops)
+    stops = [Store(**store) for store in request.get("stops", [])]
+    return RouteService().plan_route(start_lat, start_lng, stops)
 
 
 @router.post("/stores/enrich")
 def enrich_stores(request: dict):
-    """Given a list of stores from OSM, enrich with website meta tags when available."""
-    stores = [Store(**s) for s in request.get("stores", [])]
+    stores = [Store(**store) for store in request.get("stores", [])]
     enriched = []
-    for s in stores:
+    for store in stores:
         meta = {}
-        if s.website:
+        if store.website:
             try:
-                meta = fetch_metadata(s.website)
+                meta = fetch_metadata(store.website)
             except Exception:
                 meta = {}
-        store = s.dict()
-        store["meta"] = meta
-        enriched.append(store)
+        payload = store.dict()
+        payload["meta"] = meta
+        enriched.append(payload)
     return enriched
 
 
 @router.post("/ingredients/normalize")
 def normalize_ingredients_endpoint(request: dict):
-    """Normalize a list of ingredient strings into structured search terms."""
-    ingredients = request.get("ingredients") or []
-    result = normalize_ingredients(ingredients)
-    return {"normalized": result}
+    return {"normalized": normalize_ingredients(request.get("ingredients") or [])}
 
 
 @router.get("/ai/health")
 async def ai_health() -> dict:
-    """Quick check of Copilot/Gemini provider availability."""
     from app.ai.provider_selector import available_providers, select_provider
 
     gemini_configured = bool(get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GEMINI_API_KEY"))
-
     try:
         import copilot  # type: ignore
 
         copilot_installed = True
         copilot_error = None
         copilot_version = getattr(copilot, "__version__", None)
-    except Exception as exc:  # pragma: no cover - runtime environment dependent
+    except Exception as exc:  # pragma: no cover
         copilot_installed = False
         copilot_error = str(exc)
         copilot_version = None

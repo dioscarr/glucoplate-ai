@@ -1,7 +1,7 @@
 [project]
-name = "glucoplate-ai"
-version = "0.1.0"
-description = "AI-powered diabetes-friendly recipe and meal-planning system."
+name = "receipt-ai"
+version = "0.2.0"
+description = "Receipt capture, organization, search, and spending intelligence app."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
