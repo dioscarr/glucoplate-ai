@@ -1,0 +1,113 @@
+name: Live Render Smoke Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 */6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-render-smoke-test
+  cancel-in-progress: true
+
+jobs:
+  smoke-test:
+    name: Test deployed GlucoPlate app
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: https://glucoplate-ai.onrender.com
+
+    steps:
+      - name: Wake Render and verify health
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body \
+            --location \
+            --retry 12 \
+            --retry-all-errors \
+            --retry-delay 10 \
+            --connect-timeout 15 \
+            --max-time 180 \
+            "$BASE_URL/health" \
+            --output health.json
+
+          python - <<'PY'
+          import json
+
+          with open("health.json", encoding="utf-8") as file:
+              payload = json.load(file)
+
+          assert payload.get("status") == "healthy", payload
+          assert payload.get("product") == "GlucoPlate AI", payload
+          print("Health check passed:", payload)
+          PY
+
+      - name: Verify recipe-first web experience
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body \
+            --location \
+            --retry 3 \
+            --retry-all-errors \
+            --retry-delay 5 \
+            --connect-timeout 15 \
+            --max-time 90 \
+            "$BASE_URL/static/index.html" \
+            --output index.html
+
+          grep -q "GlucoPlate AI" index.html
+          grep -qi "recipe" index.html
+          if grep -qi "ReceiptAI" index.html; then
+            echo "ReceiptAI branding is still present in the deployed UI."
+            exit 1
+          fi
+
+      - name: Verify recipe generation API without paid AI
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body \
+            --location \
+            --retry 3 \
+            --retry-all-errors \
+            --retry-delay 5 \
+            --connect-timeout 15 \
+            --max-time 120 \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data '{"goal":"quick chicken and rice dinner","servings":2,"preferences":["simple"],"avoid_ingredients":[],"culture":"Dominican"}' \
+            "$BASE_URL/api/recipes/generate?use_ai=false&provider=local" \
+            --output recipe.json
+
+          python - <<'PY'
+          import json
+
+          with open("recipe.json", encoding="utf-8") as file:
+              payload = json.load(file)
+
+          required = ("title", "summary", "ingredients", "steps")
+          missing = [field for field in required if not payload.get(field)]
+          assert not missing, {"missing": missing, "payload": payload}
+          assert isinstance(payload["ingredients"], list), payload
+          assert isinstance(payload["steps"], list), payload
+          print("Recipe generation smoke test passed:", payload["title"])
+          PY
+
+      - name: Publish diagnostic files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-smoke-test-output
+          path: |
+            health.json
+            index.html
+            recipe.json
+          if-no-files-found: ignore
+          retention-days: 7
