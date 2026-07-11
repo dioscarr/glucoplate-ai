@@ -2,9 +2,14 @@ from pydantic import BaseModel, Field
 
 
 class RecipeRequest(BaseModel):
-    goal: str = Field(..., examples=["quick Dominican-style dinner"])
+    goal: str = Field(..., examples=["quick Dominican-style dinner with chicken and rice"])
     servings: int = Field(default=2, ge=1, le=12)
-    max_carbs_per_serving: int | None = Field(default=45, ge=0, le=150)
+    max_carbs_per_serving: int | None = Field(
+        default=None,
+        ge=0,
+        le=150,
+        description="Optional nutrition preference, not a required health target.",
+    )
     preferences: list[str] = Field(default_factory=list)
     avoid_ingredients: list[str] = Field(default_factory=list)
     culture: str | None = Field(default=None, examples=["Dominican", "Latin", "Mediterranean"])
