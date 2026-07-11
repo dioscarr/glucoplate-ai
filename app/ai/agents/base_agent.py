@@ -10,7 +10,8 @@ class BaseAgent:
         self.client = client or CopilotAgentClient()
 
     def load_prompt_template(self) -> str:
-        path = Path("prompts") / self.prompt_file
+        project_root = Path(__file__).resolve().parents[3]
+        path = project_root / "prompts" / self.prompt_file
         return path.read_text(encoding="utf-8")
 
     async def run(self, context: str) -> str:
