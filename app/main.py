@@ -11,9 +11,9 @@ from app.logging_config import setup_logging
 setup_logging()
 
 app = FastAPI(
-    title="GlucoPlate AI",
-    description="AI-powered diabetes-friendly recipe and meal-planning system.",
-    version="0.1.0",
+    title="ReceiptAI",
+    description="Receipt capture, organization, search, and spending intelligence API.",
+    version="0.2.0",
 )
 
 app.include_router(router)
@@ -43,24 +43,29 @@ async def log_requests(request: Request, call_next):
         duration=duration_ms,
     )
 
-    # Update agent memory for key actions to keep short/long-term context fresh.
     try:
         from app.ai.agent_memory import AgentMemory
-        am = AgentMemory()
-        path = request.url.path or ''
-        method = request.method or ''
-        # Only record POST/PUT actions on important routes to avoid noise
-        if method in ('POST', 'PUT') and any(p in path for p in ['/api/recipes', '/api/carts', '/api/products', '/api/stores', '/api/recipes/gallery']):
+
+        memory = AgentMemory()
+        path = request.url.path or ""
+        method = request.method or ""
+        tracked_routes = [
+            "/api/receipts",
+            "/api/recipes",
+            "/api/carts",
+            "/api/products",
+            "/api/stores",
+        ]
+        if method in ("POST", "PUT", "DELETE") and any(route in path for route in tracked_routes):
             try:
-                # Read small payload safely
                 body = await request.body()
-                summary = f"{method} {path} payload_len={len(body)} status={response.status_code}"
-                # Add short fact to memory
-                am.add_memory(summary, tags=['api_event'])
+                memory.add_memory(
+                    f"{method} {path} payload_len={len(body)} status={response.status_code}",
+                    tags=["api_event"],
+                )
             except Exception:
-                am.add_memory(f"{method} {path} (payload unreadable)", tags=['api_event'])
+                memory.add_memory(f"{method} {path} (payload unreadable)", tags=["api_event"])
     except Exception:
-        # Don't break requests if memory subsystem fails
         pass
 
     return response
@@ -73,4 +78,4 @@ def root() -> RedirectResponse:
 
 @app.get("/health")
 def health_check() -> dict[str, str]:
-    return {"status": "healthy"}
+    return {"status": "healthy", "product": "ReceiptAI"}
