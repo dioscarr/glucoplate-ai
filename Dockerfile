@@ -13,6 +13,7 @@ RUN apt-get update \
 COPY pyproject.toml README.md ./
 COPY app ./app
 COPY docs ./docs
+COPY prompts ./prompts
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -e .
