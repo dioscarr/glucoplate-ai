@@ -3,12 +3,13 @@ import importlib
 from app.core.secrets import get_secret
 
 
-_CURRENT_FLASH_MODEL = "gemini-flash-latest"
-_RETIRED_MODEL_REPLACEMENTS = {
-    "gemini-1.5-flash": _CURRENT_FLASH_MODEL,
-    "gemini-2.0-flash": _CURRENT_FLASH_MODEL,
-    "gemini-2.5-flash": _CURRENT_FLASH_MODEL,
-    "gemini-2.5-flash-latest": _CURRENT_FLASH_MODEL,
+_CURRENT_STABLE_MODEL = "gemini-3.5-flash"
+_MODEL_REPLACEMENTS = {
+    "gemini-1.5-flash": _CURRENT_STABLE_MODEL,
+    "gemini-2.0-flash": _CURRENT_STABLE_MODEL,
+    "gemini-2.5-flash": _CURRENT_STABLE_MODEL,
+    "gemini-2.5-flash-latest": _CURRENT_STABLE_MODEL,
+    "gemini-flash-latest": _CURRENT_STABLE_MODEL,
 }
 
 
@@ -17,8 +18,8 @@ def generate_text(prompt: str) -> str:
     if not api_key:
         raise RuntimeError("Gemini API key is not configured")
 
-    configured_model = get_secret("GEMINI_MODEL") or _CURRENT_FLASH_MODEL
-    model = _RETIRED_MODEL_REPLACEMENTS.get(configured_model, configured_model)
+    configured_model = get_secret("GEMINI_MODEL") or _CURRENT_STABLE_MODEL
+    model = _MODEL_REPLACEMENTS.get(configured_model, configured_model)
 
     module = importlib.import_module("google.genai")
     types_module = importlib.import_module("google.genai.types")
