@@ -85,7 +85,11 @@ def _client_and_model() -> tuple[Any, str]:
         raise RuntimeError("Gemini API key is not configured")
 
     module = importlib.import_module("google.genai")
-    client = module.Client(api_key=api_key)
+    types_module = importlib.import_module("google.genai.types")
+    client = module.Client(
+        api_key=api_key,
+        http_options=types_module.HttpOptions(api_version="v1"),
+    )
 
     models = list(client.models.list())
     available_models = sorted(
