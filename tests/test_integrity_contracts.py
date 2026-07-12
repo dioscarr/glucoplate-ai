@@ -70,15 +70,11 @@ def test_store_and_product_contracts_preserve_source_and_uncertainty() -> None:
     assert product.currency is None
 
 
-def test_recipe_orchestrator_exposes_expected_agent_chain() -> None:
+def test_recipe_orchestrator_exposes_local_fallback() -> None:
     orchestrator = RecipeOrchestrator()
 
-    assert orchestrator.planner_agent is not None
-    assert orchestrator.recipe_agent is not None
-    assert orchestrator.nutrition_agent is not None
-    assert orchestrator.safety_agent is not None
-    assert orchestrator.reviewer_agent is not None
     assert orchestrator.fallback_service is not None
+    assert not hasattr(orchestrator, "planner_agent")
 
 
 def test_secret_provider_reads_first_available_secret_name(monkeypatch) -> None:
