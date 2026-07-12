@@ -3,11 +3,6 @@ from typing import Any
 
 from loguru import logger
 
-from app.ai.agents.nutrition_agent import NutritionAgent
-from app.ai.agents.planner_agent import PlannerAgent
-from app.ai.agents.recipe_agent import RecipeAgent
-from app.ai.agents.reviewer_agent import ReviewerAgent
-from app.ai.agents.safety_agent import SafetyAgent
 from app.ai.gemini_adapter import generate_text
 from app.ai.json_utils import extract_json_text
 from app.schemas.recipe import RecipeRequest, RecipeResponse
@@ -15,22 +10,9 @@ from app.services.fallback_recipe_service import FallbackRecipeService
 
 
 class RecipeOrchestrator:
-    """Coordinates AI generation with local fallback support."""
+    """Generate recipes with Gemini and fall back locally when Gemini is unavailable."""
 
-    def __init__(
-        self,
-        planner_agent: PlannerAgent | None = None,
-        recipe_agent: RecipeAgent | None = None,
-        nutrition_agent: NutritionAgent | None = None,
-        safety_agent: SafetyAgent | None = None,
-        reviewer_agent: ReviewerAgent | None = None,
-        fallback_service: FallbackRecipeService | None = None,
-    ) -> None:
-        self.planner_agent = planner_agent or PlannerAgent()
-        self.recipe_agent = recipe_agent or RecipeAgent()
-        self.nutrition_agent = nutrition_agent or NutritionAgent()
-        self.safety_agent = safety_agent or SafetyAgent()
-        self.reviewer_agent = reviewer_agent or ReviewerAgent()
+    def __init__(self, fallback_service: FallbackRecipeService | None = None) -> None:
         self.fallback_service = fallback_service or FallbackRecipeService()
 
     async def generate(
@@ -42,70 +24,11 @@ class RecipeOrchestrator:
         if not use_ai or provider == "local":
             return self.fallback_service.generate(request)
 
-        from app.ai.provider_selector import available_providers, select_provider
-
-        selected = select_provider(provider)
-        providers = [selected]
-        if provider == "auto":
-            providers = [p for p in available_providers() if p != "local"]
-
-        for candidate in providers:
-            if candidate == "gemini":
-                try:
-                    return self._generate_with_gemini(request)
-                except Exception as exc:
-                    logger.warning("Gemini generation failed, trying next provider/fallback: {}", exc)
-                    continue
-
-            if candidate == "copilot":
-                try:
-                    return await self._generate_with_copilot(request)
-                except Exception as exc:
-                    logger.warning("Copilot generation failed, trying next provider/fallback: {}", exc)
-                    continue
-
-        return self.fallback_service.generate(request)
-
-    async def _generate_with_copilot(self, request: RecipeRequest) -> RecipeResponse:
-        request_context = request.model_dump_json(indent=2)
-        plan = await self.planner_agent.run(request_context)
-        draft_recipe = await self.recipe_agent.run(
-            self._to_context({"request": request.model_dump(), "plan": plan})
-        )
-        nutrition = await self.nutrition_agent.run(
-            self._to_context(
-                {
-                    "request": request.model_dump(),
-                    "plan": plan,
-                    "draft_recipe": draft_recipe,
-                }
-            )
-        )
-        safety = await self.safety_agent.run(
-            self._to_context(
-                {
-                    "request": request.model_dump(),
-                    "plan": plan,
-                    "draft_recipe": draft_recipe,
-                    "nutrition": nutrition,
-                }
-            )
-        )
-        final_response = await self.reviewer_agent.run(
-            self._to_context(
-                {
-                    "request": request.model_dump(),
-                    "plan": plan,
-                    "draft_recipe": draft_recipe,
-                    "nutrition": nutrition,
-                    "safety": safety,
-                }
-            )
-        )
-
-        payload: dict[str, Any] = json.loads(extract_json_text(final_response))
-        payload["ai_provider"] = "github-copilot-sdk-agent-chain"
-        return RecipeResponse.model_validate(payload)
+        try:
+            return self._generate_with_gemini(request)
+        except Exception as exc:
+            logger.warning("Gemini generation failed, using local fallback: {}", exc)
+            return self.fallback_service.generate(request)
 
     def _generate_with_gemini(self, request: RecipeRequest) -> RecipeResponse:
         text = generate_text(self._gemini_prompt(request))
@@ -125,6 +48,3 @@ class RecipeOrchestrator:
             f"Avoid: {request.avoid_ingredients}. "
             f"Style: {request.culture}."
         )
-
-    def _to_context(self, value: dict[str, Any]) -> str:
-        return json.dumps(value, indent=2, default=str)
