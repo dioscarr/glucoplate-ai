@@ -1,136 +1,60 @@
 # Deployment Secrets Strategy
 
-GlucoPlate AI uses a small secret-provider abstraction so application code does not need to know whether a value came from a local `.env`, GitHub Actions secret, Render environment variable, Azure Key Vault, or another managed secret store.
+GlucoPlate AI reads runtime secrets through `app.core.secrets.get_secret`, allowing local environment variables, GitHub Actions secrets, Render environment variables, and future managed vaults to use the same application code.
 
-## Recommended Strategy
+## Render runtime variables
 
-```text
-Local development
-  .env or shell environment variables
-
-GitHub Actions CI
-  GitHub repository secrets
-
-Render runtime deployment
-  Render environment variables / secret values
-
-Future Azure production
-  Azure Key Vault through a new SecretProvider implementation
-```
-
-## Can GitHub Be the Key Vault?
-
-GitHub can be the practical key vault for **CI and deployment automation**.
-
-Use GitHub Secrets for:
-
-- CI webhook URL
-- test-only API keys
-- deployment tokens
-- Render deploy hook URL
-- cloud provider credentials used by GitHub Actions
-- environment-specific secrets used during a GitHub Actions deployment
-
-Do not rely on GitHub Secrets as the direct runtime secret store unless GitHub Actions is the process that deploys the app and injects those secrets into the runtime platform.
-
-For example:
+Add this required secret to the Render service:
 
 ```text
-GitHub Actions secret
-  ↓
-GitHub Actions workflow
-  ↓
-Render deploy API / Render environment variable sync / deploy hook
-  ↓
-Running Render app reads environment variable
+GROQ_API_KEY=<your Groq API key>
 ```
 
-The running app on Render cannot automatically read GitHub Secrets by itself. GitHub Secrets are available to GitHub Actions workflows, not to arbitrary running servers.
+The application automatically prefers Groq when this variable is present.
 
-## Current Secret Names
+Optional Groq model override:
 
-The app currently supports these Gemini key names:
+```text
+GROQ_MODEL=llama-3.1-8b-instant
+```
+
+When `GROQ_MODEL` is omitted, the application uses `llama-3.1-8b-instant`. The Groq request is intentionally constrained to a compact JSON response, temperature `0.2`, and at most `420` completion tokens. Token usage is written to the application logs for monitoring.
+
+## Provider order
+
+In automatic mode, providers are attempted in this order:
+
+```text
+Groq -> Gemini (when configured) -> deterministic local fallback
+```
+
+Gemini is optional and may be removed from Render after Groq has been verified. These legacy variables remain supported:
 
 ```text
 GEMINI_API_KEY
 GOOGLE_API_KEY
 GOOGLE_GEMINI_API_KEY
-```
-
-The app currently supports this Gemini model override:
-
-```text
 GEMINI_MODEL
 ```
 
-The CI notification workflow supports this webhook secret:
+## GitHub Actions
+
+GitHub repository secrets are available to workflows, not directly to the running Render service. Keep CI-only values such as the following in GitHub Actions:
 
 ```text
 CI_NOTIFICATION_WEBHOOK_URL
 ```
 
-## Secret Provider Boundary
+Runtime API keys must be entered in Render or injected there by a deployment workflow.
 
-Application code should use:
+## Secret provider boundary
+
+Application code should request values through the shared helper:
 
 ```python
 from app.core.secrets import get_secret
 
-api_key = get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GEMINI_API_KEY")
+api_key = get_secret("GROQ_API_KEY")
 ```
 
-This allows the app to support multiple accepted names during migration while keeping feature code clean.
-
-## Why This Helps Deployment
-
-Without a secret boundary, each file calls `os.getenv` directly. That makes it harder to move from `.env` to GitHub Secrets, Render secrets, or Azure Key Vault.
-
-With a boundary:
-
-- local development keeps working
-- production deployment stays clean
-- future vault providers can be added in one place
-- AI services do not need to change when the secret store changes
-- tests can monkeypatch one layer instead of many files
-
-## Future Azure Key Vault Extension
-
-When the app is hosted in Azure, add an implementation similar to:
-
-```python
-class AzureKeyVaultSecretProvider:
-    def get(self, name: str) -> str | None:
-        ...
-```
-
-Then chain it before environment variables:
-
-```python
-return ChainedSecretProvider(
-    AzureKeyVaultSecretProvider(),
-    EnvironmentSecretProvider(),
-)
-```
-
-That allows Azure Key Vault to be preferred in production while environment variables remain the fallback.
-
-## Practical Next Step
-
-For the current app, use GitHub Secrets for GitHub Actions and Render environment variables for Render runtime.
-
-Minimum secrets to configure:
-
-```text
-GitHub Actions secret:
-CI_NOTIFICATION_WEBHOOK_URL
-
-Render environment variable:
-GEMINI_API_KEY
-```
-
-Optional:
-
-```text
-Render environment variable:
-GEMINI_MODEL=gemini-1.5-flash
-```
+This keeps provider code independent from the hosting platform and makes a future migration to Azure Key Vault or another secret manager straightforward.
