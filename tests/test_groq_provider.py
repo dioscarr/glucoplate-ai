@@ -1,4 +1,5 @@
 from app.ai import provider_selector
+from app.ai.recipe_orchestrator import RecipeOrchestrator
 
 
 def _secret_lookup(values: dict[str, str]):
@@ -39,3 +40,23 @@ def test_local_is_final_fallback(monkeypatch):
 
     assert provider_selector.available_providers() == ["local"]
     assert provider_selector.select_provider("auto") == "local"
+
+
+def test_normalize_groq_payload_converts_substitutions_and_safety_fields():
+    payload = {
+        "substitutions": {"mango": "pineapple", "yogurt": "kefir"},
+        "safety_review": {
+            "allergens": ["milk"],
+            "notes": ["Consume chilled"],
+        },
+    }
+
+    normalized = RecipeOrchestrator._normalize_payload(payload)
+
+    assert normalized["substitutions"] == ["mango: pineapple", "yogurt: kefir"]
+    assert normalized["safety_review"]["approved"] is False
+    assert normalized["safety_review"]["warnings"] == [
+        "Allergen: milk",
+        "Consume chilled",
+    ]
+    assert normalized["safety_review"]["disclaimer"]
