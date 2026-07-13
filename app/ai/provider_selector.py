@@ -2,7 +2,11 @@ from typing import Literal
 
 from app.core.secrets import get_secret
 
-ProviderName = Literal["gemini", "local"]
+ProviderName = Literal["groq", "gemini", "local"]
+
+
+def _has_groq() -> bool:
+    return bool(get_secret("GROQ_API_KEY"))
 
 
 def _has_gemini() -> bool:
@@ -12,6 +16,8 @@ def _has_gemini() -> bool:
 def available_providers() -> list[ProviderName]:
     """Return configured providers in production preference order."""
     providers: list[ProviderName] = []
+    if _has_groq():
+        providers.append("groq")
     if _has_gemini():
         providers.append("gemini")
     providers.append("local")
@@ -19,13 +25,13 @@ def available_providers() -> list[ProviderName]:
 
 
 def select_provider(prefer: str | None = "auto") -> ProviderName:
-    """Select Gemini when configured; otherwise use the local generator."""
+    """Select the requested configured provider, preferring Groq for auto mode."""
     requested = (prefer or "auto").lower()
     providers = available_providers()
 
+    if requested in providers:
+        return requested  # type: ignore[return-value]
     if requested == "local":
         return "local"
-    if requested == "gemini" and "gemini" in providers:
-        return "gemini"
 
     return providers[0]
