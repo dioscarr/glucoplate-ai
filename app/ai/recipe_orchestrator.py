@@ -25,12 +25,10 @@ class RecipeOrchestrator:
         if not use_ai or provider == "local":
             return self.fallback_service.generate(request)
 
-        from app.ai.provider_selector import available_providers, select_provider
+        from app.ai.provider_selector import select_provider
 
         selected = select_provider(provider)
-        providers = [selected]
-        if provider == "auto":
-            providers = [candidate for candidate in available_providers() if candidate != "local"]
+        providers = [selected] if selected != "local" else []
 
         generators: dict[str, tuple[Callable[[str], str], str]] = {
             "groq": (generate_groq_text, "groq"),
@@ -47,22 +45,63 @@ class RecipeOrchestrator:
             try:
                 text = generate_text(prompt)
                 payload: dict[str, Any] = json.loads(extract_json_text(text))
+                payload = self._normalize_payload(payload)
                 payload["ai_provider"] = provider_label
                 return RecipeResponse.model_validate(payload)
             except Exception as exc:
                 logger.warning(
-                    "{} generation failed, trying next provider/local fallback: {}",
+                    "{} generation failed, using local fallback: {}",
                     candidate.title(),
                     exc,
                 )
 
         return self.fallback_service.generate(request)
 
+    @staticmethod
+    def _normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
+        substitutions = payload.get("substitutions")
+        if isinstance(substitutions, dict):
+            payload["substitutions"] = [
+                f"{ingredient}: {replacement}"
+                for ingredient, replacement in substitutions.items()
+            ]
+        elif substitutions is None:
+            payload["substitutions"] = []
+
+        safety_review = payload.get("safety_review")
+        if not isinstance(safety_review, dict):
+            safety_review = {}
+
+        warnings = safety_review.get("warnings")
+        if not isinstance(warnings, list):
+            warnings = []
+
+        allergens = safety_review.get("allergens")
+        if isinstance(allergens, list):
+            warnings.extend(f"Allergen: {allergen}" for allergen in allergens)
+
+        notes = safety_review.get("notes")
+        if isinstance(notes, list):
+            warnings.extend(str(note) for note in notes)
+
+        safety_review["warnings"] = list(dict.fromkeys(str(item) for item in warnings))
+        safety_review.setdefault("approved", not safety_review["warnings"])
+        safety_review.setdefault(
+            "disclaimer",
+            "Nutrition values are estimates. Confirm ingredients and dietary needs before serving.",
+        )
+        payload["safety_review"] = safety_review
+        return payload
+
     def _recipe_prompt(self, request: RecipeRequest) -> str:
         """Build a compact prompt to minimize paid input and output tokens."""
         return (
-            "Create one balanced recipe. Return JSON with exactly these keys: "
-            "title,summary,ingredients,steps,nutrition_estimate,substitutions,safety_review. "
+            "Create one balanced recipe. Return compact JSON only with this exact shape: "
+            '{"title":"str","summary":"str","ingredients":["str"],'
+            '"steps":["str"],"nutrition_estimate":{"calories":0,"protein_g":0,'
+            '"carbs_g":0,"fiber_g":0,"sugar_g":0,"fat_g":0,"sodium_mg":0},'
+            '"substitutions":["str"],"safety_review":{"approved":true,'
+            '"warnings":["str"],"disclaimer":"str"}}. '
             f"goal={request.goal};servings={request.servings};"
             f"max_carbs={request.max_carbs_per_serving};"
             f"preferences={request.preferences};avoid={request.avoid_ingredients};"
