@@ -1,10 +1,11 @@
 import time
 
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
+from app.api.push_routes import router as push_router
 from app.api.routes import router
 from app.logging_config import setup_logging
 
@@ -13,20 +14,46 @@ setup_logging()
 app = FastAPI(
     title="GlucoPlate AI",
     description="AI-powered recipe generation, personalization, saving, and grocery planning API.",
-    version="0.3.0",
+    version="0.4.0",
 )
 
 app.include_router(router)
+app.include_router(push_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.middleware("http")
-async def no_cache_html(request: Request, call_next):
+async def pwa_headers_and_script(request: Request, call_next):
     response = await call_next(request)
-    if request.url.path.endswith(".html"):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
+    path = request.url.path
+
+    if path.endswith("/sw.js"):
+        response.headers["Service-Worker-Allowed"] = "/"
+        response.headers["Cache-Control"] = "no-cache"
+
+    if path.endswith(".webmanifest"):
+        response.headers["Content-Type"] = "application/manifest+json"
+
+    if path.endswith(".html"):
+        chunks = [chunk async for chunk in response.body_iterator]
+        body = b"".join(chunks)
+        marker = b"</body>"
+        script = b'<script src="/static/pwa.js" defer></script></body>'
+        if b"/static/pwa.js" not in body and marker in body:
+            body = body.replace(marker, script)
+        headers = dict(response.headers)
+        headers.pop("content-length", None)
+        headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        headers["Pragma"] = "no-cache"
+        headers["Expires"] = "0"
+        return Response(
+            content=body,
+            status_code=response.status_code,
+            headers=headers,
+            media_type=response.media_type,
+            background=response.background,
+        )
+
     return response
 
 
@@ -55,6 +82,8 @@ async def log_requests(request: Request, call_next):
             "/api/carts",
             "/api/products",
             "/api/stores",
+            "/api/auth",
+            "/api/push",
         ]
         if method in ("POST", "PUT", "DELETE") and any(route in path for route in tracked_routes):
             try:

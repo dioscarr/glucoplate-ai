@@ -1,0 +1,22 @@
+{
+  "id": "/static/index.html",
+  "name": "GlucoPlate AI",
+  "short_name": "GlucoPlate",
+  "description": "Discover recipes, plan meals, and cook step by step.",
+  "start_url": "/static/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#f7f4ef",
+  "theme_color": "#f26a2e",
+  "orientation": "portrait-primary",
+  "categories": ["food", "lifestyle", "utilities"],
+  "icons": [
+    {"src": "/static/icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable"},
+    {"src": "/static/icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Discover recipes", "short_name": "Discover", "url": "/static/index.html#discover", "icons": [{"src": "/static/icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml"}]},
+    {"name": "Open cookbook", "short_name": "Cookbook", "url": "/static/index.html#cookbook", "icons": [{"src": "/static/icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml"}]}
+  ]
+}
