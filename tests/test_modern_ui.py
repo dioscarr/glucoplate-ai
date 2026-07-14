@@ -19,50 +19,38 @@ def test_root_redirects_to_single_index_page() -> None:
     assert response.headers["location"] == "/static/index.html"
 
 
-def test_index_page_has_core_ux_anchors() -> None:
+def test_index_page_has_food_based_recipe_planner() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
 
-    assert "Modern AI meal-planning workspace" in html
-    assert "From meal idea to" in html
-    assert "Build today’s plate" in html
-    assert "Recipe workspace" in html
-    assert "Shopping control center" in html
+    assert "Food-based recipe planner" in html
+    assert "Pick food. Get recipe names." in html
+    assert "Browse by food" in html
+    assert "Browse by image" in html
+    assert "Suggest recipe names" in html
+    assert "foodGrid" in html
+    assert "suggestions" in html
 
 
-def test_index_page_has_mobile_navigation() -> None:
+def test_index_page_has_recipe_name_suggestion_flow() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
 
-    assert "dock" in html
-    assert "Mobile app navigation" in html
-    assert "Mobile section shortcuts" in html
-    assert "jumpToSection" in html
-    assert "composer" in html
-    assert "recipe" in html
-    assert "products" in html
-    assert "stores" in html
-    assert "mapSection" in html
+    assert "recipeIdeas" in html
+    assert "suggestRecipeNames" in html
+    assert "chooseRecipeIdea" in html
+    assert "collectFoods" in html
+    assert "imageFoodHints" in html
+    assert "Make ${idea.name}" in html
 
 
-def test_index_page_has_ios_style_glass_motion() -> None:
-    html = INDEX_HTML.read_text(encoding="utf-8")
-
-    assert "orb" in html
-    assert "backdrop-filter:blur" in html
-    assert "@keyframes floatOrb" in html
-    assert "@keyframes cardLift" in html
-    assert "@keyframes shimmer" in html
-    assert "@media(prefers-reduced-motion:reduce)" in html
-
-
-def test_index_page_protects_connected_user_journey() -> None:
+def test_index_page_keeps_existing_recipe_journey() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
 
     assert "/api/recipes/generate" in html
-    assert "/api/products/search" in html
-    assert "/api/stores/search" in html
-    assert "/api/carts" in html
-    assert "/api/route/plan" in html
-    assert "/api/ai/health" in html
+    assert "/api/recipes/save" in html
+    assert "/api/recipes/list" in html
+    assert "renderRecipe" in html
+    assert "saveRecipe" in html
+    assert "Saved recipes" in html
 
 
 def test_index_page_uses_toast_not_browser_dialogs() -> None:
