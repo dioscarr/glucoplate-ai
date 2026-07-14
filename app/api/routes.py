@@ -1,6 +1,14 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from app.core.secrets import get_secret
+from app.schemas.auth import (
+    AccessCodeLookupRequest,
+    AccessCodeLookupResponse,
+    AuthResponse,
+    CompanyAccessCode,
+    LoginRequest,
+    RegisterRequest,
+)
 from app.schemas.receipt import Receipt, ReceiptExtractRequest, ReceiptSummary
 from app.schemas.recipe import RecipeRequest, RecipeResponse
 from app.schemas.recipe_image import RecipeImageRequest
@@ -15,10 +23,37 @@ from app.services.recipe_generator import generate_recipe
 from app.services.recipe_store_service import RecipeStoreService
 from app.services.recents_service import RecentsService
 from app.services.route_service import RouteService
+from app.services.simple_auth_service import SimpleAuthService
 from app.services.store_locator_service import StoreLocatorService
 from app.services.web_scraper_service import fetch_metadata
 
 router = APIRouter(prefix="/api")
+
+
+@router.post("/auth/access-code", response_model=AccessCodeLookupResponse)
+def lookup_access_code(request: AccessCodeLookupRequest) -> AccessCodeLookupResponse:
+    return SimpleAuthService().lookup_access_code(request.access_code)
+
+
+@router.post("/auth/register", response_model=AuthResponse)
+def register_with_access_code(request: RegisterRequest) -> AuthResponse:
+    response = SimpleAuthService().register(request)
+    if not response.ok:
+        raise HTTPException(status_code=404, detail=response.message)
+    return response
+
+
+@router.post("/auth/login", response_model=AuthResponse)
+def login_with_demo_provider(request: LoginRequest) -> AuthResponse:
+    response = SimpleAuthService().login(str(request.email))
+    if not response.ok:
+        raise HTTPException(status_code=404, detail=response.message)
+    return response
+
+
+@router.get("/auth/companies", response_model=list[CompanyAccessCode])
+def list_demo_companies() -> list[CompanyAccessCode]:
+    return SimpleAuthService().list_companies()
 
 
 @router.post("/receipts/extract", response_model=Receipt)
