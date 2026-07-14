@@ -33,6 +33,30 @@ def test_html_pages_receive_pwa_client_script() -> None:
         assert '<script src="/static/pwa.js" defer></script>' in response.text
 
 
+def test_pwa_client_exposes_ios_native_capabilities() -> None:
+    script = client.get("/static/pwa.js")
+    assert script.status_code == 200
+    text = script.text
+    assert "safe-area-inset-top" in text
+    assert "safe-area-inset-bottom" in text
+    assert "navigator.share" in text
+    assert "navigator.wakeLock" in text
+    assert "startViewTransition" in text
+    assert "visualViewport" in text
+    assert "showInstallSheet" in text
+    assert "touchstart" in text
+    assert "Add to Home Screen" in text
+
+
+def test_pwa_panel_is_rendered_on_home_with_native_actions() -> None:
+    text = client.get("/static/pwa.js").text
+    assert "homeView" in text
+    assert "Share" in text
+    assert "Keep screen awake" in text
+    assert "Enable notifications" in text
+    assert "Install app" in text
+
+
 def test_push_config_is_safe_when_vapid_is_not_configured(monkeypatch) -> None:
     monkeypatch.delenv("VAPID_PUBLIC_KEY", raising=False)
     monkeypatch.delenv("VAPID_PRIVATE_KEY", raising=False)
