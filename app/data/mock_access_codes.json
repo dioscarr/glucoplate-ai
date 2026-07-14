@@ -1,0 +1,40 @@
+{
+  "access_codes": [
+    {
+      "access_code": "0001",
+      "company_id": "admin",
+      "company_name": "GlucoPlate Admin",
+      "company_domain": "glucoplate.local",
+      "user_type": "AD",
+      "user_type_name": "Admin",
+      "permissions": ["admin", "manage_companies", "manage_users", "cookbook"]
+    },
+    {
+      "access_code": "1001",
+      "company_id": "one-piece-bar",
+      "company_name": "One Piece Bar Kitchen",
+      "company_domain": "onepiecebar.local",
+      "user_type": "OF",
+      "user_type_name": "Officer / Manager",
+      "permissions": ["manage_recipes", "shopping", "cookbook"]
+    },
+    {
+      "access_code": "2001",
+      "company_id": "family-demo",
+      "company_name": "Family Demo Kitchen",
+      "company_domain": "family.local",
+      "user_type": "ST",
+      "user_type_name": "Standard Cook",
+      "permissions": ["recipes", "cookbook"]
+    },
+    {
+      "access_code": "3001",
+      "company_id": "meal-prep-studio",
+      "company_name": "Meal Prep Studio",
+      "company_domain": "mealprep.local",
+      "user_type": "ST",
+      "user_type_name": "Standard Cook",
+      "permissions": ["recipes", "cookbook", "shopping"]
+    }
+  ]
+}
