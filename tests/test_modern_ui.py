@@ -40,6 +40,8 @@ def test_index_page_has_recipe_name_suggestion_flow() -> None:
     assert "collectFoods" in html
     assert "imageFoodHints" in html
     assert "Make ${idea.name}" in html
+    assert "% match" in html
+    assert "scoreIdea" in html
 
 
 def test_index_page_has_milestone_2_native_app_shell() -> None:
@@ -57,6 +59,18 @@ def test_index_page_has_milestone_2_native_app_shell() -> None:
     assert "startCookMode" in html
 
 
+def test_index_page_has_polished_cook_mode() -> None:
+    html = INDEX_HTML.read_text(encoding="utf-8")
+
+    assert "cook-progress" in html
+    assert "Kitchen timer" in html
+    assert "toggleTimer" in html
+    assert "timerSeconds" in html
+    assert "Recipe complete" in html
+    assert "prevCookStep" in html
+    assert "nextCookStep" in html
+
+
 def test_index_page_has_motion_system_tokens() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
 
@@ -67,7 +81,18 @@ def test_index_page_has_motion_system_tokens() -> None:
     assert "@keyframes fadeLift" in html
     assert "@keyframes chipPop" in html
     assert "@keyframes heroFloat" in html
+    assert "@keyframes toastIn" in html
     assert "@media(prefers-reduced-motion:reduce)" in html
+
+
+def test_index_page_has_sticky_recipe_actions_and_saved_cards() -> None:
+    html = INDEX_HTML.read_text(encoding="utf-8")
+
+    assert "position:sticky" in html
+    assert "recipe-actions" in html
+    assert "saved-emoji" in html
+    assert "Saved recipe" in html
+    assert "New recipe" in html
 
 
 def test_index_page_keeps_existing_recipe_journey() -> None:
@@ -78,7 +103,6 @@ def test_index_page_keeps_existing_recipe_journey() -> None:
     assert "/api/recipes/list" in html
     assert "renderRecipe" in html
     assert "saveRecipe" in html
-    assert "Saved recipe" in html
 
 
 def test_index_page_uses_toast_not_browser_dialogs() -> None:
