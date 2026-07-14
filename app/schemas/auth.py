@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class CompanyAccessCode(BaseModel):
@@ -11,9 +11,20 @@ class CompanyAccessCode(BaseModel):
     permissions: list[str] = Field(default_factory=list)
 
 
-class UserRecord(BaseModel):
+class EmailModel(BaseModel):
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        normalized = value.lower().strip()
+        if "@" not in normalized or "." not in normalized.split("@")[-1]:
+            raise ValueError("Enter a valid email address.")
+        return normalized
+
+
+class UserRecord(EmailModel):
     user_id: str
-    email: EmailStr
     name: str
     provider: str = "local"
 
@@ -39,15 +50,14 @@ class AccessCodeLookupResponse(BaseModel):
     message: str
 
 
-class RegisterRequest(BaseModel):
+class RegisterRequest(EmailModel):
     access_code: str = Field(..., min_length=1)
-    email: EmailStr
     name: str = Field(..., min_length=1)
     provider: str = "local"
 
 
-class LoginRequest(BaseModel):
-    email: EmailStr
+class LoginRequest(EmailModel):
+    pass
 
 
 class AuthResponse(BaseModel):
