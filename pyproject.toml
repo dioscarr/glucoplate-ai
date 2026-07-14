@@ -9,7 +9,6 @@ dependencies = [
     "uvicorn[standard]>=0.30.0",
     "pydantic>=2.8.0",
     "pydantic-settings>=2.4.0",
-    "email-validator>=2.2.0",
     "sqlalchemy>=2.0.0",
     "loguru>=0.7.0",
     "github-copilot-sdk>=1.0.5",
