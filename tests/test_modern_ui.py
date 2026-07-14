@@ -42,6 +42,34 @@ def test_index_page_has_recipe_name_suggestion_flow() -> None:
     assert "Make ${idea.name}" in html
 
 
+def test_index_page_has_milestone_2_native_app_shell() -> None:
+    html = INDEX_HTML.read_text(encoding="utf-8")
+
+    assert "Home" in html
+    assert "Discover" in html
+    assert "Cookbook" in html
+    assert "Profile" in html
+    assert "Mobile app navigation" in html
+    assert "categoryRow" in html
+    assert "AI kitchen" in html
+    assert "thinking" in html
+    assert "Cook Mode" in html
+    assert "startCookMode" in html
+
+
+def test_index_page_has_motion_system_tokens() -> None:
+    html = INDEX_HTML.read_text(encoding="utf-8")
+
+    assert "--fast" in html
+    assert "--medium" in html
+    assert "--slow" in html
+    assert "--spring" in html
+    assert "@keyframes fadeLift" in html
+    assert "@keyframes chipPop" in html
+    assert "@keyframes heroFloat" in html
+    assert "@media(prefers-reduced-motion:reduce)" in html
+
+
 def test_index_page_keeps_existing_recipe_journey() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
 
@@ -50,7 +78,7 @@ def test_index_page_keeps_existing_recipe_journey() -> None:
     assert "/api/recipes/list" in html
     assert "renderRecipe" in html
     assert "saveRecipe" in html
-    assert "Saved recipes" in html
+    assert "Saved recipe" in html
 
 
 def test_index_page_uses_toast_not_browser_dialogs() -> None:
