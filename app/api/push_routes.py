@@ -19,6 +19,10 @@ class UnsubscribeRequest(BaseModel):
     token: str = Field(min_length=20)
 
 
+class TestPushRequest(BaseModel):
+    token: str = Field(min_length=20)
+
+
 class PushMessageRequest(BaseModel):
     title: str = Field(default="GlucoPlate AI", max_length=80)
     body: str = Field(default="Your kitchen update is ready.", max_length=240)
@@ -58,6 +62,26 @@ def save_token(request: TokenRequest) -> dict:
 @router.delete("/tokens")
 def remove_token(request: UnsubscribeRequest) -> dict:
     return {"ok": PushNotificationService().remove_token(request.token)}
+
+
+@router.post("/test")
+def send_test_push(request: TestPushRequest) -> dict:
+    result = PushNotificationService().send_to_registered_token(
+        request.token,
+        {
+            "title": "GlucoPlate notifications are working 🎉",
+            "body": "You can now receive meal reminders and recipe updates.",
+            "url": "/static/index.html",
+            "tag": "glucoplate-test",
+        },
+    )
+    if not result.get("configured"):
+        raise HTTPException(status_code=503, detail="Firebase server credentials are not configured")
+    if not result.get("registered"):
+        raise HTTPException(status_code=404, detail="This device token is not registered")
+    if not result.get("sent"):
+        raise HTTPException(status_code=502, detail="Firebase could not deliver the test notification")
+    return {"ok": True, **result}
 
 
 @router.post("/send")
