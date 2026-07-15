@@ -43,7 +43,9 @@ async def pwa_headers_and_script(request: Request, call_next):
         native_scripts = (
             b'<script src="/static/device-manager.js" defer></script>'
             b'<script src="/static/native-cook.js" defer></script>'
+            b'<script src="/static/native-timers.js" defer></script>'
             b'<script src="/static/native-ingredients.js" defer></script>'
+            b'<script src="/static/offline-actions.js" defer></script>'
             b'<script src="/static/pwa.js" defer></script></body>'
         )
         if b"/static/native-pwa.css" not in body and head_marker in body:
@@ -51,21 +53,17 @@ async def pwa_headers_and_script(request: Request, call_next):
         if b"/static/device-manager.js" not in body and body_marker in body:
             body = body.replace(body_marker, native_scripts)
         else:
-            if b"/static/native-cook.js" not in body and body_marker in body:
-                body = body.replace(
-                    body_marker,
-                    b'<script src="/static/native-cook.js" defer></script></body>',
-                )
-            if b"/static/native-ingredients.js" not in body and body_marker in body:
-                body = body.replace(
-                    body_marker,
-                    b'<script src="/static/native-ingredients.js" defer></script></body>',
-                )
-            if b"/static/pwa.js" not in body and body_marker in body:
-                body = body.replace(
-                    body_marker,
-                    b'<script src="/static/pwa.js" defer></script></body>',
-                )
+            scripts = (
+                b"/static/native-cook.js",
+                b"/static/native-timers.js",
+                b"/static/native-ingredients.js",
+                b"/static/offline-actions.js",
+                b"/static/pwa.js",
+            )
+            for script_path in scripts:
+                if script_path not in body and body_marker in body:
+                    tag = b'<script src="' + script_path + b'" defer></script></body>'
+                    body = body.replace(body_marker, tag)
         headers = dict(response.headers)
         headers.pop("content-length", None)
         headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
