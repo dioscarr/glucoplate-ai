@@ -43,6 +43,7 @@ async def pwa_headers_and_script(request: Request, call_next):
         native_scripts = (
             b'<script src="/static/device-manager.js" defer></script>'
             b'<script src="/static/native-cook.js" defer></script>'
+            b'<script src="/static/native-ingredients.js" defer></script>'
             b'<script src="/static/pwa.js" defer></script></body>'
         )
         if b"/static/native-pwa.css" not in body and head_marker in body:
@@ -51,9 +52,20 @@ async def pwa_headers_and_script(request: Request, call_next):
             body = body.replace(body_marker, native_scripts)
         else:
             if b"/static/native-cook.js" not in body and body_marker in body:
-                body = body.replace(body_marker, b'<script src="/static/native-cook.js" defer></script></body>')
+                body = body.replace(
+                    body_marker,
+                    b'<script src="/static/native-cook.js" defer></script></body>',
+                )
+            if b"/static/native-ingredients.js" not in body and body_marker in body:
+                body = body.replace(
+                    body_marker,
+                    b'<script src="/static/native-ingredients.js" defer></script></body>',
+                )
             if b"/static/pwa.js" not in body and body_marker in body:
-                body = body.replace(body_marker, b'<script src="/static/pwa.js" defer></script></body>')
+                body = body.replace(
+                    body_marker,
+                    b'<script src="/static/pwa.js" defer></script></body>',
+                )
         headers = dict(response.headers)
         headers.pop("content-length", None)
         headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
