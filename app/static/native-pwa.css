@@ -12,11 +12,16 @@ body{padding-left:var(--safe-left);padding-right:var(--safe-right);touch-action:
 .cook-swipe-hint{display:block;margin-top:14px;color:#d8b9a7;font-size:.76rem;font-weight:700;letter-spacing:.01em}
 .cook-wake-lock .cook-step:before{content:'Screen awake';position:absolute;top:calc(12px + var(--safe-top));right:14px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.12);color:#f7dfd1;font-size:.68rem;font-weight:800}
 .cook-step{position:relative}
+.native-import-panel{margin-top:16px;padding:16px;border:1px solid var(--line,#e7ded4);border-radius:18px;background:#fff}
+.native-import-panel>strong,.native-import-panel>span{display:block}.native-import-panel>span{margin-top:5px;color:var(--muted,#756f69);font-size:.82rem;line-height:1.45}
+.native-import-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.native-import-actions .btn{flex:1;min-width:150px}
+.native-photo-preview{display:grid;grid-template-columns:80px 1fr;gap:12px;align-items:center;margin-top:12px;padding:10px;border-radius:15px;background:#f8f3ed;color:var(--muted,#756f69);font-size:.78rem;line-height:1.4}
+.native-photo-preview img{width:80px;height:80px;object-fit:cover;border-radius:12px;background:#eee}
 .toast,#pwaMessage{bottom:calc(92px + var(--safe-bottom))!important}
 button,.btn,.tab,.cuisine-card,.dish-card,.food-chip,.saved-item{min-height:44px}
 .is-ios body{-webkit-user-select:none;user-select:none}
 .is-ios input,.is-ios textarea{-webkit-user-select:text;user-select:text}
 .is-standalone .app-header{background:linear-gradient(#f7f4ef 82%,rgba(247,244,239,0))}
 .is-offline .status{background:#fff0d8;color:#875613}
-@media(max-width:480px){.recipe-actions .btn{min-width:0}.cook-controls{display:grid;grid-template-columns:1fr 1fr}.cook-native-control{width:100%;min-width:0}}
+@media(max-width:480px){.recipe-actions .btn{min-width:0}.cook-controls{display:grid;grid-template-columns:1fr 1fr}.cook-native-control{width:100%;min-width:0}.native-import-actions{display:grid;grid-template-columns:1fr}.native-import-actions .btn{min-width:0}}
 @media(display-mode:standalone){body{min-height:100dvh}.scroll-pane{overscroll-behavior-y:contain}}
