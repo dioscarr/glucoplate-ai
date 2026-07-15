@@ -4,12 +4,19 @@ body{padding-left:var(--safe-left);padding-right:var(--safe-right);touch-action:
 .app-shell{min-height:100dvh}
 .app-header{padding-top:calc(8px + var(--safe-top))}
 .bottom-nav{padding-left:calc(12px + var(--safe-left));padding-right:calc(12px + var(--safe-right));padding-bottom:calc(8px + var(--safe-bottom))}
-.recipe-actions{padding-bottom:calc(20px + var(--safe-bottom));padding-left:calc(20px + var(--safe-left));padding-right:calc(20px + var(--safe-right))}
-.cook-controls{padding-bottom:var(--safe-bottom)}
+.recipe-actions{padding-bottom:calc(20px + var(--safe-bottom));padding-left:calc(20px + var(--safe-left));padding-right:calc(20px + var(--safe-right));flex-wrap:wrap}
+.recipe-actions .btn{min-width:120px}
+.cook-step{min-height:calc(100dvh - 150px);touch-action:pan-y;user-select:none}
+.cook-controls{padding-bottom:var(--safe-bottom);width:min(560px,100%);margin-left:auto;margin-right:auto}
+.cook-native-control{min-height:58px;min-width:132px;font-size:1rem}
+.cook-swipe-hint{display:block;margin-top:14px;color:#d8b9a7;font-size:.76rem;font-weight:700;letter-spacing:.01em}
+.cook-wake-lock .cook-step:before{content:'Screen awake';position:absolute;top:calc(12px + var(--safe-top));right:14px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.12);color:#f7dfd1;font-size:.68rem;font-weight:800}
+.cook-step{position:relative}
 .toast,#pwaMessage{bottom:calc(92px + var(--safe-bottom))!important}
 button,.btn,.tab,.cuisine-card,.dish-card,.food-chip,.saved-item{min-height:44px}
 .is-ios body{-webkit-user-select:none;user-select:none}
 .is-ios input,.is-ios textarea{-webkit-user-select:text;user-select:text}
 .is-standalone .app-header{background:linear-gradient(#f7f4ef 82%,rgba(247,244,239,0))}
 .is-offline .status{background:#fff0d8;color:#875613}
+@media(max-width:480px){.recipe-actions .btn{min-width:0}.cook-controls{display:grid;grid-template-columns:1fr 1fr}.cook-native-control{width:100%;min-width:0}}
 @media(display-mode:standalone){body{min-height:100dvh}.scroll-pane{overscroll-behavior-y:contain}}
