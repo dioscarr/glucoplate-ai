@@ -19,6 +19,8 @@ The product is a general recipe app. Nutrition information and optional dietary 
 - Create carts and plan shopping routes
 - Generate recipe gallery jobs
 - Use AI providers when available with a local fallback
+- Browse cuisines and popular recipe names
+- Enable Firebase push notifications and send test notifications
 
 ## Product Direction
 
@@ -35,7 +37,7 @@ Recipe Generation and Review
         ↓
 Ingredients + Steps + Nutrition + Substitutions
         ↓
-Save Recipe / Build Cart / Find Products
+Save Recipe / Build Cart / Find Products / Cook Step by Step
 ```
 
 ### Primary users
@@ -46,6 +48,17 @@ Save Recipe / Build Cart / Find Products
 - Users adapting recipes around preferences or allergies
 - Beginners who want clear cooking instructions
 - Experienced cooks looking for inspiration across cuisines
+
+## Documentation and planning
+
+- [Documentation hub](docs/README.md)
+- [Project documentation](docs/PROJECT_DOCUMENTATION.md)
+- [iOS and PWA native capabilities](docs/IOS_PWA_NATIVE_CAPABILITIES.md)
+- [AI development guide](docs/AI_DEVELOPMENT_GUIDE.md)
+- [Milestones](milestones/README.md)
+- [Project status](PROJECT_STATUS.md)
+- [Roadmap](ROADMAP.md)
+- [Changelog](CHANGELOG.md)
 
 ## API
 
@@ -58,6 +71,14 @@ Save Recipe / Build Cart / Find Products
 - `GET /api/recipes/recents`
 - `POST /api/recipes/gallery`
 - `GET /api/recipes/gallery/{job_id}`
+
+### Push notifications
+
+- `GET /api/push/config`
+- `POST /api/push/tokens`
+- `DELETE /api/push/tokens`
+- `POST /api/push/test`
+- `POST /api/push/send`
 
 ### Supporting cooking and shopping workflows
 
@@ -80,7 +101,8 @@ Save Recipe / Build Cart / Find Products
 - SQLite locally with PostgreSQL as the production target
 - GitHub Copilot SDK / Gemini provider abstraction
 - Local fallback recipe generation
-- Static responsive web UI
+- Static responsive PWA UI
+- Firebase Cloud Messaging
 - pytest, httpx, Ruff
 
 ## Repository Structure
@@ -96,20 +118,21 @@ app/
   safety/
   static/
 docs/
+  decisions/
+milestones/
 tests/
 .github/
 ```
 
 ## Next MVP Milestones
 
-1. Improve recipe generation quality and structured validation.
-2. Add recipe detail and saved-recipe management screens.
-3. Add pantry inventory and "cook with what I have" flows.
-4. Convert a recipe into a grocery list and cart.
-5. Add recipe adjustment actions such as scale servings, substitute an ingredient, change cuisine, and reduce cooking time.
-6. Add meal planning after the recipe workflow is stable.
-7. Retire or isolate receipt-specific code and tests that are no longer part of the product.
-8. Add authentication and database-backed user cookbooks.
+1. Native iOS/PWA polish and device capability layer.
+2. Firebase Authentication and cloud-backed user accounts.
+3. AI personalization from user food profiles and cooking history.
+4. Meal planning and grocery list generation.
+5. Social sharing and household collaboration.
+6. Step-aware AI cooking assistant.
+7. Production readiness and launch operations.
 
 ## Product Principle
 
