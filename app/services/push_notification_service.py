@@ -93,6 +93,12 @@ class PushNotificationService:
                 self._write(remaining)
             return changed
 
+    def token_registered(self, token: str) -> bool:
+        return any(
+            item.get("enabled") and item.get("token") == token
+            for item in self._read()
+        )
+
     def _firebase_app(self):
         import firebase_admin
         from firebase_admin import credentials
@@ -112,6 +118,42 @@ class PushNotificationService:
                     return firebase_admin.initialize_app(credential)
                 return firebase_admin.initialize_app()
 
+    def _send_token(self, token: str, payload: dict[str, Any]) -> bool:
+        from firebase_admin import messaging
+
+        title = str(payload.get("title") or "GlucoPlate AI")
+        body = str(payload.get("body") or "Your kitchen update is ready.")
+        url = str(payload.get("url") or "/static/index.html")
+        tag = str(payload.get("tag") or "glucoplate-update")
+        message = messaging.Message(
+            token=token,
+            data={"title": title, "body": body, "url": url, "tag": tag},
+            webpush=messaging.WebpushConfig(
+                headers={"Urgency": "normal"},
+                fcm_options=messaging.WebpushFCMOptions(link=url),
+            ),
+        )
+        messaging.send(message)
+        return True
+
+    def send_to_registered_token(self, token: str, payload: dict[str, Any]) -> dict[str, int | bool]:
+        if not self.server_configured():
+            return {"configured": False, "registered": False, "sent": 0, "failed": 0}
+        if not self.token_registered(token):
+            return {"configured": True, "registered": False, "sent": 0, "failed": 0}
+
+        from firebase_admin import messaging
+
+        self._firebase_app()
+        try:
+            self._send_token(token, payload)
+            return {"configured": True, "registered": True, "sent": 1, "failed": 0}
+        except (messaging.UnregisteredError, messaging.SenderIdMismatchError):
+            self.remove_token(token)
+            return {"configured": True, "registered": True, "sent": 0, "failed": 1}
+        except Exception:
+            return {"configured": True, "registered": True, "sent": 0, "failed": 1}
+
     def send(self, payload: dict[str, Any], user_id: str | None = None) -> dict[str, int | bool]:
         if not self.server_configured():
             return {"configured": False, "sent": 0, "failed": 0}
@@ -125,23 +167,11 @@ class PushNotificationService:
 
         sent = failed = 0
         invalid_tokens: set[str] = set()
-        title = str(payload.get("title") or "GlucoPlate AI")
-        body = str(payload.get("body") or "Your kitchen update is ready.")
-        url = str(payload.get("url") or "/static/index.html")
-        tag = str(payload.get("tag") or "glucoplate-update")
 
         for record in records:
             token = str(record["token"])
-            message = messaging.Message(
-                token=token,
-                data={"title": title, "body": body, "url": url, "tag": tag},
-                webpush=messaging.WebpushConfig(
-                    headers={"Urgency": "normal"},
-                    fcm_options=messaging.WebpushFCMOptions(link=url),
-                ),
-            )
             try:
-                messaging.send(message)
+                self._send_token(token, payload)
                 sent += 1
             except (messaging.UnregisteredError, messaging.SenderIdMismatchError):
                 failed += 1
