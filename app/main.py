@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
+from app.api.firebase_auth_routes import router as firebase_auth_router
 from app.api.push_routes import router as push_router
 from app.api.routes import router
 from app.logging_config import setup_logging
@@ -14,11 +15,12 @@ setup_logging()
 app = FastAPI(
     title="GlucoPlate AI",
     description="AI-powered recipe generation, personalization, saving, and grocery planning API.",
-    version="0.4.0",
+    version="0.5.0",
 )
 
 app.include_router(router)
 app.include_router(push_router)
+app.include_router(firebase_auth_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -46,6 +48,7 @@ async def pwa_headers_and_script(request: Request, call_next):
             b'<script src="/static/native-timers.js" defer></script>'
             b'<script src="/static/native-ingredients.js" defer></script>'
             b'<script src="/static/offline-actions.js" defer></script>'
+            b'<script src="/static/firebase-auth.js" defer></script>'
             b'<script src="/static/pwa.js" defer></script></body>'
         )
         if b"/static/native-pwa.css" not in body and head_marker in body:
@@ -58,6 +61,7 @@ async def pwa_headers_and_script(request: Request, call_next):
                 b"/static/native-timers.js",
                 b"/static/native-ingredients.js",
                 b"/static/offline-actions.js",
+                b"/static/firebase-auth.js",
                 b"/static/pwa.js",
             )
             for script_path in scripts:
@@ -106,6 +110,7 @@ async def log_requests(request: Request, call_next):
             "/api/products",
             "/api/stores",
             "/api/auth",
+            "/api/firebase-auth",
             "/api/push",
         ]
         if method in ("POST", "PUT", "DELETE") and any(route in path for route in tracked_routes):
