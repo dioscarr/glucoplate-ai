@@ -37,10 +37,19 @@ async def pwa_headers_and_script(request: Request, call_next):
     if path.endswith(".html"):
         chunks = [chunk async for chunk in response.body_iterator]
         body = b"".join(chunks)
-        marker = b"</body>"
-        script = b'<script src="/static/pwa.js" defer></script></body>'
-        if b"/static/pwa.js" not in body and marker in body:
-            body = body.replace(marker, script)
+        head_marker = b"</head>"
+        body_marker = b"</body>"
+        native_style = b'<link rel="stylesheet" href="/static/native-pwa.css" /></head>'
+        native_scripts = (
+            b'<script src="/static/device-manager.js" defer></script>'
+            b'<script src="/static/pwa.js" defer></script></body>'
+        )
+        if b"/static/native-pwa.css" not in body and head_marker in body:
+            body = body.replace(head_marker, native_style)
+        if b"/static/device-manager.js" not in body and body_marker in body:
+            body = body.replace(body_marker, native_scripts)
+        elif b"/static/pwa.js" not in body and body_marker in body:
+            body = body.replace(body_marker, b'<script src="/static/pwa.js" defer></script></body>')
         headers = dict(response.headers)
         headers.pop("content-length", None)
         headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
