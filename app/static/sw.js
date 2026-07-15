@@ -1,5 +1,5 @@
-const CACHE='glucoplate-shell-v3';
-const SHELL=['/static/index.html','/static/login.html','/static/register.html','/static/manifest.webmanifest','/static/device-manager.js','/static/native-pwa.css','/static/pwa.js','/static/icons/icon-192.svg','/static/icons/icon-512.svg'];
+const CACHE='glucoplate-shell-v4';
+const SHELL=['/static/index.html','/static/login.html','/static/register.html','/static/manifest.webmanifest','/static/device-manager.js','/static/native-cook.js','/static/native-pwa.css','/static/pwa.js','/static/icons/icon-192.svg','/static/icons/icon-512.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;const url=new URL(event.request.url);if(url.origin!==self.location.origin)return;event.respondWith(fetch(event.request).then(response=>{const copy=response.clone();if(url.pathname.startsWith('/static/'))caches.open(CACHE).then(cache=>cache.put(event.request,copy));return response}).catch(()=>caches.match(event.request).then(hit=>hit||caches.match('/static/index.html'))))});
