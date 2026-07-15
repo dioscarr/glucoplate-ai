@@ -1,0 +1,11 @@
+(()=>{
+  let timerId=null,endsAt=0;
+  const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
+  function finish(){timerId=null;endsAt=0;window.DeviceManager?.haptic?.('success');notify('Cooking timer finished ⏰');if(Notification?.permission==='granted'){navigator.serviceWorker?.ready.then(registration=>registration.showNotification('GlucoPlate timer finished',{body:'Your cooking timer is complete.',icon:'/static/icons/icon-192.svg',tag:'glucoplate-timer'})).catch(()=>{})}}
+  function start(minutes){if(timerId)clearTimeout(timerId);const duration=Math.max(1,Number(minutes)||1)*60000;endsAt=Date.now()+duration;timerId=setTimeout(finish,duration);window.DeviceManager?.haptic?.('light');notify(`${minutes}-minute cooking timer started.`);renderStatus()}
+  function cancel(){if(timerId)clearTimeout(timerId);timerId=null;endsAt=0;notify('Cooking timer cancelled.');renderStatus()}
+  function renderStatus(){const host=document.querySelector('.cook-timer-status');if(!host)return;host.textContent=endsAt?`Timer running until ${new Date(endsAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}`:'No timer running'}
+  function enhance(){const cook=document.getElementById('cookMode');if(!cook||cook.querySelector('.cook-timers'))return;const controls=cook.querySelector('.cook-controls');if(!controls)return;const panel=document.createElement('div');panel.className='cook-timers';panel.innerHTML='<strong>Quick timer</strong><div class="cook-timer-buttons"><button type="button" class="btn ghost" data-minutes="1">1 min</button><button type="button" class="btn ghost" data-minutes="5">5 min</button><button type="button" class="btn ghost" data-minutes="10">10 min</button><button type="button" class="btn ghost" data-cancel="true">Cancel</button></div><span class="cook-timer-status">No timer running</span>';controls.insertAdjacentElement('afterend',panel);panel.querySelectorAll('[data-minutes]').forEach(button=>button.onclick=()=>start(button.dataset.minutes));panel.querySelector('[data-cancel]').onclick=cancel;renderStatus()}
+  const observer=new MutationObserver(enhance);window.addEventListener('DOMContentLoaded',()=>{observer.observe(document.body,{subtree:true,childList:true});enhance()});
+  window.GlucoPlateTimers={start,cancel,finish};
+})();
