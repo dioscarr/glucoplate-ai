@@ -19,70 +19,54 @@ def test_root_redirects_to_single_index_page() -> None:
     assert response.headers["location"] == "/static/index.html"
 
 
-def test_index_page_has_food_based_recipe_planner() -> None:
+def test_index_page_has_cuisine_first_recipe_discovery() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
 
-    assert "Food-based recipe planner" in html
-    assert "Pick food. Get recipe names." in html
-    assert "Browse by food" in html
-    assert "Browse by image" in html
-    assert "Suggest recipe names" in html
+    assert "Cuisine-first recipe discovery" in html
+    assert "Choose a cuisine. Pick a dish. Generate it." in html
+    assert "Explore cuisines" in html
+    assert "cuisineGrid" in html
+    assert "renderPopularRecipes" in html
+
+
+def test_index_page_has_ingredient_and_food_browsing() -> None:
+    html = INDEX_HTML.read_text(encoding="utf-8")
+
     assert "foodGrid" in html
-    assert "suggestions" in html
+    assert "selectedFoods" in html
+    assert "renderCategories" in html
+    assert "renderFoods" in html
+    assert "ingredients you already have" in html
 
 
-def test_index_page_has_recipe_name_suggestion_flow() -> None:
+def test_index_page_has_native_app_shell() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
 
-    assert "recipeIdeas" in html
-    assert "suggestRecipeNames" in html
-    assert "chooseRecipeIdea" in html
-    assert "collectFoods" in html
-    assert "imageFoodHints" in html
-    assert "Make ${idea.name}" in html
-    assert "% match" in html
-    assert "scoreIdea" in html
+    assert "homeView" in html
+    assert "discoverView" in html
+    assert "cookView" in html
+    assert "savedView" in html
+    assert "profileView" in html
+    assert "bottom-nav" in html
+    assert "Open Cook Mode" in html
 
 
-def test_index_page_has_milestone_2_native_app_shell() -> None:
+def test_index_page_has_cook_mode() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
 
-    assert "Home" in html
-    assert "Discover" in html
-    assert "Cookbook" in html
-    assert "Profile" in html
-    assert "Mobile app navigation" in html
-    assert "categoryRow" in html
-    assert "AI kitchen" in html
-    assert "thinking" in html
-    assert "Cook Mode" in html
+    assert "cook-step" in html
+    assert "cook-controls" in html
     assert "startCookMode" in html
-
-
-def test_index_page_has_polished_cook_mode() -> None:
-    html = INDEX_HTML.read_text(encoding="utf-8")
-
-    assert "cook-progress" in html
-    assert "Kitchen timer" in html
-    assert "toggleTimer" in html
-    assert "timerSeconds" in html
-    assert "Recipe complete" in html
-    assert "prevCookStep" in html
     assert "nextCookStep" in html
 
 
-def test_index_page_has_motion_system_tokens() -> None:
+def test_index_page_has_motion_and_feedback() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
 
-    assert "--fast" in html
-    assert "--medium" in html
-    assert "--slow" in html
-    assert "--spring" in html
     assert "@keyframes fadeLift" in html
-    assert "@keyframes chipPop" in html
-    assert "@keyframes heroFloat" in html
-    assert "@keyframes toastIn" in html
-    assert "@media(prefers-reduced-motion:reduce)" in html
+    assert "@keyframes bounce" in html
+    assert "thinking" in html
+    assert "toast" in html
 
 
 def test_index_page_has_sticky_recipe_actions_and_saved_cards() -> None:
@@ -90,9 +74,9 @@ def test_index_page_has_sticky_recipe_actions_and_saved_cards() -> None:
 
     assert "position:sticky" in html
     assert "recipe-actions" in html
-    assert "saved-emoji" in html
-    assert "Saved recipe" in html
-    assert "New recipe" in html
+    assert "saved-list" in html
+    assert "saved-item" in html
+    assert "loadSaved" in html
 
 
 def test_index_page_keeps_existing_recipe_journey() -> None:

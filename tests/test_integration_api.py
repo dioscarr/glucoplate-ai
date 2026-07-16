@@ -15,7 +15,7 @@ def test_health_endpoint_returns_healthy() -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy"}
+    assert response.json() == {"status": "healthy", "product": "GlucoPlate AI"}
 
 
 def test_recipe_generation_uses_local_fallback_when_ai_disabled() -> None:

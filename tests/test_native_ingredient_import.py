@@ -26,4 +26,4 @@ def test_native_ingredient_script_exposes_clipboard_camera_and_indexeddb() -> No
 def test_service_worker_caches_native_ingredient_script() -> None:
     worker = (ROOT / 'app' / 'static' / 'sw.js').read_text(encoding='utf-8')
     assert '/static/native-ingredients.js' in worker
-    assert "glucoplate-shell-v5" in worker
+    assert "glucoplate-shell-v7" in worker
