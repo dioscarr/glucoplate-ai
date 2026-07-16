@@ -19,6 +19,7 @@ class FirebaseAuthService:
             "messagingSenderId": os.getenv("FIREBASE_MESSAGING_SENDER_ID", ""),
             "appId": os.getenv("FIREBASE_APP_ID", ""),
             "measurementId": os.getenv("FIREBASE_MEASUREMENT_ID", ""),
+            "databaseURL": os.getenv("FIREBASE_DATABASE_URL", ""),
         }
 
     def client_configured(self) -> bool:
@@ -30,6 +31,12 @@ class FirebaseAuthService:
             os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
             or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         )
+
+    def realtime_database_configured(self) -> bool:
+        return bool(os.getenv("FIREBASE_DATABASE_URL"))
+
+    def firebase_app(self):
+        return self._firebase_app()
 
     def _firebase_app(self):
         import firebase_admin
@@ -45,10 +52,14 @@ class FirebaseAuthService:
                 return firebase_admin.get_app()
             except ValueError:
                 service_account_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+                options: dict[str, str] = {}
+                database_url = os.getenv("FIREBASE_DATABASE_URL")
+                if database_url:
+                    options["databaseURL"] = database_url
                 if service_account_json:
                     credential = credentials.Certificate(json.loads(service_account_json))
-                    return firebase_admin.initialize_app(credential)
-                return firebase_admin.initialize_app()
+                    return firebase_admin.initialize_app(credential, options=options or None)
+                return firebase_admin.initialize_app(options=options or None)
 
     def verify_id_token(self, token: str) -> dict[str, Any]:
         if not self.server_configured():

@@ -93,7 +93,9 @@
   function hideGate(){ensureGate();document.getElementById('enterpriseAuthGate').classList.add('hidden')}
   function panelHtml(){
     const session=JSON.parse(localStorage.getItem('glucoplate_firebase_session')||'null'),user=session?.user,enterprise=session?.enterprise;
-    return `<div id="firebaseAuthPanel" style="margin-top:16px;padding:16px;border:1px solid #e7ded4;border-radius:18px;background:#fff"><strong style="display:block">Enterprise account</strong><span style="display:block;color:#756f69;font-size:.82rem;margin:5px 0 12px">${user&&enterprise?`${user.name||user.email} · ${enterprise.company_name} · ${enterprise.role}`:'Sign in with your company access code.'}</span><div style="display:flex;gap:8px;flex-wrap:wrap">${user&&enterprise?'<button id="firebaseSignOutBtn" class="btn ghost" type="button">Sign out</button>':'<button id="firebaseOpenLoginBtn" class="btn primary" type="button">Sign in</button>'}</div></div>`;
+    const adminRoles=new Set(['platform_admin','enterprise_owner','enterprise_admin','admin']);
+    const adminLink=user&&enterprise&&adminRoles.has(enterprise.role)?'<a href="/static/admin.html" class="btn secondary" style="text-decoration:none">Admin dashboard</a>':'';
+    return `<div id="firebaseAuthPanel" style="margin-top:16px;padding:16px;border:1px solid #e7ded4;border-radius:18px;background:#fff"><strong style="display:block">Enterprise account</strong><span style="display:block;color:#756f69;font-size:.82rem;margin:5px 0 12px">${user&&enterprise?`${user.name||user.email} · ${enterprise.company_name} · ${enterprise.role}`:'Sign in with your company access code.'}</span><div style="display:flex;gap:8px;flex-wrap:wrap">${user&&enterprise?`${adminLink}<button id="firebaseSignOutBtn" class="btn ghost" type="button">Sign out</button>`:'<button id="firebaseOpenLoginBtn" class="btn primary" type="button">Sign in</button>'}</div></div>`;
   }
   function renderPanel(){
     document.getElementById('firebaseAuthPanel')?.remove();
