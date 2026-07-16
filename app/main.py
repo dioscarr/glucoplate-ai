@@ -54,6 +54,7 @@ async def pwa_headers_and_script(request: Request, call_next):
             b'<script src="/static/offline-actions.js" defer></script>'
             b'<script src="/static/firebase-auth.js" defer></script>'
             b'<script src="/static/firebase-user-data.js" defer></script>'
+            b'<script src="/static/profile-personalization.js" defer></script>'
             b'<script src="/static/pwa.js" defer></script></body>'
         )
         if b"/static/native-pwa.css" not in body and head_marker in body:
@@ -68,6 +69,7 @@ async def pwa_headers_and_script(request: Request, call_next):
                 b"/static/offline-actions.js",
                 b"/static/firebase-auth.js",
                 b"/static/firebase-user-data.js",
+                b"/static/profile-personalization.js",
                 b"/static/pwa.js",
             )
             for script_path in scripts:
