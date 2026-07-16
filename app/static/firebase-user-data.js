@@ -1,10 +1,21 @@
 (()=>{
   const nativeFetch=window.fetch.bind(window);
+  const ACTIVE_PROFILE_KEY='glucoplate_active_profile_id';
   const routeMap=new Map([
     ['/api/recipes/save','/api/user-data/recipes'],
     ['/api/recipes/list','/api/user-data/recipes'],
     ['/api/recipes/recents','/api/user-data/recents']
   ]);
+
+  const activeProfileId=()=>localStorage.getItem(ACTIVE_PROFILE_KEY)||'default';
+  function setActiveProfile(profile){
+    const id=typeof profile==='string'?profile:profile?.id;
+    if(!id)throw new Error('A profile id is required.');
+    localStorage.setItem(ACTIVE_PROFILE_KEY,id);
+    localStorage.setItem('glucoplate_active_profile',JSON.stringify(typeof profile==='string'?{id}:profile));
+    window.dispatchEvent(new CustomEvent('glucoplate:profilechange',{detail:{profile_id:id}}));
+    return id;
+  }
 
   function normalizeRequest(input,init={}){
     const rawUrl=typeof input==='string'?input:input.url;
@@ -45,12 +56,19 @@
     return response.status===204?null:response.json();
   }
 
+  const profileQuery=path=>`${path}${path.includes('?')?'&':'?'}profile_id=${encodeURIComponent(activeProfileId())}`;
+
   window.GlucoPlateUserData={
+    activeProfileId,
+    setActiveProfile,
+    listProfiles:()=>authenticatedRequest('/api/user-data/profiles'),
+    createProfile:profile=>authenticatedRequest('/api/user-data/profiles',{method:'POST',body:JSON.stringify(profile)}),
+    deleteProfile:profileId=>authenticatedRequest(`/api/user-data/profiles/${encodeURIComponent(profileId)}`,{method:'DELETE'}),
     listSavedRecipes:()=>authenticatedRequest('/api/user-data/recipes'),
     deleteSavedRecipe:recipeId=>authenticatedRequest(`/api/user-data/recipes/${encodeURIComponent(recipeId)}`,{method:'DELETE'}),
-    recordCooked:payload=>authenticatedRequest('/api/user-data/cooking-history',{method:'POST',body:JSON.stringify(payload)}),
-    listCookingHistory:(limit=50)=>authenticatedRequest(`/api/user-data/cooking-history?limit=${limit}`),
-    getPreferences:()=>authenticatedRequest('/api/user-data/preferences'),
-    savePreferences:preferences=>authenticatedRequest('/api/user-data/preferences',{method:'PUT',body:JSON.stringify({preferences})})
+    recordCooked:payload=>authenticatedRequest('/api/user-data/cooking-history',{method:'POST',body:JSON.stringify({...payload,profile_id:activeProfileId()})}),
+    listCookingHistory:(limit=50)=>authenticatedRequest(profileQuery(`/api/user-data/cooking-history?limit=${limit}`)),
+    getPreferences:()=>authenticatedRequest(profileQuery('/api/user-data/preferences')),
+    savePreferences:preferences=>authenticatedRequest('/api/user-data/preferences',{method:'PUT',body:JSON.stringify({preferences,profile_id:activeProfileId()})})
   };
 })();
