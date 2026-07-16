@@ -1,5 +1,5 @@
 (()=>{
-  let sdk=null,authClient=null;
+  let sdk=null,authClient=null,currentMode='login';
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   const loadSdk=async()=>{
     if(sdk)return sdk;
@@ -18,40 +18,93 @@
     await api.setPersistence(authClient,api.browserLocalPersistence);
     return authClient;
   }
+  const authStyle=`
+    #enterpriseAuthGate{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 15% 0%,#fff2e6,transparent 35%),#f7f4ef;font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#211f1d}
+    #enterpriseAuthGate.hidden{display:none}.enterprise-auth-card{width:min(460px,100%);background:#fff;border:1px solid #e7ded4;border-radius:28px;padding:28px;box-shadow:0 24px 70px rgba(59,43,30,.16)}
+    .enterprise-auth-brand{display:flex;gap:12px;align-items:center;margin-bottom:22px}.enterprise-auth-logo{width:52px;height:52px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(135deg,#f26a2e,#ff9e3d);font-size:1.45rem}.enterprise-auth-brand strong,.enterprise-auth-brand span{display:block}.enterprise-auth-brand span{font-size:.78rem;color:#756f69;margin-top:3px}
+    .enterprise-auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;background:#f3ede6;border-radius:15px;margin-bottom:20px}.enterprise-auth-tab{border:0;border-radius:11px;padding:10px;background:transparent;font-weight:850}.enterprise-auth-tab.active{background:#fff;box-shadow:0 4px 14px rgba(59,43,30,.08)}
+    .enterprise-auth-card h1{font-size:1.9rem;letter-spacing:-.04em;margin:0 0 6px}.enterprise-auth-copy{color:#756f69;font-size:.9rem;line-height:1.5;margin:0 0 18px}.enterprise-auth-field{display:grid;gap:7px;margin-top:13px}.enterprise-auth-field label{font-size:.78rem;font-weight:850}.enterprise-auth-field input{width:100%;border:1px solid #e7ded4;border-radius:15px;padding:13px 14px;outline:none}.enterprise-auth-field input:focus{border-color:#efa076;box-shadow:0 0 0 4px rgba(242,106,46,.10)}
+    .enterprise-auth-submit,.enterprise-auth-google{width:100%;border:0;border-radius:16px;padding:14px;font-weight:900;margin-top:16px}.enterprise-auth-submit{background:linear-gradient(135deg,#f26a2e,#ff9e3d);color:#fff}.enterprise-auth-google{background:#fff;border:1px solid #e7ded4;color:#211f1d;margin-top:10px}.enterprise-auth-error{min-height:20px;color:#a92f24;font-size:.82rem;margin-top:12px}.enterprise-auth-note{font-size:.75rem;color:#756f69;margin-top:14px;line-height:1.45}
+  `;
+  function ensureGate(){
+    if(!document.getElementById('enterpriseAuthStyles')){const style=document.createElement('style');style.id='enterpriseAuthStyles';style.textContent=authStyle;document.head.appendChild(style)}
+    if(document.getElementById('enterpriseAuthGate'))return;
+    document.body.insertAdjacentHTML('beforeend',`<div id="enterpriseAuthGate"><div class="enterprise-auth-card"><div class="enterprise-auth-brand"><div class="enterprise-auth-logo">🍽️</div><div><strong>GlucoPlate Enterprise</strong><span>Secure company access</span></div></div><div class="enterprise-auth-tabs"><button id="enterpriseLoginTab" class="enterprise-auth-tab active" type="button">Login</button><button id="enterpriseRegisterTab" class="enterprise-auth-tab" type="button">Register</button></div><h1 id="enterpriseAuthTitle">Welcome back</h1><p id="enterpriseAuthCopy" class="enterprise-auth-copy">Sign in with your company account and access code.</p><form id="enterpriseAuthForm"><div id="enterpriseNameField" class="enterprise-auth-field" style="display:none"><label for="enterpriseName">Full name</label><input id="enterpriseName" autocomplete="name" /></div><div class="enterprise-auth-field"><label for="enterpriseEmail">Work email</label><input id="enterpriseEmail" type="email" autocomplete="email" required /></div><div class="enterprise-auth-field"><label for="enterprisePassword">Password</label><input id="enterprisePassword" type="password" autocomplete="current-password" minlength="6" required /></div><div class="enterprise-auth-field"><label for="enterpriseAccessCode">Company access code</label><input id="enterpriseAccessCode" inputmode="numeric" autocomplete="one-time-code" required /></div><button id="enterpriseSubmit" class="enterprise-auth-submit" type="submit">Login</button><button id="enterpriseGoogle" class="enterprise-auth-google" type="button">Continue with Google</button><div id="enterpriseAuthError" class="enterprise-auth-error"></div><div class="enterprise-auth-note">Your access code identifies your company and permissions. Contact your administrator if you do not have one.</div></form></div></div>`);
+    document.getElementById('enterpriseLoginTab').addEventListener('click',()=>setMode('login'));
+    document.getElementById('enterpriseRegisterTab').addEventListener('click',()=>setMode('register'));
+    document.getElementById('enterpriseAuthForm').addEventListener('submit',submitCredentials);
+    document.getElementById('enterpriseGoogle').addEventListener('click',signInGoogle);
+  }
+  function setMode(mode){
+    currentMode=mode;const registering=mode==='register';
+    document.getElementById('enterpriseLoginTab').classList.toggle('active',!registering);
+    document.getElementById('enterpriseRegisterTab').classList.toggle('active',registering);
+    document.getElementById('enterpriseNameField').style.display=registering?'grid':'none';
+    document.getElementById('enterpriseAuthTitle').textContent=registering?'Create your account':'Welcome back';
+    document.getElementById('enterpriseAuthCopy').textContent=registering?'Register with your company-issued access code.':'Sign in with your company account and access code.';
+    document.getElementById('enterpriseSubmit').textContent=registering?'Create account':'Login';
+    document.getElementById('enterprisePassword').autocomplete=registering?'new-password':'current-password';
+    setError('');
+  }
+  const setError=message=>{const target=document.getElementById('enterpriseAuthError');if(target)target.textContent=message||''};
+  const accessCode=()=>document.getElementById('enterpriseAccessCode')?.value.trim()||'';
+  async function enroll(user,code){
+    const token=await user.getIdToken();
+    const response=await fetch('/api/firebase-auth/enterprise/enroll',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({access_code:code})});
+    if(!response.ok)throw new Error((await response.json()).detail||'Company enrollment failed.');
+    await user.getIdToken(true);
+    return syncSession(user);
+  }
   async function syncSession(user){
-    if(!user){localStorage.removeItem('glucoplate_firebase_session');renderPanel();return null}
+    if(!user){localStorage.removeItem('glucoplate_firebase_session');localStorage.removeItem('glucoplate_firebase_id_token');showGate();renderPanel();return null}
     const token=await user.getIdToken();
     const response=await fetch('/api/firebase-auth/session',{headers:{Authorization:`Bearer ${token}`}});
     if(!response.ok)throw new Error((await response.json()).detail||'Could not verify Firebase session.');
     const session=await response.json();
     localStorage.setItem('glucoplate_firebase_session',JSON.stringify(session));
     localStorage.setItem('glucoplate_firebase_id_token',token);
+    if(session.enterprise)hideGate();else showGate();
     renderPanel();return session;
   }
-  async function signInGoogle(){
-    try{const api=await loadSdk(),client=await getAuthClient();await api.signInWithPopup(client,new api.GoogleAuthProvider());notify('Signed in with Google.')}catch(error){if(error?.code!=='auth/popup-closed-by-user')notify(error.message||'Google sign-in failed.')}
+  async function submitCredentials(event){
+    event.preventDefault();setError('');
+    const email=document.getElementById('enterpriseEmail').value.trim();
+    const password=document.getElementById('enterprisePassword').value;
+    const code=accessCode();
+    if(!code)return setError('Company access code is required.');
+    try{
+      const api=await loadSdk(),client=await getAuthClient();let credential;
+      if(currentMode==='register'){
+        credential=await api.createUserWithEmailAndPassword(client,email,password);
+        const name=document.getElementById('enterpriseName').value.trim();
+        if(name)await api.updateProfile(credential.user,{displayName:name});
+      }else credential=await api.signInWithEmailAndPassword(client,email,password);
+      await enroll(credential.user,code);notify(currentMode==='register'?'Account created.':'Signed in.');
+    }catch(error){setError((error.message||'Authentication failed.').replace('Firebase: ',''));}
   }
-  async function signInGuest(){
-    try{const api=await loadSdk(),client=await getAuthClient();await api.signInAnonymously(client);notify('Continuing as guest.')}catch(error){notify(error.message||'Guest sign-in failed.')}
+  async function signInGoogle(){
+    setError('');const code=accessCode();if(!code)return setError('Enter your company access code first.');
+    try{const api=await loadSdk(),client=await getAuthClient();const credential=await api.signInWithPopup(client,new api.GoogleAuthProvider());await enroll(credential.user,code);notify('Signed in with Google.')}catch(error){if(error?.code!=='auth/popup-closed-by-user')setError(error.message||'Google sign-in failed.');}
   }
   async function signOut(){
-    try{const api=await loadSdk(),client=await getAuthClient();await api.signOut(client);localStorage.removeItem('glucoplate_firebase_id_token');notify('Signed out.')}catch(error){notify(error.message||'Sign-out failed.')}
+    try{const api=await loadSdk(),client=await getAuthClient();await api.signOut(client);notify('Signed out.')}catch(error){notify(error.message||'Sign-out failed.');}
   }
+  function showGate(){ensureGate();document.getElementById('enterpriseAuthGate').classList.remove('hidden')}
+  function hideGate(){ensureGate();document.getElementById('enterpriseAuthGate').classList.add('hidden')}
   function panelHtml(){
-    const session=JSON.parse(localStorage.getItem('glucoplate_firebase_session')||'null'),user=session?.user;
-    return `<div id="firebaseAuthPanel" style="margin-top:16px;padding:16px;border:1px solid #e7ded4;border-radius:18px;background:#fff"><strong style="display:block">Account</strong><span style="display:block;color:#756f69;font-size:.82rem;margin:5px 0 12px">${user?`Signed in as ${user.name||user.email||'Guest'}`:'Sign in to sync recipes and notifications across devices.'}</span><div style="display:flex;gap:8px;flex-wrap:wrap">${user?'<button id="firebaseSignOutBtn" class="btn ghost" type="button">Sign out</button>':'<button id="firebaseGoogleBtn" class="btn primary" type="button">Continue with Google</button><button id="firebaseGuestBtn" class="btn secondary" type="button">Continue as guest</button>'}</div></div>`;
+    const session=JSON.parse(localStorage.getItem('glucoplate_firebase_session')||'null'),user=session?.user,enterprise=session?.enterprise;
+    return `<div id="firebaseAuthPanel" style="margin-top:16px;padding:16px;border:1px solid #e7ded4;border-radius:18px;background:#fff"><strong style="display:block">Enterprise account</strong><span style="display:block;color:#756f69;font-size:.82rem;margin:5px 0 12px">${user&&enterprise?`${user.name||user.email} · ${enterprise.company_name} · ${enterprise.role}`:'Sign in with your company access code.'}</span><div style="display:flex;gap:8px;flex-wrap:wrap">${user&&enterprise?'<button id="firebaseSignOutBtn" class="btn ghost" type="button">Sign out</button>':'<button id="firebaseOpenLoginBtn" class="btn primary" type="button">Sign in</button>'}</div></div>`;
   }
   function renderPanel(){
     document.getElementById('firebaseAuthPanel')?.remove();
     const profile=document.getElementById('profileView');const target=profile?.querySelector('.card')||document.querySelector('main')||document.body;
     target.insertAdjacentHTML('beforeend',panelHtml());
-    document.getElementById('firebaseGoogleBtn')?.addEventListener('click',signInGoogle);
-    document.getElementById('firebaseGuestBtn')?.addEventListener('click',signInGuest);
     document.getElementById('firebaseSignOutBtn')?.addEventListener('click',signOut);
+    document.getElementById('firebaseOpenLoginBtn')?.addEventListener('click',showGate);
   }
   window.addEventListener('DOMContentLoaded',async()=>{
-    renderPanel();
-    try{const api=await loadSdk(),client=await getAuthClient();api.onAuthStateChanged(client,user=>syncSession(user).catch(error=>notify(error.message)))}catch(error){console.info('Firebase Auth unavailable:',error.message)}
+    ensureGate();showGate();renderPanel();
+    try{const api=await loadSdk(),client=await getAuthClient();api.onAuthStateChanged(client,user=>syncSession(user).catch(error=>{setError(error.message);showGate()}))}catch(error){setError(error.message);console.info('Firebase Auth unavailable:',error.message)}
   });
-  window.GlucoPlateFirebaseAuth={signInGoogle,signInGuest,signOut,syncSession,getAuthClient};
+  window.GlucoPlateFirebaseAuth={signInGoogle,signOut,syncSession,getAuthClient,showGate};
 })();
