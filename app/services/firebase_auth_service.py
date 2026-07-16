@@ -69,3 +69,14 @@ class FirebaseAuthService:
             "provider": (claims.get("firebase") or {}).get("sign_in_provider"),
             "claims": claims,
         }
+
+    def set_custom_user_claims(self, uid: str, claims: dict[str, Any]) -> None:
+        if not self.server_configured():
+            raise RuntimeError("Firebase server credentials are not configured")
+        if not uid.strip():
+            raise ValueError("Firebase user identifier is required")
+
+        from firebase_admin import auth
+
+        self._firebase_app()
+        auth.set_custom_user_claims(uid, claims)
