@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
+from app.api.enterprise_admin_routes import router as enterprise_admin_router
 from app.api.firebase_auth_routes import router as firebase_auth_router
 from app.api.push_routes import router as push_router
 from app.api.routes import router
@@ -15,12 +16,13 @@ setup_logging()
 app = FastAPI(
     title="GlucoPlate AI",
     description="AI-powered recipe generation, personalization, saving, and grocery planning API.",
-    version="0.5.0",
+    version="0.6.0",
 )
 
 app.include_router(router)
 app.include_router(push_router)
 app.include_router(firebase_auth_router)
+app.include_router(enterprise_admin_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -111,9 +113,10 @@ async def log_requests(request: Request, call_next):
             "/api/stores",
             "/api/auth",
             "/api/firebase-auth",
+            "/api/enterprise",
             "/api/push",
         ]
-        if method in ("POST", "PUT", "DELETE") and any(route in path for route in tracked_routes):
+        if method in ("POST", "PUT", "PATCH", "DELETE") and any(route in path for route in tracked_routes):
             try:
                 body = await request.body()
                 memory.add_memory(
