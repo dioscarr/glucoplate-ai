@@ -64,16 +64,43 @@ def enterprise_enroll(
     return {"ok": True, "company": company, "refresh_token": True}
 
 
+def _sync_enterprise_directory(user: dict, claims: dict) -> dict | None:
+    company_id = claims.get("company_id") or claims.get("enterprise_id")
+    if not company_id:
+        return None
+
+    uid = user.get("uid")
+    if not uid:
+        raise HTTPException(status_code=401, detail="Firebase user identifier is missing")
+
+    # Import lazily to avoid coupling router initialization while still using the
+    # same cached directory instance as the enterprise admin endpoints.
+    from app.api.enterprise_admin_routes import directory
+
+    try:
+        return directory().upsert_authenticated_user(
+            firebase_uid=uid,
+            email=user.get("email"),
+            display_name=user.get("name"),
+            enterprise_id=company_id,
+            role=claims.get("role") or "member",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
 @router.get("/session")
 def firebase_session(authorization: str | None = Header(default=None)) -> dict:
     user = _verified_user(authorization)
     claims = user.pop("claims", {})
-    company_id = claims.get("company_id")
+    company_id = claims.get("company_id") or claims.get("enterprise_id")
     enterprise = None
+    membership = None
     if company_id:
+        membership = _sync_enterprise_directory(user, claims)
         enterprise = {
             "company_id": company_id,
-            "company_name": claims.get("company_name"),
+            "company_name": claims.get("company_name") or claims.get("enterprise_name"),
             "role": claims.get("role", "member"),
         }
-    return {"ok": True, "user": user, "enterprise": enterprise}
+    return {"ok": True, "user": user, "enterprise": enterprise, "membership": membership}
