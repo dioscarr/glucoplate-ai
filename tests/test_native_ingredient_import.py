@@ -23,6 +23,21 @@ def test_native_ingredient_script_exposes_clipboard_camera_and_indexeddb() -> No
     assert 'cachedRecipes' in script
 
 
+def test_native_ingredient_script_has_specific_food_iconography() -> None:
+    script = (ROOT / 'app' / 'static' / 'native-ingredients.js').read_text(encoding='utf-8')
+
+    assert 'INGREDIENT_ICONS' in script
+    assert 'ingredientIconFor' in script
+    assert "'🍌'" in script
+    assert "'🧅'" in script
+    assert "'🧄'" in script
+    assert "'🥩'" in script
+    assert "'🍤'" in script
+    assert "'🍚'" in script
+    assert "'🥄'" in script
+    assert 'window.ingredientIcon=ingredientIconFor' in script
+
+
 def test_service_worker_caches_native_ingredient_script() -> None:
     worker = (ROOT / 'app' / 'static' / 'sw.js').read_text(encoding='utf-8')
     assert '/static/native-ingredients.js' in worker
