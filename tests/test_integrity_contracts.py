@@ -96,14 +96,14 @@ def test_static_ui_does_not_reintroduce_browser_dialogs() -> None:
 
     banned_dialog_calls = ["alert(", "confirm(", "prompt("]
     for banned_call in banned_dialog_calls:
-        assert banned_call not in index_html, f"Replace {banned_call} with toast or mini-modal UX."
+        assert banned_call not in index_html, f"Replace {banned_call} with toast or inline UX."
 
 
-def test_static_ui_keeps_modal_and_toast_language_available() -> None:
+def test_static_ui_keeps_nonblocking_feedback_available() -> None:
     index_html = (ROOT / "app" / "static" / "index.html").read_text(encoding="utf-8").lower()
 
-    assert "modal" in index_html
     assert "toast" in index_html
+    assert "thinking" in index_html
 
 
 def test_documentation_booklet_exists_for_architecture_context() -> None:
@@ -116,11 +116,11 @@ def test_documentation_booklet_exists_for_architecture_context() -> None:
     assert "Architectural Design" in text
 
 
-def test_deployment_secrets_document_explains_github_usage() -> None:
+def test_deployment_secrets_document_covers_runtime_and_ci_secrets() -> None:
     doc = ROOT / "docs" / "DEPLOYMENT_SECRETS.md"
 
     assert doc.exists()
     text = doc.read_text(encoding="utf-8")
-    assert "GitHub Secrets" in text
+    assert "Deployment Secrets Strategy" in text
     assert "CI_NOTIFICATION_WEBHOOK_URL" in text
     assert "GEMINI_API_KEY" in text
