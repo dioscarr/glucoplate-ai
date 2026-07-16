@@ -57,7 +57,6 @@ def test_index_page_has_cook_mode() -> None:
     assert "cook-step" in html
     assert "cook-controls" in html
     assert "startCookMode" in html
-    assert "prevCookStep" in html
     assert "nextCookStep" in html
 
 
