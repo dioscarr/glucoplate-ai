@@ -23,10 +23,21 @@ class CookedPayload(BaseModel):
     rating: int | None = Field(default=None, ge=1, le=5)
     notes: str | None = Field(default=None, max_length=2000)
     cooked_at: str | None = None
+    profile_id: str | None = None
 
 
 class PreferencesPayload(BaseModel):
     preferences: dict[str, Any]
+    profile_id: str | None = None
+
+
+class ProfilePayload(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    avatar: str | None = Field(default=None, max_length=16)
+    relationship: str | None = Field(default=None, max_length=40)
+    birth_year: int | None = Field(default=None, ge=1900, le=2100)
+    dietary_preferences: list[str] = Field(default_factory=list)
+    allergies: list[str] = Field(default_factory=list)
 
 
 def scoped_user(user: Annotated[AuthContext, Depends(current_user)]) -> AuthContext:
@@ -40,6 +51,25 @@ def service() -> FirebaseUserDataService:
         return FirebaseUserDataService()
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Firebase Realtime Database is unavailable") from exc
+
+
+@router.post("/profiles")
+def create_profile(payload: ProfilePayload, user: Annotated[AuthContext, Depends(scoped_user)]) -> dict:
+    profile = service().create_profile(user.enterprise_id, user.uid, payload.model_dump())
+    return {"ok": True, "profile": profile}
+
+
+@router.get("/profiles")
+def list_profiles(user: Annotated[AuthContext, Depends(scoped_user)]) -> list[dict[str, Any]]:
+    return service().list_profiles(user.enterprise_id, user.uid)
+
+
+@router.delete("/profiles/{profile_id}")
+def delete_profile(profile_id: str, user: Annotated[AuthContext, Depends(scoped_user)]) -> dict:
+    deleted = service().delete_profile(user.enterprise_id, user.uid, profile_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Profile not found or cannot be deleted")
+    return {"ok": True}
 
 
 @router.post("/recipes")
@@ -81,6 +111,7 @@ def record_cooked(payload: CookedPayload, user: Annotated[AuthContext, Depends(s
         user.enterprise_id,
         user.uid,
         payload.model_dump(exclude_none=True),
+        payload.profile_id,
     )
     return {"ok": True, "history": history}
 
@@ -89,16 +120,20 @@ def record_cooked(payload: CookedPayload, user: Annotated[AuthContext, Depends(s
 def list_cooked(
     user: Annotated[AuthContext, Depends(scoped_user)],
     limit: int = Query(default=50, ge=1, le=200),
+    profile_id: str | None = Query(default=None),
 ) -> list[dict[str, Any]]:
-    return service().list_cooked(user.enterprise_id, user.uid, limit)
+    return service().list_cooked(user.enterprise_id, user.uid, limit, profile_id)
 
 
 @router.put("/preferences")
 def save_preferences(payload: PreferencesPayload, user: Annotated[AuthContext, Depends(scoped_user)]) -> dict:
-    preferences = service().save_preferences(user.enterprise_id, user.uid, payload.preferences)
+    preferences = service().save_preferences(user.enterprise_id, user.uid, payload.preferences, payload.profile_id)
     return {"ok": True, "preferences": preferences}
 
 
 @router.get("/preferences")
-def get_preferences(user: Annotated[AuthContext, Depends(scoped_user)]) -> dict[str, Any]:
-    return service().get_preferences(user.enterprise_id, user.uid)
+def get_preferences(
+    user: Annotated[AuthContext, Depends(scoped_user)],
+    profile_id: str | None = Query(default=None),
+) -> dict[str, Any]:
+    return service().get_preferences(user.enterprise_id, user.uid, profile_id)
