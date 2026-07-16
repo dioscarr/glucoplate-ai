@@ -79,4 +79,6 @@ class FirebaseAuthService:
         from firebase_admin import auth
 
         self._firebase_app()
-        auth.set_custom_user_claims(uid, claims)
+        user = auth.get_user(uid)
+        merged_claims = {**(user.custom_claims or {}), **claims}
+        auth.set_custom_user_claims(uid, merged_claims)
