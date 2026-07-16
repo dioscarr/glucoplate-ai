@@ -86,6 +86,8 @@ class PushNotificationService:
         token = token.strip()
         if not token:
             raise ValueError("Firebase messaging token is required")
+        if not user_id:
+            raise ValueError("Authenticated Firebase user is required")
         with _STORE_LOCK, self._connect() as connection:
             connection.execute(
                 """
@@ -103,14 +105,21 @@ class PushNotificationService:
             row = connection.execute("SELECT * FROM push_tokens WHERE token = ?", (token,)).fetchone()
         return dict(row)
 
-    def remove_token(self, token: str) -> bool:
+    def remove_token(self, token: str, user_id: str | None = None) -> bool:
+        if not user_id:
+            return False
         with _STORE_LOCK, self._connect() as connection:
-            cursor = connection.execute("DELETE FROM push_tokens WHERE token = ?", (token,))
+            cursor = connection.execute("DELETE FROM push_tokens WHERE token = ? AND user_id = ?", (token, user_id))
             return cursor.rowcount > 0
 
-    def token_registered(self, token: str) -> bool:
+    def token_registered(self, token: str, user_id: str | None = None) -> bool:
+        if not user_id:
+            return False
         with self._connect() as connection:
-            row = connection.execute("SELECT 1 FROM push_tokens WHERE token = ? AND enabled = 1", (token,)).fetchone()
+            row = connection.execute(
+                "SELECT 1 FROM push_tokens WHERE token = ? AND user_id = ? AND enabled = 1",
+                (token, user_id),
+            ).fetchone()
             return row is not None
 
     def _firebase_app(self):
@@ -136,10 +145,10 @@ class PushNotificationService:
         messaging.send(messaging.Message(token=token, data={"title": title, "body": body, "url": url, "tag": tag}, webpush=messaging.WebpushConfig(headers={"Urgency": "normal"}, fcm_options=messaging.WebpushFCMOptions(link=url))))
         return True
 
-    def send_to_registered_token(self, token: str, payload: dict[str, Any]) -> dict[str, int | bool]:
+    def send_to_registered_token(self, token: str, payload: dict[str, Any], user_id: str | None = None) -> dict[str, int | bool]:
         if not self.server_configured():
             return {"configured": False, "registered": False, "sent": 0, "failed": 0}
-        if not self.token_registered(token):
+        if not self.token_registered(token, user_id=user_id):
             return {"configured": True, "registered": False, "sent": 0, "failed": 0}
         from firebase_admin import messaging
         self._firebase_app()
@@ -147,7 +156,7 @@ class PushNotificationService:
             self._send_token(token, payload)
             return {"configured": True, "registered": True, "sent": 1, "failed": 0}
         except (messaging.UnregisteredError, messaging.SenderIdMismatchError):
-            self.remove_token(token)
+            self.remove_token(token, user_id=user_id)
             return {"configured": True, "registered": True, "sent": 0, "failed": 1}
         except Exception:
             return {"configured": True, "registered": True, "sent": 0, "failed": 1}
@@ -168,7 +177,7 @@ class PushNotificationService:
                 sent += 1
             except (messaging.UnregisteredError, messaging.SenderIdMismatchError):
                 failed += 1
-                self.remove_token(token)
+                self.remove_token(token, user_id=str(record.get("user_id") or ""))
             except Exception:
                 failed += 1
         return {"configured": True, "sent": sent, "failed": failed}
