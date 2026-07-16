@@ -1,8 +1,12 @@
-import os
+from __future__ import annotations
 
-from fastapi import APIRouter, Header, HTTPException
+import os
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
+from app.api.enterprise_admin_routes import AuthContext, current_user
 from app.services.push_notification_service import PushNotificationService
 
 router = APIRouter(prefix="/api/push", tags=["push"])
@@ -10,7 +14,6 @@ router = APIRouter(prefix="/api/push", tags=["push"])
 
 class TokenRequest(BaseModel):
     token: str = Field(min_length=20)
-    user_id: str | None = None
     profile_id: str | None = None
     device_name: str | None = None
 
@@ -46,11 +49,14 @@ def push_config() -> dict:
 
 
 @router.post("/tokens")
-def save_token(request: TokenRequest) -> dict:
+def save_token(
+    request: TokenRequest,
+    user: Annotated[AuthContext, Depends(current_user)],
+) -> dict:
     try:
         record = PushNotificationService().save_token(
             request.token,
-            user_id=request.user_id,
+            user_id=user.uid,
             profile_id=request.profile_id,
             device_name=request.device_name,
         )
@@ -60,12 +66,18 @@ def save_token(request: TokenRequest) -> dict:
 
 
 @router.delete("/tokens")
-def remove_token(request: UnsubscribeRequest) -> dict:
-    return {"ok": PushNotificationService().remove_token(request.token)}
+def remove_token(
+    request: UnsubscribeRequest,
+    user: Annotated[AuthContext, Depends(current_user)],
+) -> dict:
+    return {"ok": PushNotificationService().remove_token(request.token, user_id=user.uid)}
 
 
 @router.post("/test")
-def send_test_push(request: TestPushRequest) -> dict:
+def send_test_push(
+    request: TestPushRequest,
+    user: Annotated[AuthContext, Depends(current_user)],
+) -> dict:
     result = PushNotificationService().send_to_registered_token(
         request.token,
         {
@@ -74,11 +86,12 @@ def send_test_push(request: TestPushRequest) -> dict:
             "url": "/static/index.html",
             "tag": "glucoplate-test",
         },
+        user_id=user.uid,
     )
     if not result.get("configured"):
         raise HTTPException(status_code=503, detail="Firebase server credentials are not configured")
     if not result.get("registered"):
-        raise HTTPException(status_code=404, detail="This device token is not registered")
+        raise HTTPException(status_code=404, detail="This device token is not registered for the signed-in user")
     if not result.get("sent"):
         raise HTTPException(status_code=502, detail="Firebase could not deliver the test notification")
     return {"ok": True, **result}
