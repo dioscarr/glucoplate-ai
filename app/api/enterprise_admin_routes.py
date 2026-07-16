@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
 from app.services.enterprise_directory import EnterpriseDirectory
 from app.services.firebase_auth_service import FirebaseAuthService
+from app.services.firebase_realtime_enterprise_directory import FirebaseRealtimeEnterpriseDirectory
 
 router = APIRouter(prefix="/api/enterprise", tags=["enterprise-admin"])
 
@@ -32,8 +33,12 @@ class MemberUpdate(BaseModel):
 
 
 @lru_cache(maxsize=1)
-def directory() -> EnterpriseDirectory:
-    service = EnterpriseDirectory()
+def directory() -> Any:
+    firebase = FirebaseAuthService()
+    if firebase.realtime_database_configured():
+        service = FirebaseRealtimeEnterpriseDirectory()
+    else:
+        service = EnterpriseDirectory()
     service.create_schema()
     service.seed_enterprise(
         enterprise_id="glucoplate",
