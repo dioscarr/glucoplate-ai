@@ -1,0 +1,11 @@
+{
+  "companies": [
+    {
+      "id": "glucoplate",
+      "name": "GlucoPlate AI",
+      "access_code": "0001",
+      "role": "admin",
+      "active": true
+    }
+  ]
+}
