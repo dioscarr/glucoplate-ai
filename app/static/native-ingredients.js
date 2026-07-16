@@ -20,6 +20,19 @@
     return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readonly');const request=tx.objectStore(STORE).getAll();request.onsuccess=()=>resolve(request.result.sort((a,b)=>String(b.cachedAt).localeCompare(String(a.cachedAt))).map(x=>x.recipe));request.onerror=()=>reject(request.error)});
   }
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
+  const INGREDIENT_ICONS=[
+    [/plantain|banana|guineo/i,'🍌'],[/avocado|aguacate/i,'🥑'],[/tomato/i,'🍅'],[/onion|shallot|scallion|leek/i,'🧅'],[/garlic/i,'🧄'],
+    [/pepper|chili|chile|jalapeño|paprika/i,'🫑'],[/carrot/i,'🥕'],[/potato/i,'🥔'],[/sweet potato|yam|yuca|cassava/i,'🍠'],[/corn|maize/i,'🌽'],
+    [/broccoli/i,'🥦'],[/mushroom/i,'🍄'],[/spinach|lettuce|kale|greens|cabbage|cilantro|parsley|basil|oregano|thyme|herb/i,'🥬'],[/lemon|lime|citrus/i,'🍋'],
+    [/chicken|turkey/i,'🍗'],[/beef|steak|ground meat/i,'🥩'],[/pork|ham|bacon|salami|sausage/i,'🥓'],[/fish|salmon|tuna|cod|tilapia/i,'🐟'],[/shrimp|prawn|crab|lobster|seafood/i,'🍤'],
+    [/egg/i,'🥚'],[/cheese/i,'🧀'],[/milk|cream|yogurt/i,'🥛'],[/butter/i,'🧈'],[/rice/i,'🍚'],[/pasta|spaghetti|noodle/i,'🍝'],[/bread|flour|tortilla|dough/i,'🍞'],
+    [/bean|lentil|chickpea|pea/i,'🫘'],[/oil|olive/i,'🫒'],[/salt/i,'🧂'],[/sugar|honey|syrup/i,'🍯'],[/coconut/i,'🥥'],[/stock|broth|water/i,'🥣'],[/spice|seasoning|cumin|curry|cinnamon|nutmeg/i,'🌶️']
+  ];
+  function ingredientIconFor(text){
+    const value=String(text||'');
+    const match=INGREDIENT_ICONS.find(([pattern])=>pattern.test(value));
+    return match?match[1]:'🥄';
+  }
   function parseIngredients(text){
     return [...new Set(String(text||'').split(/\n|,|;/).map(x=>x.replace(/^[-*•\d.)\s]+/,'').trim().toLowerCase()).filter(x=>x.length>1))].slice(0,30);
   }
@@ -61,6 +74,7 @@
     document.getElementById('ingredientPhotoInput').onchange=handlePhoto;
   }
   function wrapRecipeFunctions(){
+    window.ingredientIcon=ingredientIconFor;
     const originalRender=window.renderRecipe;
     if(typeof originalRender==='function'&&!originalRender.__offlineWrapped){
       const wrapped=function(recipe,...args){cacheRecipe(recipe).catch(()=>{});return originalRender.call(this,recipe,...args)};
@@ -82,5 +96,5 @@
   window.addEventListener('offline',()=>{notify('Offline mode: cached recipes remain available.');window.loadSaved?.()});
   window.addEventListener('online',()=>notify('Back online'));
   window.addEventListener('DOMContentLoaded',()=>{installImportPanel();wrapRecipeFunctions();setTimeout(()=>window.loadSaved?.(),0)});
-  window.GlucoPlateIngredients={importClipboard,choosePhoto,parseIngredients,cacheRecipe,cachedRecipes};
+  window.GlucoPlateIngredients={importClipboard,choosePhoto,parseIngredients,ingredientIconFor,cacheRecipe,cachedRecipes};
 })();
