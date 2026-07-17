@@ -5,11 +5,12 @@ from functools import lru_cache
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.services.enterprise_directory import EnterpriseDirectory
 from app.services.firebase_auth_service import FirebaseAuthService
 from app.services.firebase_realtime_enterprise_directory import FirebaseRealtimeEnterpriseDirectory
+from app.services.theme_service import ThemeService
 
 router = APIRouter(prefix="/api/enterprise", tags=["enterprise-admin"])
 
@@ -32,6 +33,13 @@ class MemberUpdate(BaseModel):
     status: Literal["active", "disabled"] | None = None
 
 
+class ThemeUpdate(BaseModel):
+    tokens: dict[str, Any] = Field(default_factory=dict)
+    sections: dict[str, Any] = Field(default_factory=dict)
+    components: dict[str, Any] = Field(default_factory=dict)
+    elements: dict[str, Any] = Field(default_factory=dict)
+
+
 @lru_cache(maxsize=1)
 def directory() -> Any:
     firebase = FirebaseAuthService()
@@ -40,13 +48,13 @@ def directory() -> Any:
     else:
         service = EnterpriseDirectory()
     service.create_schema()
-    service.seed_enterprise(
-        enterprise_id="glucoplate",
-        name="GlucoPlate AI",
-        slug="glucoplate",
-        plan="enterprise",
-    )
+    service.seed_enterprise(enterprise_id="glucoplate", name="GlucoPlate AI", slug="glucoplate", plan="enterprise")
     return service
+
+
+@lru_cache(maxsize=1)
+def themes() -> ThemeService:
+    return ThemeService()
 
 
 def current_user(authorization: Annotated[str | None, Header()] = None) -> AuthContext:
@@ -59,19 +67,11 @@ def current_user(authorization: Annotated[str | None, Header()] = None) -> AuthC
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=401, detail="Firebase authentication failed") from exc
-
     claims = verified.get("claims") or {}
     uid = verified.get("uid")
     if not uid:
         raise HTTPException(status_code=401, detail="Firebase token does not contain a user id")
-    return AuthContext(
-        uid=uid,
-        email=verified.get("email"),
-        name=verified.get("name"),
-        enterprise_id=claims.get("company_id") or claims.get("enterprise_id"),
-        enterprise_name=claims.get("company_name") or claims.get("enterprise_name"),
-        role=claims.get("role") or "member",
-    )
+    return AuthContext(uid=uid, email=verified.get("email"), name=verified.get("name"), enterprise_id=claims.get("company_id") or claims.get("enterprise_id"), enterprise_name=claims.get("company_name") or claims.get("enterprise_name"), role=claims.get("role") or "member")
 
 
 def require_enterprise_admin(user: Annotated[AuthContext, Depends(current_user)]) -> AuthContext:
@@ -93,13 +93,7 @@ def sync_enterprise_session(user: Annotated[AuthContext, Depends(current_user)])
     if not user.enterprise_id:
         raise HTTPException(status_code=403, detail="User is not assigned to an enterprise")
     try:
-        membership = directory().upsert_authenticated_user(
-            firebase_uid=user.uid,
-            email=user.email,
-            display_name=user.name,
-            enterprise_id=user.enterprise_id,
-            role=user.role,
-        )
+        membership = directory().upsert_authenticated_user(firebase_uid=user.uid, email=user.email, display_name=user.name, enterprise_id=user.enterprise_id, role=user.role)
     except ValueError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     return {"ok": True, "membership": membership}
@@ -113,34 +107,48 @@ def list_enterprise_users(user: Annotated[AuthContext, Depends(require_enterpris
 
 
 @router.patch("/admin/users/{user_id}")
-def update_enterprise_user(
-    user_id: str,
-    update: MemberUpdate,
-    actor: Annotated[AuthContext, Depends(require_enterprise_admin)],
-) -> dict:
+def update_enterprise_user(user_id: str, update: MemberUpdate, actor: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
     if not actor.enterprise_id:
         raise HTTPException(status_code=400, detail="Select an enterprise before updating users")
     if update.role and update.role not in ALLOWED_ROLES:
         raise HTTPException(status_code=400, detail="Unsupported enterprise role")
     try:
-        membership = directory().update_member(
-            actor.enterprise_id,
-            user_id,
-            role=update.role,
-            status=update.status,
-        )
+        membership = directory().update_member(actor.enterprise_id, user_id, role=update.role, status=update.status)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    directory().record_audit(
-        enterprise_id=actor.enterprise_id,
-        actor_uid=actor.uid,
-        action="membership.updated",
-        target_type="enterprise_user",
-        target_id=user_id,
-        details_json=json.dumps(update.model_dump(exclude_none=True), sort_keys=True),
-    )
+    directory().record_audit(enterprise_id=actor.enterprise_id, actor_uid=actor.uid, action="membership.updated", target_type="enterprise_user", target_id=user_id, details_json=json.dumps(update.model_dump(exclude_none=True), sort_keys=True))
     return {"ok": True, "membership": membership}
+
+
+@router.get("/admin/theme")
+def get_enterprise_theme(user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+    if not user.enterprise_id:
+        raise HTTPException(status_code=400, detail="Select an enterprise before editing its theme")
+    return {"theme": themes().get(user.enterprise_id)}
+
+
+@router.put("/admin/theme")
+def save_enterprise_theme(update: ThemeUpdate, user: Annotated[AuthContext, Depends(require_enterprise_admin)], publish: bool = False) -> dict:
+    if not user.enterprise_id:
+        raise HTTPException(status_code=400, detail="Select an enterprise before editing its theme")
+    saved = themes().save(user.enterprise_id, update.model_dump(), publish=publish)
+    directory().record_audit(enterprise_id=user.enterprise_id, actor_uid=user.uid, action="theme.published" if publish else "theme.saved", target_type="enterprise_theme", target_id=user.enterprise_id, details_json=json.dumps({"version": saved["version"], "status": saved["status"]}))
+    return {"ok": True, "theme": saved}
+
+
+@router.delete("/admin/theme")
+def reset_enterprise_theme(user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+    if not user.enterprise_id:
+        raise HTTPException(status_code=400, detail="Select an enterprise before resetting its theme")
+    return {"ok": True, "theme": themes().reset(user.enterprise_id)}
+
+
+@router.get("/theme/{enterprise_id}")
+def get_public_theme(enterprise_id: str) -> dict:
+    theme = themes().get(enterprise_id)
+    if theme.get("status") == "draft":
+        theme["status"] = "published-default"
+    return {"theme": theme}
 
 
 @router.get("/platform/enterprises")
