@@ -17,7 +17,7 @@ setup_logging()
 app = FastAPI(
     title="GlucoPlate AI",
     description="AI-powered recipe generation, personalization, saving, and grocery planning API.",
-    version="0.7.0",
+    version="0.8.0",
 )
 
 app.include_router(router)
@@ -55,6 +55,7 @@ async def pwa_headers_and_script(request: Request, call_next):
             b'<script src="/static/firebase-auth.js" defer></script>'
             b'<script src="/static/firebase-user-data.js" defer></script>'
             b'<script src="/static/profile-personalization.js" defer></script>'
+            b'<script src="/static/theme-runtime.js" defer></script>'
             b'<script src="/static/pwa.js" defer></script></body>'
         )
         if b"/static/native-pwa.css" not in body and head_marker in body:
@@ -70,6 +71,7 @@ async def pwa_headers_and_script(request: Request, call_next):
                 b"/static/firebase-auth.js",
                 b"/static/firebase-user-data.js",
                 b"/static/profile-personalization.js",
+                b"/static/theme-runtime.js",
                 b"/static/pwa.js",
             )
             for script_path in scripts:
