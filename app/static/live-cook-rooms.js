@@ -87,17 +87,21 @@
     const panel=ensurePanel(),reopen=ensureReopenButton();
     panel.hidden=dismissed||!room;
     reopen.hidden=!dismissed||!room;
+    launchControls();
   }
 
   function launchControls(){
     const cook=document.getElementById('cookMode');if(!cook)return;
-    const hasRecipe=Boolean(currentRecipe()),existing=cook.querySelector('.live-room-launch');
-    if(existing?.dataset.hasRecipe===String(hasRecipe))return;
+    const hasRecipe=Boolean(currentRecipe()),existing=cook.querySelector('.live-room-launch'),state=`${hasRecipe}:${Boolean(room)}:${dismissed}`;
+    if(existing?.dataset.state===state)return;
     existing?.remove();
-    const wrap=document.createElement('div');wrap.className='live-room-launch';wrap.dataset.hasRecipe=String(hasRecipe);
-    wrap.innerHTML=hasRecipe
-      ?'<button type="button" class="btn" data-live-create>Start live room</button><button type="button" class="btn ghost" data-live-browse>Live now</button><button type="button" class="live-room-code-link" data-live-join>Have an invite code?</button>'
-      :'<button type="button" class="btn" data-live-browse>Browse live rooms</button><button type="button" class="live-room-code-link" data-live-join>Have an invite code?</button>';
+    const wrap=document.createElement('div');wrap.className='live-room-launch';wrap.dataset.state=state;
+    wrap.innerHTML=room
+      ?'<button type="button" class="btn" data-live-reopen-inline>Open live room</button><button type="button" class="btn ghost" data-live-browse>Live now</button>'
+      :hasRecipe
+        ?'<button type="button" class="btn" data-live-create>Start live room</button><button type="button" class="btn ghost" data-live-browse>Live now</button><button type="button" class="live-room-code-link" data-live-join>Have an invite code?</button>'
+        :'<button type="button" class="btn" data-live-browse>Browse live rooms</button><button type="button" class="live-room-code-link" data-live-join>Have an invite code?</button>';
+    wrap.querySelector('[data-live-reopen-inline]')?.addEventListener('click',()=>setDismissed(false));
     wrap.querySelector('[data-live-create]')?.addEventListener('click',createRoom);
     wrap.querySelector('[data-live-browse]').onclick=browseLiveRooms;
     wrap.querySelector('[data-live-join]').onclick=promptJoin;
