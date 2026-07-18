@@ -1,6 +1,11 @@
 (()=>{
   const nativeFetch=window.fetch.bind(window);
   const ACTIVE_PROFILE_KEY='glucoplate_active_profile_id';
+  const INTERACTION_QUEUE_KEY='glucoplate_flavor_memory_queue_v1';
+  const INTERACTION_QUEUE_LIMIT=100;
+  const SIGNAL_DEDUPE_MS=2500;
+  const recentSignals=new Map();
+  let flushingSignals=false;
   const routeMap=new Map([
     ['/api/recipes/save','/api/user-data/recipes'],
     ['/api/recipes/list','/api/user-data/recipes'],
@@ -55,17 +60,27 @@
     return response;
   };
 
+  async function authToken(forceRefresh=false){
+    const provider=window.GlucoPlateFirebaseAuth?.getIdToken;
+    if(typeof provider==='function')return provider(Boolean(forceRefresh));
+    const cached=localStorage.getItem('glucoplate_firebase_id_token');
+    if(!cached)throw new Error('Sign in is required.');
+    return cached;
+  }
+
   async function authenticatedRequest(path,options={}){
-    const token=localStorage.getItem('glucoplate_firebase_id_token');
-    if(!token)throw new Error('Sign in is required.');
-    const headers=new Headers(options.headers||{});
-    headers.set('Authorization',`Bearer ${token}`);
-    if(options.body&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');
-    const response=await nativeFetch(path,{...options,headers});
+    const request=async forceRefresh=>{
+      const headers=new Headers(options.headers||{});
+      headers.set('Authorization',`Bearer ${await authToken(forceRefresh)}`);
+      if(options.body&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');
+      return nativeFetch(path,{...options,headers});
+    };
+    let response=await request(false);
+    if(response.status===401&&typeof window.GlucoPlateFirebaseAuth?.getIdToken==='function')response=await request(true);
     if(!response.ok){
       let message='Request failed.';
       try{message=(await response.json()).detail||message}catch(_error){}
-      throw new Error(message);
+      const error=new Error(message);error.status=response.status;throw error;
     }
     return response.status===204?null:response.json();
   }
@@ -81,7 +96,7 @@
     deleteSavedRecipe:recipeId=>authenticatedRequest(`/api/user-data/recipes/${encodeURIComponent(recipeId)}`,{method:'DELETE'}),
     recordCooked:payload=>authenticatedRequest('/api/user-data/cooking-history',{method:'POST',body:JSON.stringify({...payload,profile_id:activeProfileId()})}),
     listCookingHistory:(limit=50)=>authenticatedRequest(profileQuery(`/api/user-data/cooking-history?limit=${limit}`)),
-    recordRecipeInteraction:payload=>authenticatedRequest('/api/user-data/recipe-interactions',{method:'POST',body:JSON.stringify({...payload,profile_id:activeProfileId()})}),
+    recordRecipeInteraction:payload=>authenticatedRequest('/api/user-data/recipe-interactions',{method:'POST',body:JSON.stringify({...payload,profile_id:payload.profile_id||activeProfileId()})}),
     listRecipeInteractions:(limit=100)=>authenticatedRequest(profileQuery(`/api/user-data/recipe-interactions?limit=${limit}`)),
     getFlavorMemory:()=>authenticatedRequest(profileQuery('/api/user-data/flavor-memory')),
     getPreferences:()=>authenticatedRequest(profileQuery('/api/user-data/preferences')),
@@ -96,22 +111,65 @@
     return {title,summary,tags:pills};
   }
 
+  function readInteractionQueue(){
+    try{const value=JSON.parse(localStorage.getItem(INTERACTION_QUEUE_KEY)||'[]');return Array.isArray(value)?value.slice(-INTERACTION_QUEUE_LIMIT):[]}
+    catch{return[]}
+  }
+  function writeInteractionQueue(items){
+    const trimmed=items.slice(-INTERACTION_QUEUE_LIMIT);
+    if(trimmed.length)localStorage.setItem(INTERACTION_QUEUE_KEY,JSON.stringify(trimmed));
+    else localStorage.removeItem(INTERACTION_QUEUE_KEY);
+  }
+  function signalFingerprint(payload){
+    const recipeKey=payload.recipe_id||String(payload.recipe_name||'').trim().toLowerCase();
+    return [payload.profile_id,payload.interaction_type,recipeKey,payload.source].join(':');
+  }
+  function isDuplicateSignal(payload){
+    const key=signalFingerprint(payload),now=Date.now(),previous=recentSignals.get(key)||0;
+    recentSignals.set(key,now);
+    for(const [fingerprint,time] of recentSignals)if(now-time>SIGNAL_DEDUPE_MS*4)recentSignals.delete(fingerprint);
+    return now-previous<SIGNAL_DEDUPE_MS;
+  }
+  function queueInteraction(payload){
+    const queued=readInteractionQueue();
+    if(!queued.some(item=>signalFingerprint(item)===signalFingerprint(payload)&&item.occurred_at===payload.occurred_at)){
+      queued.push(payload);writeInteractionQueue(queued);
+    }
+  }
+  async function flushInteractionQueue(){
+    if(flushingSignals||!navigator.onLine||!localStorage.getItem('glucoplate_firebase_id_token'))return;
+    flushingSignals=true;
+    try{
+      const queued=readInteractionQueue(),remaining=[];
+      for(let index=0;index<queued.length;index++){
+        try{await api.recordRecipeInteraction(queued[index])}
+        catch(error){remaining.push(...queued.slice(index));console.debug('Flavor Memory queue is waiting to retry.',error?.message);break}
+      }
+      writeInteractionQueue(remaining);
+    }finally{flushingSignals=false}
+  }
   async function trackInteraction(interactionType,recipe=null,source='recipe-ui'){
     if(!localStorage.getItem('glucoplate_firebase_id_token'))return null;
     const value=recipe||recipeFromDocument();
-    if(!value?.title&&!value?.id)return null;
+    if(!value?.title&&!value?.id&&!value?.recipe_id)return null;
+    const payload={
+      interaction_type:interactionType,
+      recipe_id:value.id||value.recipe_id||null,
+      recipe_name:value.title||value.recipe_name||null,
+      cuisine:value.cuisine||value.culture||null,
+      tags:Array.isArray(value.tags)?value.tags.slice(0,30):[],
+      source,
+      profile_id:activeProfileId(),
+      occurred_at:new Date().toISOString()
+    };
+    if(isDuplicateSignal(payload))return null;
     try{
-      return await api.recordRecipeInteraction({
-        interaction_type:interactionType,
-        recipe_id:value.id||value.recipe_id||null,
-        recipe_name:value.title||value.recipe_name||null,
-        cuisine:value.cuisine||value.culture||null,
-        tags:Array.isArray(value.tags)?value.tags.slice(0,30):[],
-        source,
-        occurred_at:new Date().toISOString()
-      });
+      const result=await api.recordRecipeInteraction(payload);
+      flushInteractionQueue().catch(()=>{});
+      return result;
     }catch(error){
-      console.debug('Flavor Memory signal was not recorded.',{interactionType,message:error?.message});
+      queueInteraction(payload);
+      console.debug('Flavor Memory signal queued for retry.',{interactionType,message:error?.message});
       return null;
     }
   }
@@ -123,6 +181,9 @@
     if(button.classList.contains('saved-item')){
       openedFromCookbook=true;
       return;
+    }
+    if(button.id==='generateBtn'||button.id==='ingredientGenerateBtn'||button.id==='newBtn'||button.classList.contains('dish-card')){
+      openedFromCookbook=false;
     }
     if(button.id==='cookBtn'&&openedFromCookbook){
       openedFromCookbook=false;
@@ -193,7 +254,9 @@
   }
 
   window.GlucoPlateUserData=api;
-  window.GlucoPlateFlavorMemory={trackInteraction,recipeFromDocument};
-  window.addEventListener('DOMContentLoaded',()=>renderProfilePanel().catch(()=>{}));
-  window.addEventListener('glucoplate:profilechange',()=>renderProfilePanel().catch(()=>{}));
+  window.GlucoPlateFlavorMemory={trackInteraction,recipeFromDocument,flushInteractionQueue,pendingInteractions:readInteractionQueue};
+  window.addEventListener('DOMContentLoaded',()=>{renderProfilePanel().catch(()=>{});flushInteractionQueue().catch(()=>{})});
+  window.addEventListener('online',()=>flushInteractionQueue().catch(()=>{}));
+  window.addEventListener('glucoplate:auth-session-changed',()=>flushInteractionQueue().catch(()=>{}));
+  window.addEventListener('glucoplate:profilechange',()=>{renderProfilePanel().catch(()=>{});flushInteractionQueue().catch(()=>{})});
 })();
