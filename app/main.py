@@ -19,7 +19,7 @@ setup_logging()
 app = FastAPI(
     title="GlucoPlate AI",
     description="AI-powered recipe generation, personalization, saving, and grocery planning API.",
-    version="0.9.0",
+    version="0.10.0",
 )
 
 app.include_router(router)
@@ -40,6 +40,7 @@ HTML_SCRIPT_PATHS = (
     "/static/firebase-auth.js",
     "/static/firebase-user-data.js",
     "/static/profile-personalization.js",
+    "/static/pantry-ui.js",
     "/static/recommendation-ui.js",
     "/static/theme-runtime.js",
     "/static/pwa.js",

@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.api.enterprise_admin_routes import AuthContext
 from app.api.user_data_routes import scoped_user, service
+from app.services.firebase_pantry_service import FirebasePantryService
 from app.services.recipe_recommendation_service import RecipeRecommendationService
 
 router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
@@ -98,15 +99,25 @@ def recommend_recipe_concepts(
         user.uid,
         payload.profile_id,
     )
+    try:
+        pantry_items = FirebasePantryService().list_items(
+            user.enterprise_id,
+            user.uid,
+            payload.profile_id,
+        )
+    except Exception:
+        pantry_items = []
+
     concepts = RecipeRecommendationService().rank(
         goal=payload.goal,
         culture=payload.culture,
         interactions=interactions,
         preferences=preferences,
+        pantry_items=pantry_items,
         candidates=[candidate.model_dump(exclude_none=True) for candidate in payload.candidates] or None,
         limit=payload.limit,
     )
-    ranking_version = "flavor-memory-v1"
+    ranking_version = "flavor-memory-pantry-v1"
     session = _create_session(
         user_data,
         user,
@@ -121,6 +132,8 @@ def recommend_recipe_concepts(
         "session_id": session["id"],
         "concepts": concepts,
         "interaction_count": len(interactions),
+        "pantry_count": len(pantry_items),
+        "use_soon_count": sum(item.get("expiration_status") == "use_soon" for item in pantry_items),
         "ranking_version": ranking_version,
     }
 
