@@ -57,6 +57,7 @@ def save_token(
         record = PushNotificationService().save_token(
             request.token,
             user_id=user.uid,
+            enterprise_id=user.enterprise_id,
             profile_id=request.profile_id,
             device_name=request.device_name,
         )
