@@ -8,6 +8,7 @@ from loguru import logger
 from app.api.enterprise_admin_routes import router as enterprise_admin_router
 from app.api.firebase_auth_routes import router as firebase_auth_router
 from app.api.push_routes import router as push_router
+from app.api.recommendation_routes import router as recommendation_router
 from app.api.routes import router
 from app.api.user_data_routes import router as user_data_router
 from app.logging_config import setup_logging
@@ -25,6 +26,7 @@ app.include_router(push_router)
 app.include_router(firebase_auth_router)
 app.include_router(enterprise_admin_router)
 app.include_router(user_data_router)
+app.include_router(recommendation_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -123,6 +125,7 @@ async def log_requests(request: Request, call_next):
             "/api/firebase-auth",
             "/api/enterprise",
             "/api/user-data",
+            "/api/recommendations",
             "/api/push",
         ]
         if method in ("POST", "PUT", "PATCH", "DELETE") and any(route in path for route in tracked_routes):
