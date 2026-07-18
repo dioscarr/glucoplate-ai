@@ -95,6 +95,14 @@ class RecipeOrchestrator:
 
     def _recipe_prompt(self, request: RecipeRequest) -> str:
         """Build a compact prompt to minimize paid input and output tokens."""
+        pantry = request.pantry_items[:80]
+        use_soon = request.use_soon_ingredients[:30]
+        pantry_instruction = (
+            "Prefer ingredients from pantry, prioritize use-soon items, and suggest pantry substitutions "
+            "before introducing new purchases. Never assume an ingredient is available unless listed. "
+            if pantry
+            else ""
+        )
         return (
             "Create one balanced recipe. Return compact JSON only with this exact shape: "
             '{"title":"str","summary":"str","ingredients":["str"],'
@@ -102,8 +110,10 @@ class RecipeOrchestrator:
             '"carbs_g":0,"fiber_g":0,"sugar_g":0,"fat_g":0,"sodium_mg":0},'
             '"substitutions":["str"],"safety_review":{"approved":true,'
             '"warnings":["str"],"disclaimer":"str"}}. '
+            f"{pantry_instruction}"
             f"goal={request.goal};servings={request.servings};"
             f"max_carbs={request.max_carbs_per_serving};"
             f"preferences={request.preferences};avoid={request.avoid_ingredients};"
-            f"culture={request.culture}. Keep ingredients and steps concise."
+            f"culture={request.culture};pantry={pantry};use_soon={use_soon}. "
+            "Keep ingredients and steps concise."
         )
