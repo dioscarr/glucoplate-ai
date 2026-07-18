@@ -42,6 +42,14 @@
     return String(value).trim().slice(0,80)||'Cook';
   }
   function normalizeInviteCode(value){return String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12)}
+  function roomChef(current=room){
+    const participants=current?.participants||[];
+    return participants.find(item=>item.role==='host')||participants.find(item=>String(item.uid||'')===String(current?.host_uid||''))||null;
+  }
+  function isChatEditing(){
+    const input=document.getElementById('liveRoomChatInput');
+    return Boolean(input&&document.activeElement===input);
+  }
 
   function ensureStyles(){
     if(document.getElementById('liveCookRoomStyles'))return;
@@ -55,7 +63,7 @@
     let panel=document.getElementById('liveCookRoomPanel');
     if(panel)return panel;
     panel=document.createElement('aside');panel.id='liveCookRoomPanel';panel.className='live-room-panel';panel.hidden=true;
-    panel.innerHTML=`<header><div><strong>Live Cook Room</strong><div id="liveRoomTitle"></div></div><button class="live-room-close" type="button" aria-label="Close">×</button></header><div id="liveRoomBody"></div>`;
+    panel.innerHTML=`<header class="live-room-header"><div class="live-room-brand"><span class="live-room-mark" aria-hidden="true">◉</span><div><span class="live-room-eyebrow">LIVE KITCHEN</span><strong id="liveRoomTitle">Live Cook Room</strong><div id="liveRoomChef"></div></div></div><button class="live-room-close" type="button" aria-label="Minimize live room">×</button></header><div id="liveRoomBody"></div>`;
     panel.querySelector('.live-room-close').onclick=()=>setDismissed(true);
     document.body.appendChild(panel);ensureReopenButton();return panel;
   }
@@ -171,7 +179,14 @@
   function activate(next){room=next;dismissed=false;lastRevision=Number(room.state?.revision||0);render();startPolling();syncRemoteState(room)}
 
   function startPolling(){clearInterval(pollTimer);pollTimer=setInterval(refresh,1800)}
-  async function refresh(){if(!room)return;try{const result=await api(`/api/live-cook-rooms/${room.id}`);room=result.room;render();syncRemoteState(room)}catch(error){clearInterval(pollTimer);notify(error.message)}}
+  async function refresh(forceRender=false){
+    if(!room)return;
+    try{
+      const result=await api(`/api/live-cook-rooms/${room.id}`);room=result.room;
+      if(forceRender||!isChatEditing())render();
+      syncRemoteState(room);
+    }catch(error){clearInterval(pollTimer);notify(error.message)}
+  }
 
   function syncRemoteState(next){
     const revision=Number(next.state?.revision||0);if(revision<=lastRevision)return;lastRevision=revision;
@@ -185,19 +200,20 @@
   async function setReady(ready){try{room=(await api(`/api/live-cook-rooms/${room.id}/ready`,{method:'PUT',body:JSON.stringify({ready})})).room;render()}catch(error){notify(error.message)}}
   async function chat(kind='message'){
     const input=document.getElementById('liveRoomChatInput');const message=kind==='help'?'I need help with this step.':input?.value.trim();if(!message)return;
-    try{await api(`/api/live-cook-rooms/${room.id}/chat`,{method:'POST',body:JSON.stringify({message,kind})});if(input)input.value='';refresh()}catch(error){notify(error.message)}
+    try{await api(`/api/live-cook-rooms/${room.id}/chat`,{method:'POST',body:JSON.stringify({message,kind})});if(input){input.value='';input.blur()}refresh(true)}catch(error){notify(error.message)}
   }
   async function leave(){if(!room)return;try{await api(`/api/live-cook-rooms/${room.id}/participants/me`,{method:'DELETE'});clearInterval(pollTimer);room=null;dismissed=false;ensurePanel().hidden=true;ensureReopenButton().hidden=true;notify('You left the cook room.')}catch(error){notify(error.message)}}
 
   function render(){
     const panel=ensurePanel();panel.hidden=dismissed;ensureReopenButton().hidden=!dismissed;
     panel.querySelector('#liveRoomTitle').textContent=room.title||'Live Cook Room';
-    const participants=room.participants||[],activity=room.activity||[],messages=room.chat||[];
+    const participants=room.participants||[],chef=roomChef(room),activity=room.activity||[],messages=room.chat||[];
+    panel.querySelector('#liveRoomChef').innerHTML=chef?`Hosted by <strong>${escapeHtml(chef.display_name||'Chef')}</strong> · Chef`:'Chef details unavailable';
     const body=panel.querySelector('#liveRoomBody'),media=body.querySelector('[data-live-media]');
     body.innerHTML=`
-      <div class="live-room-row"><span>Invite:</span><span class="live-room-code">${escapeHtml(room.invite_code)}</span><button type="button" data-copy-code>Copy</button></div>
+      <section class="live-room-invite"><div><span>Invite your kitchen</span><strong class="live-room-code">${escapeHtml(room.invite_code)}</strong></div><button type="button" data-copy-code>Copy code</button></section>
       <div class="live-room-actions"><button type="button" data-ready>Ready</button><button type="button" data-not-ready>Not ready</button><button type="button" data-help>Need help</button><button type="button" data-leave>Leave</button></div>
-      <h4>Participants</h4><div class="live-room-members">${participants.length?participants.map(p=>`<div class="live-room-member">${escapeHtml(p.display_name||'Cook')} · ${p.ready?'ready':'not ready'}${p.online===false?' · away':''}</div>`).join(''):'<div class="live-room-empty">No participants yet.</div>'}</div>
+      <h4>Participants</h4><div class="live-room-members">${participants.length?participants.map(p=>`<div class="live-room-member"><span class="live-room-avatar" aria-hidden="true">${p.role==='host'?'👨‍🍳':'🍽️'}</span><div><strong>${escapeHtml(p.display_name||'Cook')}</strong><span>${p.role==='host'?'<b class="live-room-chef-badge">Chef</b> · ':''}${p.ready?'Ready':'Getting ready'}${p.online===false?' · Away':''}</span></div></div>`).join(''):'<div class="live-room-empty">No participants yet.</div>'}</div>
       <h4>Chat</h4><div class="live-room-chat">${messages.length?messages.slice(-8).map(m=>`<div class="live-room-message"><strong>${escapeHtml(m.display_name||'Cook')}</strong>${escapeHtml(m.message||'')}</div>`).join(''):'<div class="live-room-empty">No messages yet.</div>'}</div>
       <div class="live-room-row"><input id="liveRoomChatInput" maxlength="1000" placeholder="Message the room"><button type="button" data-send>Send</button></div>
       <h4>Activity</h4><div class="live-room-feed">${activity.length?activity.slice(0,10).map(a=>`<div class="live-room-event">${escapeHtml(a.message||a.type)}</div>`).join(''):'<div class="live-room-empty">Room activity will appear here.</div>'}</div>`;
