@@ -16,6 +16,7 @@ class FirebaseUserDataService:
     ROOT = "app_data"
     DEFAULT_PROFILE_ID = "default"
     INTERACTION_TYPES = {"saved", "cooked", "dismissed", "repeated"}
+    RECOMMENDATION_EVENT_TYPES = {"impression", "selected", "skipped", "generated"}
 
     def __init__(self) -> None:
         FirebaseAuthService()._firebase_app()
@@ -159,6 +160,102 @@ class FirebaseUserDataService:
         data = self._profile_root(enterprise_id, uid, profile_id).child("recipe_interactions").get() or {}
         items = sorted(data.values(), key=lambda item: item.get("occurred_at", ""), reverse=True)
         return items[: max(1, min(limit, 500))]
+
+    def create_recommendation_session(
+        self,
+        enterprise_id: str,
+        uid: str,
+        payload: dict[str, Any],
+        profile_id: str | None = None,
+    ) -> dict[str, Any]:
+        session_id = uuid.uuid4().hex
+        selected_profile_id = self._profile_id(profile_id or payload.get("profile_id"))
+        now = self._now()
+        concepts = []
+        for rank, concept in enumerate(payload.get("concepts") or [], start=1):
+            concepts.append(self._normalize({**concept, "rank": concept.get("rank") or rank}))
+        record = self._normalize({
+            **payload,
+            "id": session_id,
+            "profile_id": selected_profile_id,
+            "concepts": concepts,
+            "created_at": now,
+            "updated_at": now,
+        })
+        self._profile_root(enterprise_id, uid, selected_profile_id).child(
+            f"recommendation_sessions/{session_id}"
+        ).set(record)
+        return record
+
+    def record_recommendation_event(
+        self,
+        enterprise_id: str,
+        uid: str,
+        payload: dict[str, Any],
+        profile_id: str | None = None,
+    ) -> dict[str, Any]:
+        event_type = str(payload.get("event_type") or "").strip().lower()
+        if event_type not in self.RECOMMENDATION_EVENT_TYPES:
+            raise ValueError(f"Unsupported recommendation event type: {event_type}")
+
+        selected_profile_id = self._profile_id(profile_id or payload.get("profile_id"))
+        session_id = str(payload.get("session_id") or "").strip()
+        if not session_id:
+            raise ValueError("Recommendation session_id is required")
+
+        session_ref = self._profile_root(enterprise_id, uid, selected_profile_id).child(
+            f"recommendation_sessions/{session_id}"
+        )
+        if session_ref.get() is None:
+            raise ValueError("Recommendation session was not found")
+
+        event_id = uuid.uuid4().hex
+        now = self._now()
+        record = self._normalize({
+            **payload,
+            "id": event_id,
+            "event_type": event_type,
+            "profile_id": selected_profile_id,
+            "occurred_at": payload.get("occurred_at") or now,
+            "created_at": now,
+        })
+        self._profile_root(enterprise_id, uid, selected_profile_id).child(
+            f"recommendation_events/{event_id}"
+        ).set(record)
+        session_ref.child("updated_at").set(now)
+        return record
+
+    def recommendation_history(
+        self,
+        enterprise_id: str,
+        uid: str,
+        limit: int = 50,
+        profile_id: str | None = None,
+    ) -> dict[str, Any]:
+        profile_root = self._profile_root(enterprise_id, uid, profile_id)
+        sessions_data = profile_root.child("recommendation_sessions").get() or {}
+        events_data = profile_root.child("recommendation_events").get() or {}
+        sessions = sorted(sessions_data.values(), key=lambda item: item.get("created_at", ""), reverse=True)
+        sessions = sessions[: max(1, min(limit, 200))]
+        session_ids = {item.get("id") for item in sessions}
+        events = [item for item in events_data.values() if item.get("session_id") in session_ids]
+        events.sort(key=lambda item: item.get("occurred_at", ""), reverse=True)
+        counts = Counter(item.get("event_type") for item in events)
+        impressions = counts.get("impression", 0)
+        selections = counts.get("selected", 0)
+        return {
+            "profile_id": self._profile_id(profile_id),
+            "sessions": sessions,
+            "events": events,
+            "metrics": {
+                "session_count": len(sessions),
+                "impressions": impressions,
+                "selections": selections,
+                "skips": counts.get("skipped", 0),
+                "generated": counts.get("generated", 0),
+                "selection_rate": round(selections / impressions, 4) if impressions else 0,
+            },
+        }
 
     def flavor_memory_summary(
         self,
