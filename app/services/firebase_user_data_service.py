@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from collections import Counter
 from datetime import UTC, datetime
 from typing import Any
 
@@ -14,6 +15,7 @@ class FirebaseUserDataService:
 
     ROOT = "app_data"
     DEFAULT_PROFILE_ID = "default"
+    INTERACTION_TYPES = {"saved", "cooked", "dismissed", "repeated"}
 
     def __init__(self) -> None:
         FirebaseAuthService()._firebase_app()
@@ -119,6 +121,68 @@ class FirebaseUserDataService:
         data = self._profile_root(enterprise_id, uid, profile_id).child("cooking_history").get() or {}
         items = sorted(data.values(), key=lambda item: item.get("cooked_at", ""), reverse=True)
         return items[: max(1, min(limit, 200))]
+
+    def record_recipe_interaction(
+        self,
+        enterprise_id: str,
+        uid: str,
+        payload: dict[str, Any],
+        profile_id: str | None = None,
+    ) -> dict[str, Any]:
+        interaction_type = str(payload.get("interaction_type") or "").strip().lower()
+        if interaction_type not in self.INTERACTION_TYPES:
+            raise ValueError(f"Unsupported interaction type: {interaction_type}")
+
+        interaction_id = uuid.uuid4().hex
+        selected_profile_id = self._profile_id(profile_id or payload.get("profile_id"))
+        now = self._now()
+        record = self._normalize({
+            **payload,
+            "id": interaction_id,
+            "interaction_type": interaction_type,
+            "profile_id": selected_profile_id,
+            "occurred_at": payload.get("occurred_at") or now,
+            "created_at": now,
+        })
+        self._profile_root(enterprise_id, uid, selected_profile_id).child(
+            f"recipe_interactions/{interaction_id}"
+        ).set(record)
+        return record
+
+    def list_recipe_interactions(
+        self,
+        enterprise_id: str,
+        uid: str,
+        limit: int = 100,
+        profile_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        data = self._profile_root(enterprise_id, uid, profile_id).child("recipe_interactions").get() or {}
+        items = sorted(data.values(), key=lambda item: item.get("occurred_at", ""), reverse=True)
+        return items[: max(1, min(limit, 500))]
+
+    def flavor_memory_summary(
+        self,
+        enterprise_id: str,
+        uid: str,
+        profile_id: str | None = None,
+    ) -> dict[str, Any]:
+        interactions = self.list_recipe_interactions(enterprise_id, uid, 500, profile_id)
+        counts = Counter(item.get("interaction_type") for item in interactions)
+        recipe_counts = Counter(
+            str(item.get("recipe_id") or item.get("recipe_name") or "").strip()
+            for item in interactions
+            if item.get("interaction_type") in {"cooked", "repeated"}
+            and str(item.get("recipe_id") or item.get("recipe_name") or "").strip()
+        )
+        return {
+            "profile_id": self._profile_id(profile_id),
+            "total_interactions": len(interactions),
+            "counts": {interaction_type: counts.get(interaction_type, 0) for interaction_type in sorted(self.INTERACTION_TYPES)},
+            "repeat_favorites": [
+                {"recipe_key": recipe_key, "count": count}
+                for recipe_key, count in recipe_counts.most_common(5)
+            ],
+        }
 
     def save_preferences(self, enterprise_id: str, uid: str, preferences: dict[str, Any], profile_id: str | None = None) -> dict[str, Any]:
         record = self._normalize({**preferences, "updated_at": self._now()})

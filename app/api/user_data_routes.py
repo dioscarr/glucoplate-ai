@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -23,6 +23,19 @@ class CookedPayload(BaseModel):
     rating: int | None = Field(default=None, ge=1, le=5)
     notes: str | None = Field(default=None, max_length=2000)
     cooked_at: str | None = None
+    profile_id: str | None = None
+
+
+class RecipeInteractionPayload(BaseModel):
+    interaction_type: Literal["saved", "cooked", "dismissed", "repeated"]
+    recipe_id: str | None = Field(default=None, max_length=200)
+    recipe_name: str | None = Field(default=None, max_length=240)
+    cuisine: str | None = Field(default=None, max_length=120)
+    tags: list[str] = Field(default_factory=list, max_length=30)
+    rating: int | None = Field(default=None, ge=1, le=5)
+    notes: str | None = Field(default=None, max_length=1000)
+    source: str | None = Field(default=None, max_length=80)
+    occurred_at: str | None = None
     profile_id: str | None = None
 
 
@@ -123,6 +136,37 @@ def list_cooked(
     profile_id: str | None = Query(default=None),
 ) -> list[dict[str, Any]]:
     return service().list_cooked(user.enterprise_id, user.uid, limit, profile_id)
+
+
+@router.post("/recipe-interactions")
+def record_recipe_interaction(
+    payload: RecipeInteractionPayload,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict:
+    interaction = service().record_recipe_interaction(
+        user.enterprise_id,
+        user.uid,
+        payload.model_dump(exclude_none=True),
+        payload.profile_id,
+    )
+    return {"ok": True, "interaction": interaction}
+
+
+@router.get("/recipe-interactions")
+def list_recipe_interactions(
+    user: Annotated[AuthContext, Depends(scoped_user)],
+    limit: int = Query(default=100, ge=1, le=500),
+    profile_id: str | None = Query(default=None),
+) -> list[dict[str, Any]]:
+    return service().list_recipe_interactions(user.enterprise_id, user.uid, limit, profile_id)
+
+
+@router.get("/flavor-memory")
+def get_flavor_memory(
+    user: Annotated[AuthContext, Depends(scoped_user)],
+    profile_id: str | None = Query(default=None),
+) -> dict[str, Any]:
+    return service().flavor_memory_summary(user.enterprise_id, user.uid, profile_id)
 
 
 @router.put("/preferences")
