@@ -54,6 +54,7 @@ HTML_SCRIPT_PATHS = (
     "/static/live-cook-shared-state.js",
     "/static/native-timers.js",
     "/static/native-ingredients.js",
+    "/static/premium-recipe-detail.js",
     "/static/offline-actions.js",
     "/static/firebase-auth.js",
     "/static/firebase-user-data.js",
