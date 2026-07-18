@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.api.enterprise_admin_routes import AuthContext
 from app.api.user_data_routes import scoped_user
@@ -22,6 +22,14 @@ class CreateRoomPayload(BaseModel):
 class JoinRoomPayload(BaseModel):
     invite_code: str = Field(min_length=4, max_length=12)
     display_name: str | None = Field(default=None, max_length=80)
+
+    @field_validator("invite_code", mode="before")
+    @classmethod
+    def normalize_invite_code(cls, value: Any) -> str:
+        normalized = "".join(character for character in str(value or "").upper() if character.isalnum())
+        if not normalized:
+            raise ValueError("Invite code is required")
+        return normalized
 
 
 class ReadyPayload(BaseModel):
