@@ -2,16 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#11141a" />
   <title>GlucoPlate Enterprise Admin</title>
   <link rel="stylesheet" href="/static/admin.css" />
+  <link rel="stylesheet" href="/static/admin-premium.css" />
 </head>
 <body>
   <div class="admin-shell">
     <aside class="sidebar">
       <a class="brand" href="/static/index.html"><span class="brand-mark">🍽️</span><span><strong>GlucoPlate</strong><small>Enterprise workspace</small></span></a>
       <div class="workspace-label">Workspace</div>
-      <nav>
+      <nav aria-label="Administration">
         <button class="nav-item active" data-view="overview"><span>◫</span><b>Overview</b></button>
         <button class="nav-item" data-view="users"><span>◎</span><b>People & access</b></button>
         <a class="nav-item" href="/static/theme.html"><span>✦</span><b>Theme Studio</b></a>
@@ -24,10 +26,10 @@
     <main class="content">
       <header class="topbar">
         <div><p class="eyebrow">Enterprise administration</p><h1 id="pageTitle">Overview</h1><span class="page-subtitle">A single place to manage your company experience.</span></div>
-        <div id="adminIdentity" class="identity">Loading account…</div>
+        <div id="adminIdentity" class="identity" aria-live="polite">Loading account…</div>
       </header>
 
-      <div id="adminAlert" class="alert hidden"></div>
+      <div id="adminAlert" class="alert hidden" role="status" aria-live="polite"></div>
 
       <section id="overviewView" class="view active">
         <article class="welcome-panel">
@@ -53,7 +55,7 @@
       <section id="usersView" class="view">
         <article class="panel users-panel">
           <div class="panel-heading"><div><span class="section-label">Identity & permissions</span><h2>People & access</h2><p>Every change is company-scoped and recorded by the administration API.</p></div><button id="refreshUsers" class="button secondary">↻ Refresh</button></div>
-          <div class="toolbar"><label class="search-box"><span>⌕</span><input id="userSearch" type="search" placeholder="Search people by name or email" /></label><select id="statusFilter"><option value="all">All statuses</option><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
+          <div class="toolbar"><label class="search-box"><span>⌕</span><input id="userSearch" type="search" aria-label="Search people" placeholder="Search people by name or email" /></label><select id="statusFilter" aria-label="Filter by status"><option value="all">All statuses</option><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
           <div class="table-wrap"><table><thead><tr><th>Person</th><th>Access level</th><th>Status</th><th>Last activity</th><th>Controls</th></tr></thead><tbody id="userRows"></tbody></table></div>
           <div id="usersEmpty" class="empty hidden"><span>◎</span><strong>No people found</strong><p>Try changing your search or status filter.</p></div>
         </article>
