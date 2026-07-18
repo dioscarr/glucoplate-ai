@@ -22,7 +22,7 @@
     const rawUrl=typeof input==='string'?input:input.url;
     const url=new URL(rawUrl,window.location.origin);
     const mapped=routeMap.get(url.pathname);
-    if(!mapped)return {input,init};
+    if(!mapped)return {input,init,originalPath:url.pathname};
     const headers=new Headers(init.headers||(typeof input!=='string'?input.headers:undefined));
     const token=localStorage.getItem('glucoplate_firebase_id_token');
     if(token)headers.set('Authorization',`Bearer ${token}`);
@@ -31,13 +31,28 @@
       try{body=JSON.stringify({recipe:JSON.parse(body)})}catch(_error){}
       headers.set('Content-Type','application/json');
     }
+    const originalPath=url.pathname;
     url.pathname=mapped;
-    return {input:url.toString(),init:{...init,headers,body}};
+    return {input:url.toString(),init:{...init,headers,body},originalPath};
   }
 
-  window.fetch=(input,init={})=>{
+  function parseRecipeBody(body){
+    if(!body||typeof body!=='string')return null;
+    try{
+      const parsed=JSON.parse(body);
+      return parsed?.recipe||parsed;
+    }catch(_error){return null}
+  }
+
+  window.fetch=async(input,init={})=>{
+    const originalBody=init.body;
     const normalized=normalizeRequest(input,init);
-    return nativeFetch(normalized.input,normalized.init);
+    const response=await nativeFetch(normalized.input,normalized.init);
+    if(response.ok&&normalized.originalPath==='/api/recipes/save'){
+      const recipe=parseRecipeBody(originalBody);
+      trackInteraction('saved',recipe,'recipe-save').catch(()=>{});
+    }
+    return response;
   };
 
   async function authenticatedRequest(path,options={}){
@@ -66,9 +81,64 @@
     deleteSavedRecipe:recipeId=>authenticatedRequest(`/api/user-data/recipes/${encodeURIComponent(recipeId)}`,{method:'DELETE'}),
     recordCooked:payload=>authenticatedRequest('/api/user-data/cooking-history',{method:'POST',body:JSON.stringify({...payload,profile_id:activeProfileId()})}),
     listCookingHistory:(limit=50)=>authenticatedRequest(profileQuery(`/api/user-data/cooking-history?limit=${limit}`)),
+    recordRecipeInteraction:payload=>authenticatedRequest('/api/user-data/recipe-interactions',{method:'POST',body:JSON.stringify({...payload,profile_id:activeProfileId()})}),
+    listRecipeInteractions:(limit=100)=>authenticatedRequest(profileQuery(`/api/user-data/recipe-interactions?limit=${limit}`)),
+    getFlavorMemory:()=>authenticatedRequest(profileQuery('/api/user-data/flavor-memory')),
     getPreferences:()=>authenticatedRequest(profileQuery('/api/user-data/preferences')),
     savePreferences:preferences=>authenticatedRequest('/api/user-data/preferences',{method:'PUT',body:JSON.stringify({preferences,profile_id:activeProfileId()})})
   };
+
+  function recipeFromDocument(){
+    const title=document.querySelector('#result .recipe-hero h1')?.textContent?.trim();
+    if(!title)return null;
+    const summary=document.querySelector('#result .recipe-hero p')?.textContent?.trim()||null;
+    const pills=[...document.querySelectorAll('#result .recipe-kicker .pill')].map(item=>item.textContent.trim()).filter(Boolean);
+    return {title,summary,tags:pills};
+  }
+
+  async function trackInteraction(interactionType,recipe=null,source='recipe-ui'){
+    if(!localStorage.getItem('glucoplate_firebase_id_token'))return null;
+    const value=recipe||recipeFromDocument();
+    if(!value?.title&&!value?.id)return null;
+    try{
+      return await api.recordRecipeInteraction({
+        interaction_type:interactionType,
+        recipe_id:value.id||value.recipe_id||null,
+        recipe_name:value.title||value.recipe_name||null,
+        cuisine:value.cuisine||value.culture||null,
+        tags:Array.isArray(value.tags)?value.tags.slice(0,30):[],
+        source,
+        occurred_at:new Date().toISOString()
+      });
+    }catch(error){
+      console.debug('Flavor Memory signal was not recorded.',{interactionType,message:error?.message});
+      return null;
+    }
+  }
+
+  let openedFromCookbook=false;
+  document.addEventListener('click',event=>{
+    const button=event.target.closest('button');
+    if(!button)return;
+    if(button.classList.contains('saved-item')){
+      openedFromCookbook=true;
+      return;
+    }
+    if(button.id==='cookBtn'&&openedFromCookbook){
+      openedFromCookbook=false;
+      trackInteraction('repeated',null,'saved-recipe-cook').catch(()=>{});
+      return;
+    }
+    if(button.id==='newBtn'){
+      trackInteraction('dismissed',null,'new-recipe-action').catch(()=>{});
+      return;
+    }
+    if(button.closest('#cookMode')&&button.textContent.trim()==='Finish'){
+      const recipe=recipeFromDocument();
+      trackInteraction('cooked',recipe,'cook-mode-completed').catch(()=>{});
+      api.recordCooked({recipe_name:recipe?.title||null,recipe:recipe||undefined,cooked_at:new Date().toISOString()}).catch(()=>{});
+    }
+  },true);
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   function ensureStyles(){
@@ -123,6 +193,7 @@
   }
 
   window.GlucoPlateUserData=api;
+  window.GlucoPlateFlavorMemory={trackInteraction,recipeFromDocument};
   window.addEventListener('DOMContentLoaded',()=>renderProfilePanel().catch(()=>{}));
   window.addEventListener('glucoplate:profilechange',()=>renderProfilePanel().catch(()=>{}));
 })();
