@@ -3,15 +3,31 @@
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   let room=null,pollTimer=null,applyingRemote=false,lastRevision=0;
 
+  function errorMessage(body,status){
+    const detail=body?.detail;
+    if(Array.isArray(detail)){
+      const fields=detail.map(item=>Array.isArray(item?.loc)?item.loc.at(-1):null).filter(Boolean).join(', ');
+      const messages=detail.map(item=>item?.msg).filter(Boolean).join('; ');
+      return `${fields?fields+': ':''}${messages||'The request was rejected.'}`;
+    }
+    return typeof detail==='string'&&detail.trim()?detail:`Request failed (${status})`;
+  }
+
   async function api(path,options={}){
-    const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${token()}`,...(options.headers||{})}});
+    const authToken=token();
+    if(!authToken)throw new Error('Sign in before using a live cook room.');
+    const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${authToken}`,...(options.headers||{})}});
     const body=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(body.detail||'Request failed');
+    if(!response.ok)throw new Error(errorMessage(body,response.status));
     return body;
   }
 
   function currentRecipe(){return window.currentRecipe||null}
-  function displayName(){return localStorage.getItem('glucoplate_display_name')||localStorage.getItem('glucoplate_user_name')||'Cook'}
+  function displayName(){
+    const value=localStorage.getItem('glucoplate_display_name')||localStorage.getItem('glucoplate_user_name')||'Cook';
+    return String(value).trim().slice(0,80)||'Cook';
+  }
+  function normalizeInviteCode(value){return String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12)}
 
   function ensureStyles(){
     if(document.getElementById('liveCookRoomStyles'))return;
@@ -47,7 +63,9 @@
   }
 
   async function promptJoin(){
-    const code=prompt('Enter the cook room code');if(!code)return;
+    const entered=prompt('Enter the 6-character cook room code');if(entered===null)return;
+    const code=normalizeInviteCode(entered);
+    if(code.length<4){notify('Enter a valid cook room code.');return}
     try{const result=await api('/api/live-cook-rooms/join',{method:'POST',body:JSON.stringify({invite_code:code,display_name:displayName()})});activate(result.room)}catch(error){notify(error.message)}
   }
 
