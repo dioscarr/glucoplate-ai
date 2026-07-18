@@ -58,6 +58,7 @@ class PushNotificationService:
                     token TEXT PRIMARY KEY,
                     provider TEXT NOT NULL DEFAULT 'firebase',
                     user_id TEXT,
+                    enterprise_id TEXT,
                     profile_id TEXT,
                     device_name TEXT,
                     enabled INTEGER NOT NULL DEFAULT 1,
@@ -66,6 +67,9 @@ class PushNotificationService:
                 )
                 """
             )
+            columns = {row[1] for row in connection.execute("PRAGMA table_info(push_tokens)")}
+            if "enterprise_id" not in columns:
+                connection.execute("ALTER TABLE push_tokens ADD COLUMN enterprise_id TEXT")
             count = connection.execute("SELECT COUNT(*) FROM push_tokens").fetchone()[0]
             if count == 0 and self.legacy_store_path.exists():
                 try:
@@ -84,25 +88,28 @@ class PushNotificationService:
         with self._connect() as connection:
             return [dict(row) for row in connection.execute("SELECT * FROM push_tokens ORDER BY updated_at DESC")]
 
-    def save_token(self, token: str, user_id: str | None = None, profile_id: str | None = None, device_name: str | None = None) -> dict[str, Any]:
+    def save_token(self, token: str, user_id: str | None = None, enterprise_id: str | None = None, profile_id: str | None = None, device_name: str | None = None) -> dict[str, Any]:
         token = token.strip()
         if not token:
             raise ValueError("Firebase messaging token is required")
         if not user_id:
             raise ValueError("Authenticated Firebase user is required")
+        if not enterprise_id:
+            raise ValueError("Enterprise membership is required")
         with _STORE_LOCK, self._connect() as connection:
             connection.execute(
                 """
-                INSERT INTO push_tokens (token, provider, user_id, profile_id, device_name, enabled)
-                VALUES (?, 'firebase', ?, ?, ?, 1)
+                INSERT INTO push_tokens (token, provider, user_id, enterprise_id, profile_id, device_name, enabled)
+                VALUES (?, 'firebase', ?, ?, ?, ?, 1)
                 ON CONFLICT(token) DO UPDATE SET
                     user_id=excluded.user_id,
+                    enterprise_id=excluded.enterprise_id,
                     profile_id=excluded.profile_id,
                     device_name=excluded.device_name,
                     enabled=1,
                     updated_at=CURRENT_TIMESTAMP
                 """,
-                (token, user_id, profile_id, device_name),
+                (token, user_id, enterprise_id, profile_id, device_name),
             )
             row = connection.execute("SELECT * FROM push_tokens WHERE token = ?", (token,)).fetchone()
         return dict(row)
@@ -176,7 +183,7 @@ class PushNotificationService:
             )
             return {"configured": True, "registered": True, "sent": 0, "failed": 1}
 
-    def send(self, payload: dict[str, Any], user_id: str | None = None) -> dict[str, int | bool]:
+    def send(self, payload: dict[str, Any], user_id: str | None = None, enterprise_id: str | None = None) -> dict[str, int | bool]:
         if not self.server_configured():
             return {"configured": False, "sent": 0, "failed": 0}
         from firebase_admin import messaging
@@ -184,6 +191,8 @@ class PushNotificationService:
         records = [item for item in self._read() if item.get("enabled") and item.get("token")]
         if user_id:
             records = [item for item in records if item.get("user_id") == user_id]
+        if enterprise_id:
+            records = [item for item in records if item.get("enterprise_id") == enterprise_id]
         sent = failed = 0
         for record in records:
             token = str(record["token"])
