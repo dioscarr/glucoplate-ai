@@ -81,9 +81,34 @@
     cook.querySelector('[data-open-cookbook]').onclick=()=>window.showView?.('savedView');
   }
 
+  function enhanceActiveCookMode(cook){
+    if(!current()){cook.classList.remove('cook-active-state');return}
+    cook.classList.remove('cook-empty-state');cook.classList.add('cook-active-state');
+    if(cook.querySelector('.cook-active-shell'))return;
+    const icon=cook.querySelector('.big'),label=cook.querySelector('.eyebrow'),title=cook.querySelector('h2'),instruction=cook.querySelector('p'),controls=cook.querySelector('.cook-controls');
+    if(!title||!instruction||!controls)return;
+    const steps=current()?.steps||[],index=Math.max(0,Number(window.cookIndex||0)),total=Math.max(steps.length,1);
+    const shell=document.createElement('div');shell.className='cook-active-shell';
+    const stage=document.createElement('section');stage.className='cook-active-stage';
+    const meta=document.createElement('div');meta.className='cook-active-meta';
+    const identity=document.createElement('div');identity.className='cook-active-identity';
+    if(icon)identity.appendChild(icon);if(label)identity.appendChild(label);meta.appendChild(identity);
+    const recipeButton=document.createElement('button');recipeButton.type='button';recipeButton.className='cook-view-recipe';recipeButton.textContent='View recipe';recipeButton.onclick=()=>window.showView?.('recipeView');meta.appendChild(recipeButton);
+    const progress=document.createElement('div');progress.className='cook-step-progress';progress.setAttribute('role','progressbar');progress.setAttribute('aria-label','Recipe progress');progress.setAttribute('aria-valuemin','1');progress.setAttribute('aria-valuemax',String(total));progress.setAttribute('aria-valuenow',String(Math.min(index+1,total)));progress.innerHTML='<span></span>';progress.firstElementChild.style.width=`${Math.min(100,((index+1)/total)*100)}%`;
+    const copy=document.createElement('div');copy.className='cook-active-copy';copy.append(title,instruction);
+    controls.classList.add('cook-action-bar');
+    stage.append(meta,progress,copy,controls);
+    const tools=document.createElement('section');tools.className='cook-active-tools';tools.setAttribute('aria-label','Cooking tools');
+    const timerSlot=document.createElement('div');timerSlot.dataset.cookTimerSlot='1';
+    const liveCard=document.createElement('div');liveCard.className='cook-tool-card cook-tool-live';
+    liveCard.innerHTML='<div class="cook-tool-heading"><span>◉</span><div><strong>Cook together</strong><small>Invite your organization into this recipe</small></div></div><div data-cook-live-slot></div>';
+    tools.append(timerSlot,liveCard);shell.append(stage,tools);cook.replaceChildren(shell);
+  }
+
   function enhanceCookControls(){
     const cook=document.getElementById('cookMode');if(!cook)return;
     enhanceEmptyCookMode(cook);
+    enhanceActiveCookMode(cook);
     attachSwipeSurface();
     const controls=cook.querySelector('.cook-controls');if(!controls)return;
     controls.querySelectorAll('button').forEach(button=>{button.classList.add('cook-native-control');button.setAttribute('aria-label',button.textContent.trim())});
