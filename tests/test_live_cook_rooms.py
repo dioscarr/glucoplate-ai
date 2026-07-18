@@ -64,3 +64,14 @@ def test_live_room_client_exposes_app_state_and_validation_errors():
     assert "escapeHtml" in source
     assert "normalizeInviteCode" in source
     assert "Sign in before using a live cook room." in source
+
+
+def test_live_rooms_refresh_firebase_tokens_before_authenticated_requests():
+    auth_source = (ROOT / "app" / "static" / "firebase-auth.js").read_text(encoding="utf-8")
+    room_source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    assert "async function getIdToken(forceRefresh=false)" in auth_source
+    assert "currentUser" in auth_source
+    assert "user.getIdToken(Boolean(forceRefresh))" in auth_source
+    assert "GlucoPlateFirebaseAuth={signInGoogle,signOut,syncSession,getAuthClient,getIdToken,showGate}" in auth_source
+    assert "response.status===401" in room_source
+    assert "request(true)" in room_source

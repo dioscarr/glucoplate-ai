@@ -55,6 +55,14 @@
     await user.getIdToken(true);
     return syncSession(user);
   }
+  async function getIdToken(forceRefresh=false){
+    const client=await getAuthClient();
+    const user=client.currentUser;
+    if(!user)throw new Error('Sign in before using authenticated features.');
+    const freshToken=await user.getIdToken(Boolean(forceRefresh));
+    localStorage.setItem('glucoplate_firebase_id_token',freshToken);
+    return freshToken;
+  }
   async function syncSession(user){
     if(!user){localStorage.removeItem('glucoplate_firebase_session');localStorage.removeItem('glucoplate_firebase_id_token');showGate();renderPanel();return null}
     const token=await user.getIdToken();
@@ -113,5 +121,5 @@
     renderPanel();
     try{const api=await loadSdk(),client=await getAuthClient();api.onAuthStateChanged(client,user=>syncSession(user).catch(error=>{setError(error.message);showGate()}))}catch(error){setError(error.message);console.info('Firebase Auth unavailable:',error.message)}
   });
-  window.GlucoPlateFirebaseAuth={signInGoogle,signOut,syncSession,getAuthClient,showGate};
+  window.GlucoPlateFirebaseAuth={signInGoogle,signOut,syncSession,getAuthClient,getIdToken,showGate};
 })();

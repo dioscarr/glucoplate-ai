@@ -14,10 +14,23 @@
     return typeof detail==='string'&&detail.trim()?detail:`Request failed (${status})`;
   }
 
+  async function authToken(forceRefresh=false){
+    const provider=window.GlucoPlateFirebaseAuth?.getIdToken;
+    if(typeof provider==='function')return provider(forceRefresh);
+    const cached=token();
+    if(!cached)throw new Error('Sign in before using a live cook room.');
+    return cached;
+  }
+
   async function api(path,options={}){
-    const authToken=token();
-    if(!authToken)throw new Error('Sign in before using a live cook room.');
-    const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${authToken}`,...(options.headers||{})}});
+    const request=async forceRefresh=>{
+      const currentToken=await authToken(forceRefresh);
+      return fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${currentToken}`,...(options.headers||{})}});
+    };
+    let response=await request(false);
+    if(response.status===401&&typeof window.GlucoPlateFirebaseAuth?.getIdToken==='function'){
+      response=await request(true);
+    }
     const body=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(errorMessage(body,response.status));
     return body;
