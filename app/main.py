@@ -55,6 +55,7 @@ HTML_SCRIPT_PATHS = (
     "/static/pantry-generation.js",
     "/static/recommendation-ui.js",
     "/static/theme-runtime.js",
+    "/static/theme-publish-apply.js",
     "/static/pwa.js",
 )
 
