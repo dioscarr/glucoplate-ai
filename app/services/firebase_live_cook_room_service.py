@@ -127,19 +127,42 @@ class FirebaseLiveCookRoomService:
         normalized = str(code or "").strip().upper()
         return self._codes(enterprise_id).child(normalized).get()
 
-    def join_room(
+    def list_active_rooms(self, enterprise_id: str) -> list[dict[str, Any]]:
+        rooms = (self._rooms(enterprise_id).get() or {}).values()
+        items: list[dict[str, Any]] = []
+        for room in rooms:
+            phase = str((room.get("state") or {}).get("session_status") or "waiting")
+            if room.get("status") != "active" or phase == "completed":
+                continue
+            participants = list((room.get("participants") or {}).values())
+            host = next(
+                (item for item in participants if str(item.get("uid")) == str(room.get("host_uid"))),
+                {},
+            )
+            items.append(
+                {
+                    "id": room.get("id"),
+                    "title": room.get("title") or "Live Cook Room",
+                    "host_name": host.get("display_name") or "Host",
+                    "participant_count": len(participants),
+                    "session_status": phase,
+                    "current_step": int((room.get("state") or {}).get("current_step") or 0),
+                    "updated_at": room.get("updated_at"),
+                }
+            )
+        return sorted(items, key=lambda item: str(item.get("updated_at") or ""), reverse=True)
+
+    def join_room_by_id(
         self,
         enterprise_id: str,
         uid: str,
-        code: str,
+        room_id: str,
         display_name: str | None,
     ) -> dict[str, Any] | None:
-        room_id = self.find_by_code(enterprise_id, code)
-        if not room_id:
-            return None
         room_ref = self._room(enterprise_id, room_id)
         room = room_ref.get()
-        if not room or room.get("status") != "active":
+        phase = str((room.get("state") or {}).get("session_status") or "waiting") if room else "completed"
+        if not room or room.get("status") != "active" or phase == "completed":
             return None
         now = self._now()
         name = self._clean_name(display_name, "Guest")
@@ -156,15 +179,28 @@ class FirebaseLiveCookRoomService:
         }
         room_ref.child("participants").child(uid).set(participant)
         room_ref.update({"updated_at": now})
-        self._activity(
-            enterprise_id,
-            room_id,
-            event_type="participant_joined",
-            message=f"{name} joined the room.",
-            actor_uid=uid,
-            actor_name=name,
-        )
+        if not existing:
+            self._activity(
+                enterprise_id,
+                room_id,
+                event_type="participant_joined",
+                message=f"{name} joined the room.",
+                actor_uid=uid,
+                actor_name=name,
+            )
         return self.get_room(enterprise_id, room_id)
+
+    def join_room(
+        self,
+        enterprise_id: str,
+        uid: str,
+        code: str,
+        display_name: str | None,
+    ) -> dict[str, Any] | None:
+        room_id = self.find_by_code(enterprise_id, code)
+        if not room_id:
+            return None
+        return self.join_room_by_id(enterprise_id, uid, room_id, display_name)
 
     def get_room(self, enterprise_id: str, room_id: str) -> dict[str, Any] | None:
         room = self._room(enterprise_id, room_id).get()

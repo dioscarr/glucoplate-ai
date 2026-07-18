@@ -61,7 +61,7 @@ def notify_enterprise_session_started(enterprise_id: str, room: dict[str, Any]) 
             {
                 "title": "Live cooking started",
                 "body": f"{host} started {title}. Join with code {invite_code}.",
-                "url": f"/static/index.html?join_room={invite_code}",
+                "url": f"/static/index.html?live_room={room.get('id')}",
                 "tag": f"live-cook-started-{room.get('id')}",
             },
             enterprise_id=enterprise_id,

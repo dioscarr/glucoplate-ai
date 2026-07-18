@@ -104,3 +104,32 @@ def test_live_room_has_touch_friendly_mobile_styles():
     assert "@media(max-width:640px)" in css
     assert "env(safe-area-inset-bottom)" in css
     assert "min-height:44px" in css
+
+
+def test_enterprise_live_room_directory_and_direct_join_routes():
+    routes = (ROOT / "app" / "api" / "live_cook_room_routes.py").read_text(encoding="utf-8")
+    service = (ROOT / "app" / "services" / "firebase_live_cook_room_service.py").read_text(encoding="utf-8")
+    assert '@router.get("/active")' in routes
+    assert '@router.post("/join/{room_id}")' in routes
+    assert "list_active_rooms" in service
+    assert "join_room_by_id" in service
+    assert 'room.get("status") != "active"' in service
+    assert 'phase == "completed"' in service
+
+
+def test_notification_deep_link_auto_joins_without_invite_entry():
+    notifications = (ROOT / "app" / "api" / "live_cook_session_routes.py").read_text(encoding="utf-8")
+    client = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    assert "?live_room=" in notifications
+    assert "consumeLiveRoomDeepLink" in client
+    assert "/api/live-cook-rooms/join/" in client
+    assert "history.replaceState" in client
+
+
+def test_live_now_directory_supports_switching_rooms():
+    client = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    css = (ROOT / "app" / "static" / "live-cook-room-premium.css").read_text(encoding="utf-8")
+    assert "Live now" in client
+    assert "browseLiveRooms" in client
+    assert "data-join-room-id" in client
+    assert ".live-room-directory-card" in css

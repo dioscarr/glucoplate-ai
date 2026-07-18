@@ -32,6 +32,10 @@ class JoinRoomPayload(BaseModel):
         return normalized
 
 
+class JoinActiveRoomPayload(BaseModel):
+    display_name: str | None = Field(default=None, max_length=80)
+
+
 class ReadyPayload(BaseModel):
     ready: bool
 
@@ -77,6 +81,31 @@ def join_room(
         user.enterprise_id,
         user.uid,
         payload.invite_code,
+        payload.display_name,
+    )
+    if room is None:
+        raise HTTPException(status_code=404, detail="Active cook room not found")
+    return {"ok": True, "room": room}
+
+
+@router.get("/active")
+def list_active_rooms(
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    rooms = service().list_active_rooms(user.enterprise_id)
+    return {"rooms": rooms, "count": len(rooms)}
+
+
+@router.post("/join/{room_id}")
+def join_active_room(
+    room_id: str,
+    payload: JoinActiveRoomPayload,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    room = service().join_room_by_id(
+        user.enterprise_id,
+        user.uid,
+        room_id,
         payload.display_name,
     )
     if room is None:

@@ -84,10 +84,67 @@
   function launchControls(){
     const cook=document.getElementById('cookMode');if(!cook||cook.querySelector('.live-room-launch'))return;
     const wrap=document.createElement('div');wrap.className='live-room-launch';
-    wrap.innerHTML='<button type="button" class="btn" data-live-create>Start live room</button><button type="button" class="btn ghost" data-live-join>Join room</button>';
+    wrap.innerHTML='<button type="button" class="btn" data-live-create>Start live room</button><button type="button" class="btn ghost" data-live-browse>Live now</button><button type="button" class="btn ghost" data-live-join>Enter code</button>';
     wrap.querySelector('[data-live-create]').onclick=createRoom;
+    wrap.querySelector('[data-live-browse]').onclick=browseLiveRooms;
     wrap.querySelector('[data-live-join]').onclick=promptJoin;
     const controls=cook.querySelector('.cook-controls');(controls||cook).insertAdjacentElement('afterend',wrap);
+  }
+
+  function ensureDirectory(){
+    let directory=document.getElementById('liveRoomDirectory');
+    if(directory)return directory;
+    directory=document.createElement('section');
+    directory.id='liveRoomDirectory';
+    directory.className='live-room-directory';
+    directory.hidden=true;
+    directory.innerHTML='<header><div><strong>Live now</strong><span>Cooking across your organization</span></div><button type="button" aria-label="Close live rooms" data-close-directory>×</button></header><div data-live-directory-body></div>';
+    directory.querySelector('[data-close-directory]').onclick=()=>directory.hidden=true;
+    directory.addEventListener('click',event=>{
+      const button=event.target.closest?.('[data-join-room-id]');
+      if(button)joinRoomById(button.dataset.joinRoomId,button);
+    });
+    document.body.appendChild(directory);
+    return directory;
+  }
+
+  async function joinRoomById(roomId,button=null){
+    if(!roomId)return;
+    if(button)button.disabled=true;
+    try{
+      const result=await api(`/api/live-cook-rooms/join/${encodeURIComponent(roomId)}`,{method:'POST',body:JSON.stringify({display_name:displayName()})});
+      ensureDirectory().hidden=true;
+      activate(result.room);
+      notify(`Joined ${result.room.title||'live cooking room'}.`);
+      return result.room;
+    }catch(error){notify(error.message);throw error}
+    finally{if(button?.isConnected)button.disabled=false}
+  }
+
+  async function browseLiveRooms(){
+    const directory=ensureDirectory(),body=directory.querySelector('[data-live-directory-body]');
+    directory.hidden=false;
+    body.innerHTML='<div class="live-room-directory-empty">Loading live rooms…</div>';
+    try{
+      const result=await api('/api/live-cook-rooms/active');
+      const rooms=result.rooms||[];
+      body.innerHTML=rooms.length?rooms.map(item=>`
+        <article class="live-room-directory-card">
+          <div><strong>${escapeHtml(item.title||'Live Cook Room')}</strong><span>${escapeHtml(item.host_name||'Host')} · ${Number(item.participant_count||0)} cooking · ${escapeHtml(item.session_status||'waiting')}</span></div>
+          <button type="button" data-join-room-id="${escapeHtml(item.id)}">Join</button>
+        </article>`).join(''):'<div class="live-room-directory-empty">No live cooking rooms right now.</div>';
+    }catch(error){body.innerHTML=`<div class="live-room-directory-empty">${escapeHtml(error.message)}</div>`}
+  }
+
+  function consumeLiveRoomDeepLink(attempt=0){
+    const url=new URL(location.href),roomId=url.searchParams.get('live_room');
+    if(!roomId)return;
+    const hasAuth=Boolean(localStorage.getItem('glucoplate_firebase_id_token')||window.GlucoPlateFirebaseAuth?.getIdToken);
+    if(!hasAuth&&attempt<20){setTimeout(()=>consumeLiveRoomDeepLink(attempt+1),500);return}
+    joinRoomById(roomId).then(()=>{
+      url.searchParams.delete('live_room');
+      history.replaceState({},'',url.pathname+url.search+url.hash);
+    }).catch(()=>{});
   }
 
   async function createRoom(){
@@ -150,7 +207,7 @@
   }
 
   const observer=new MutationObserver(()=>{launchControls();wrapCookNavigation()});
-  window.addEventListener('DOMContentLoaded',()=>{ensurePanel();launchControls();wrapCookNavigation();observer.observe(document.body,{childList:true,subtree:true})});
+  window.addEventListener('DOMContentLoaded',()=>{ensurePanel();ensureDirectory();launchControls();wrapCookNavigation();observer.observe(document.body,{childList:true,subtree:true});consumeLiveRoomDeepLink()});
   window.addEventListener('pagehide',()=>clearInterval(pollTimer));
-  window.GlucoPlateLiveCookRooms={createRoom,promptJoin,refresh,getRoom:()=>room};
+  window.GlucoPlateLiveCookRooms={createRoom,promptJoin,browseLiveRooms,joinRoomById,refresh,getRoom:()=>room};
 })();
