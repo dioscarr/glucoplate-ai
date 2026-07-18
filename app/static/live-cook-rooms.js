@@ -1,17 +1,34 @@
 (()=>{
   const token=()=>localStorage.getItem('glucoplate_firebase_id_token')||'';
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
+  const escapeHtml=value=>String(value??'').replace(/[&<>'\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]));
   let room=null,pollTimer=null,applyingRemote=false,lastRevision=0;
 
+  function errorMessage(body,status){
+    const detail=body?.detail;
+    if(Array.isArray(detail)){
+      const fields=detail.map(item=>Array.isArray(item?.loc)?item.loc.at(-1):null).filter(Boolean).join(', ');
+      const messages=detail.map(item=>item?.msg).filter(Boolean).join('; ');
+      return `${fields?fields+': ':''}${messages||'The request was rejected.'}`;
+    }
+    return typeof detail==='string'&&detail.trim()?detail:`Request failed (${status})`;
+  }
+
   async function api(path,options={}){
-    const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${token()}`,...(options.headers||{})}});
+    const authToken=token();
+    if(!authToken)throw new Error('Sign in before using a live cook room.');
+    const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${authToken}`,...(options.headers||{})}});
     const body=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(body.detail||'Request failed');
+    if(!response.ok)throw new Error(errorMessage(body,response.status));
     return body;
   }
 
   function currentRecipe(){return window.currentRecipe||null}
-  function displayName(){return localStorage.getItem('glucoplate_display_name')||localStorage.getItem('glucoplate_user_name')||'Cook'}
+  function displayName(){
+    const value=localStorage.getItem('glucoplate_display_name')||localStorage.getItem('glucoplate_user_name')||'Cook';
+    return String(value).trim().slice(0,80)||'Cook';
+  }
+  function normalizeInviteCode(value){return String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12)}
 
   function ensureStyles(){
     if(document.getElementById('liveCookRoomStyles'))return;
@@ -47,7 +64,9 @@
   }
 
   async function promptJoin(){
-    const code=prompt('Enter the cook room code');if(!code)return;
+    const entered=prompt('Enter the 6-character cook room code');if(entered===null)return;
+    const code=normalizeInviteCode(entered);
+    if(code.length<4){notify('Enter a valid cook room code.');return}
     try{const result=await api('/api/live-cook-rooms/join',{method:'POST',body:JSON.stringify({invite_code:code,display_name:displayName()})});activate(result.room)}catch(error){notify(error.message)}
   }
 
@@ -77,12 +96,12 @@
     panel.querySelector('#liveRoomTitle').textContent=room.title||'Live Cook Room';
     const participants=room.participants||[],activity=room.activity||[],messages=room.chat||[];
     panel.querySelector('#liveRoomBody').innerHTML=`
-      <div class="live-room-row"><span>Invite:</span><span class="live-room-code">${room.invite_code}</span><button type="button" data-copy-code>Copy</button></div>
+      <div class="live-room-row"><span>Invite:</span><span class="live-room-code">${escapeHtml(room.invite_code)}</span><button type="button" data-copy-code>Copy</button></div>
       <div class="live-room-actions"><button type="button" data-ready>Ready</button><button type="button" data-not-ready>Not ready</button><button type="button" data-help>Need help</button><button type="button" data-leave>Leave</button></div>
-      <h4>Participants</h4><div class="live-room-members">${participants.length?participants.map(p=>`<div class="live-room-member">${p.display_name||'Cook'} · ${p.ready?'ready':'not ready'}${p.online===false?' · away':''}</div>`).join(''):'<div class="live-room-empty">No participants yet.</div>'}</div>
-      <h4>Chat</h4><div class="live-room-chat">${messages.length?messages.slice(-8).map(m=>`<div class="live-room-message"><strong>${m.display_name||'Cook'}</strong>${m.message||''}</div>`).join(''):'<div class="live-room-empty">No messages yet.</div>'}</div>
+      <h4>Participants</h4><div class="live-room-members">${participants.length?participants.map(p=>`<div class="live-room-member">${escapeHtml(p.display_name||'Cook')} · ${p.ready?'ready':'not ready'}${p.online===false?' · away':''}</div>`).join(''):'<div class="live-room-empty">No participants yet.</div>'}</div>
+      <h4>Chat</h4><div class="live-room-chat">${messages.length?messages.slice(-8).map(m=>`<div class="live-room-message"><strong>${escapeHtml(m.display_name||'Cook')}</strong>${escapeHtml(m.message||'')}</div>`).join(''):'<div class="live-room-empty">No messages yet.</div>'}</div>
       <div class="live-room-row"><input id="liveRoomChatInput" maxlength="1000" placeholder="Message the room"><button type="button" data-send>Send</button></div>
-      <h4>Activity</h4><div class="live-room-feed">${activity.length?activity.slice(0,10).map(a=>`<div class="live-room-event">${a.message||a.type}</div>`).join(''):'<div class="live-room-empty">Room activity will appear here.</div>'}</div>`;
+      <h4>Activity</h4><div class="live-room-feed">${activity.length?activity.slice(0,10).map(a=>`<div class="live-room-event">${escapeHtml(a.message||a.type)}</div>`).join(''):'<div class="live-room-empty">Room activity will appear here.</div>'}</div>`;
     panel.querySelector('[data-copy-code]').onclick=async()=>{await navigator.clipboard?.writeText(room.invite_code);notify('Invite code copied.')};
     panel.querySelector('[data-ready]').onclick=()=>setReady(true);panel.querySelector('[data-not-ready]').onclick=()=>setReady(false);panel.querySelector('[data-help]').onclick=()=>chat('help');panel.querySelector('[data-leave]').onclick=leave;panel.querySelector('[data-send]').onclick=()=>chat('message');panel.querySelector('#liveRoomChatInput').onkeydown=e=>{if(e.key==='Enter')chat('message')};
   }
