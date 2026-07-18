@@ -82,13 +82,19 @@
   }
 
   function launchControls(){
-    const cook=document.getElementById('cookMode');if(!cook||cook.querySelector('.live-room-launch'))return;
-    const wrap=document.createElement('div');wrap.className='live-room-launch';
-    wrap.innerHTML='<button type="button" class="btn" data-live-create>Start live room</button><button type="button" class="btn ghost" data-live-browse>Live now</button><button type="button" class="btn ghost" data-live-join>Enter code</button>';
-    wrap.querySelector('[data-live-create]').onclick=createRoom;
+    const cook=document.getElementById('cookMode');if(!cook)return;
+    const hasRecipe=Boolean(currentRecipe()),existing=cook.querySelector('.live-room-launch');
+    if(existing?.dataset.hasRecipe===String(hasRecipe))return;
+    existing?.remove();
+    const wrap=document.createElement('div');wrap.className='live-room-launch';wrap.dataset.hasRecipe=String(hasRecipe);
+    wrap.innerHTML=hasRecipe
+      ?'<button type="button" class="btn" data-live-create>Start live room</button><button type="button" class="btn ghost" data-live-browse>Live now</button><button type="button" class="live-room-code-link" data-live-join>Have an invite code?</button>'
+      :'<button type="button" class="btn" data-live-browse>Browse live rooms</button><button type="button" class="live-room-code-link" data-live-join>Have an invite code?</button>';
+    wrap.querySelector('[data-live-create]')?.addEventListener('click',createRoom);
     wrap.querySelector('[data-live-browse]').onclick=browseLiveRooms;
     wrap.querySelector('[data-live-join]').onclick=promptJoin;
-    const controls=cook.querySelector('.cook-controls');(controls||cook).insertAdjacentElement('afterend',wrap);
+    const target=cook.querySelector('[data-cook-live-slot]');
+    target?target.appendChild(wrap):(cook.querySelector('.cook-controls')||cook).insertAdjacentElement('afterend',wrap);
   }
 
   function ensureDirectory(){
