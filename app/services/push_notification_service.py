@@ -144,7 +144,7 @@ class PushNotificationService:
         body = str(payload.get("body") or "Your kitchen update is ready.")
         url = str(payload.get("url") or "/static/index.html")
         tag = str(payload.get("tag") or "glucoplate-update")
-        messaging.send(messaging.Message(token=token, data={"title": title, "body": body, "url": url, "tag": tag}, webpush=messaging.WebpushConfig(headers={"Urgency": "normal"}, fcm_options=messaging.WebpushFCMOptions(link=url))))
+        messaging.send(messaging.Message(token=token, data={"title": title, "body": body, "url": url, "tag": tag}, webpush=messaging.WebpushConfig(headers={"Urgency": "normal"})))
         return True
 
     def send_to_registered_token(self, token: str, payload: dict[str, Any], user_id: str | None = None) -> dict[str, int | bool]:
