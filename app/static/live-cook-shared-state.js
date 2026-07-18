@@ -1,19 +1,26 @@
 (()=>{
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
-  let clock=null;
-  async function authToken(){
+  let clock=null,busy=false;
+
+  async function authToken(forceRefresh=false){
     const provider=window.GlucoPlateFirebaseAuth?.getIdToken;
-    if(typeof provider==='function')return provider(false);
+    if(typeof provider==='function')return provider(forceRefresh);
     const cached=localStorage.getItem('glucoplate_firebase_id_token')||'';
     if(!cached)throw new Error('Sign in before using shared cooking controls.');
     return cached;
   }
 
   async function api(path,options={}){
-    const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${await authToken()}`,...(options.headers||{})}});
+    const request=async forceRefresh=>fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${await authToken(forceRefresh)}`,...(options.headers||{})}});
+    let response=await request(false);
+    if(response.status===401&&typeof window.GlucoPlateFirebaseAuth?.getIdToken==='function')response=await request(true);
     const body=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(typeof body.detail==='string'?body.detail:'Shared cooking state could not be updated');
+    if(!response.ok){
+      const error=new Error(typeof body.detail==='string'?body.detail:'Shared cooking state could not be updated');
+      error.status=response.status;
+      throw error;
+    }
     return body;
   }
 
@@ -37,24 +44,86 @@
     return hours?`${hours}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`:`${minutes}:${String(seconds).padStart(2,'0')}`;
   }
 
-  async function setIngredient(room,index,checked){
-    try{
-      await api(`/api/live-cook-rooms/${encodeURIComponent(room.id)}/ingredients`,{method:'PUT',body:JSON.stringify({ingredient_index:index,checked,expected_revision:Number(room.state?.revision||0)})});
-      await window.GlucoPlateLiveCookRooms?.refresh?.();
-    }catch(error){notify(error.message);await window.GlucoPlateLiveCookRooms?.refresh?.()}
+  async function latestRoom(){
+    await window.GlucoPlateLiveCookRooms?.refresh?.();
+    return window.GlucoPlateLiveCookRooms?.getRoom?.();
   }
 
-  async function timerAction(room,action,durationSeconds){
+  async function mutate(path,method,payloadFactory,retry=true){
+    let room=window.GlucoPlateLiveCookRooms?.getRoom?.();
+    if(!room)throw new Error('The live cook room is no longer available.');
     try{
-      await api(`/api/live-cook-rooms/${encodeURIComponent(room.id)}/timer`,{method:'POST',body:JSON.stringify({action,duration_seconds:durationSeconds||undefined,expected_revision:Number(room.state?.revision||0)})});
-      await window.GlucoPlateLiveCookRooms?.refresh?.();
-    }catch(error){notify(error.message);await window.GlucoPlateLiveCookRooms?.refresh?.()}
+      const result=await api(path(room),{method,body:JSON.stringify(payloadFactory(room))});
+      await latestRoom();
+      return result;
+    }catch(error){
+      if(error.status===409&&retry){
+        room=await latestRoom();
+        if(!room)throw error;
+        return mutate(path,method,payloadFactory,false);
+      }
+      throw error;
+    }
+  }
+
+  async function setIngredient(index,checked){
+    return mutate(
+      room=>`/api/live-cook-rooms/${encodeURIComponent(room.id)}/ingredients`,
+      'PUT',
+      room=>({ingredient_index:index,checked,expected_revision:Number(room.state?.revision||0)})
+    );
+  }
+
+  async function timerAction(action,durationSeconds){
+    return mutate(
+      room=>`/api/live-cook-rooms/${encodeURIComponent(room.id)}/timer`,
+      'POST',
+      room=>({action,duration_seconds:durationSeconds||undefined,expected_revision:Number(room.state?.revision||0)})
+    );
+  }
+
+  async function handleInteraction(event){
+    const body=document.getElementById('liveRoomBody');
+    if(!body||busy)return;
+    const ingredient=event.target.closest?.('[data-ingredient-index]');
+    const timerButton=event.target.closest?.('[data-timer-action]');
+    if(!ingredient&&!timerButton)return;
+
+    event.preventDefault();
+    busy=true;
+    const control=ingredient||timerButton;
+    control.disabled=true;
+    try{
+      if(ingredient){
+        await setIngredient(Number(ingredient.dataset.ingredientIndex),ingredient.checked);
+      }else{
+        const section=timerButton.closest('[data-shared-cooking-state]');
+        const action=timerButton.dataset.timerAction;
+        const minutes=Number(section?.querySelector('[data-timer-minutes]')?.value||0);
+        if(action==='start'&&(!Number.isFinite(minutes)||minutes<1))throw new Error('Enter at least 1 minute.');
+        await timerAction(action,action==='start'?Math.round(minutes*60):undefined);
+      }
+    }catch(error){
+      notify(error.message);
+      await latestRoom().catch(()=>{});
+    }finally{
+      busy=false;
+      if(control.isConnected)control.disabled=false;
+    }
+  }
+
+  function installDelegatedHandlers(body){
+    if(body.dataset.sharedStateHandlers==='1')return;
+    body.dataset.sharedStateHandlers='1';
+    body.addEventListener('change',handleInteraction);
+    body.addEventListener('click',handleInteraction);
   }
 
   function enhance(){
     const room=window.GlucoPlateLiveCookRooms?.getRoom?.();
     const body=document.getElementById('liveRoomBody');
     if(!room||!body)return;
+    installDelegatedHandlers(body);
     const phase=room.state?.session_status||'waiting';
     let section=body.querySelector('[data-shared-cooking-state]');
     if(!section){
@@ -73,18 +142,12 @@
       ?'<button type="button" data-timer-action="pause">Pause</button><button type="button" data-timer-action="reset">Reset</button>'
       :timer.status==='paused'
         ?'<button type="button" data-timer-action="resume">Resume</button><button type="button" data-timer-action="reset">Reset</button>'
-        :'<input data-timer-minutes type="number" min="1" max="1440" value="5" aria-label="Timer minutes"><button type="button" data-timer-action="start">Start timer</button>';
+        :'<input data-timer-minutes type="number" inputmode="numeric" min="1" max="1440" value="5" aria-label="Timer minutes"><button type="button" data-timer-action="start">Start timer</button>';
 
     section.innerHTML=`
       <div><strong>Shared ingredients</strong><div style="display:grid;gap:.35rem;margin-top:.45rem">${ingredients.length?ingredients.map((item,index)=>`<label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" data-ingredient-index="${index}" ${checks[String(index)]?'checked':''} ${active?'':'disabled'}><span>${escapeHtml(ingredientLabel(item,index))}</span></label>`).join(''):'<span class="live-room-empty">No ingredients are attached to this recipe.</span>'}</div></div>
       <div><strong>Shared timer</strong><div style="display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;margin-top:.45rem"><output data-shared-timer-clock style="font-size:1.35rem;font-weight:800">${formatSeconds(time)}</output><span>${escapeHtml(timer.status||'idle')}</span>${active?timerButtons:'<span class="live-room-empty">Available after the host starts cooking.</span>'}</div></div>`;
 
-    section.querySelectorAll('[data-ingredient-index]').forEach(input=>input.addEventListener('change',()=>setIngredient(room,Number(input.dataset.ingredientIndex),input.checked)));
-    section.querySelectorAll('[data-timer-action]').forEach(button=>button.addEventListener('click',()=>{
-      const action=button.dataset.timerAction;
-      const minutes=Number(section.querySelector('[data-timer-minutes]')?.value||0);
-      timerAction(room,action,action==='start'?Math.round(minutes*60):undefined);
-    }));
     clearInterval(clock);
     clock=setInterval(()=>{
       const output=section.querySelector('[data-shared-timer-clock]');
