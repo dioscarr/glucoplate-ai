@@ -55,8 +55,35 @@
     surface.addEventListener('touchend',event=>{const touch=event.changedTouches[0],dx=touch.clientX-touchStartX,dy=touch.clientY-touchStartY;if(Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.3)return;dx<0?goNext():goPrevious()},{passive:true});
   }
 
+  function enhanceEmptyCookMode(cook){
+    if(current()){cook.classList.remove('cook-empty-state');return}
+    cook.classList.add('cook-empty-state');
+    if(cook.querySelector('.cook-empty-shell'))return;
+    cook.innerHTML=`
+      <div class="cook-empty-shell">
+        <section class="cook-empty-hero">
+          <span class="cook-empty-eyebrow">COOK MODE</span>
+          <div class="cook-empty-visual" aria-hidden="true"><span>🍳</span></div>
+          <h2>Your kitchen is ready</h2>
+          <p>Choose a recipe and we’ll guide you through every step, timer, and ingredient.</p>
+          <div class="cook-controls cook-empty-actions">
+            <button class="btn primary" type="button" data-find-recipe>Browse recipes</button>
+            <button class="btn ghost" type="button" data-open-cookbook>Open cookbook</button>
+          </div>
+        </section>
+        <section class="cook-empty-tools" aria-label="Cooking tools">
+          <div class="cook-tool-card cook-tool-live" data-cook-live-slot>
+            <div class="cook-tool-heading"><span>◉</span><div><strong>Cook together</strong><small>Start or join a live room</small></div></div>
+          </div>
+        </section>
+      </div>`;
+    cook.querySelector('[data-find-recipe]').onclick=()=>window.showView?.('discoverView');
+    cook.querySelector('[data-open-cookbook]').onclick=()=>window.showView?.('savedView');
+  }
+
   function enhanceCookControls(){
     const cook=document.getElementById('cookMode');if(!cook)return;
+    enhanceEmptyCookMode(cook);
     attachSwipeSurface();
     const controls=cook.querySelector('.cook-controls');if(!controls)return;
     controls.querySelectorAll('button').forEach(button=>{button.classList.add('cook-native-control');button.setAttribute('aria-label',button.textContent.trim())});
