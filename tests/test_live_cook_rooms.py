@@ -86,3 +86,21 @@ def test_live_room_extensions_render_from_explicit_updates_without_mutation_loop
     assert "glucoplate:live-room-updated" in shared
     assert "MutationObserver" not in lifecycle
     assert "MutationObserver" not in shared
+
+
+def test_mobile_lifecycle_uses_delegated_in_app_confirmation():
+    source = (ROOT / "app" / "static" / "live-cook-session-lifecycle.js").read_text(encoding="utf-8")
+    assert "body.addEventListener('click',handleClick)" in source
+    assert "data-confirm-complete" in source
+    assert "role=\"alertdialog\"" in source
+    assert "confirm(" not in source
+    assert "response.status===401" in source
+
+
+def test_live_room_has_touch_friendly_mobile_styles():
+    room_source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    css = (ROOT / "app" / "static" / "live-cook-room-premium.css").read_text(encoding="utf-8")
+    assert "/static/live-cook-room-premium.css" in room_source
+    assert "@media(max-width:640px)" in css
+    assert "env(safe-area-inset-bottom)" in css
+    assert "min-height:44px" in css
