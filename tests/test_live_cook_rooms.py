@@ -141,3 +141,39 @@ def test_mobile_live_room_reopen_button_clears_bottom_navigation() -> None:
     assert ".live-room-reopen" in mobile
     assert "bottom:calc(86px + env(safe-area-inset-bottom))" in mobile
     assert "max-width:calc(100vw - 24px)" in mobile
+
+
+def test_live_room_polling_preserves_chat_composition() -> None:
+    source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    assert "function isChatEditing()" in source
+    assert "forceRender||!isChatEditing()" in source
+    assert "input.blur()" in source
+    assert "refresh(true)" in source
+
+
+def test_live_room_identifies_host_as_chef() -> None:
+    source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    service = (ROOT / "app" / "services" / "firebase_live_cook_room_service.py").read_text(encoding="utf-8")
+    assert "function roomChef" in source
+    assert "Hosted by" in source
+    assert "live-room-chef-badge" in source
+    assert '"role": "host"' in service
+
+
+def test_live_room_ingredients_support_zoom_and_audio() -> None:
+    shared = (ROOT / "app" / "static" / "live-cook-shared-state.js").read_text(encoding="utf-8")
+    css = (ROOT / "app" / "static" / "live-cook-room-premium.css").read_text(encoding="utf-8")
+    assert "ingredient-list live-room-ingredient-list" in shared
+    assert 'class="ingredient-icon"' in shared
+    assert "GlucoPlateIngredients?.ingredientIconFor" in shared
+    assert "Tap an image to enlarge and hear its name" in shared
+    assert ".live-room-ingredient-list" in css
+
+
+def test_live_room_has_premium_companion_layout() -> None:
+    source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    css = (ROOT / "app" / "static" / "live-cook-room-premium.css").read_text(encoding="utf-8")
+    assert "LIVE KITCHEN" in source
+    assert "live-room-invite" in source
+    assert "linear-gradient(135deg" in css
+    assert "height:76dvh" in css
