@@ -135,12 +135,11 @@ def test_live_now_directory_supports_switching_rooms():
     assert ".live-room-directory-card" in css
 
 
-def test_mobile_live_room_reopen_button_clears_bottom_navigation() -> None:
+def test_mobile_live_room_reopen_badge_is_removed_from_navigation_layer() -> None:
     css = (ROOT / "app" / "static" / "live-cook-room-premium.css").read_text(encoding="utf-8")
     mobile = css.split("@media(max-width:640px)", 1)[1]
-    assert ".live-room-reopen" in mobile
-    assert "bottom:calc(86px + env(safe-area-inset-bottom))" in mobile
-    assert "max-width:calc(100vw - 24px)" in mobile
+    assert ".live-room-reopen{display:none!important}" in mobile
+    assert "bottom:calc(86px + env(safe-area-inset-bottom))" not in mobile
 
 
 def test_live_room_polling_preserves_chat_composition() -> None:
