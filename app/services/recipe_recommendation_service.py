@@ -6,9 +6,11 @@ from typing import Any
 
 
 class RecipeRecommendationService:
-    """Rank recipe concepts with transparent Flavor Memory signals."""
+    """Rank recipe concepts with transparent Flavor Memory and pantry signals."""
 
     WEIGHTS = {"saved": 5, "cooked": 10, "repeated": 20, "dismissed": -8}
+    PANTRY_WEIGHT = 6
+    USE_SOON_BONUS = 8
 
     @staticmethod
     def _tokens(*values: Any) -> set[str]:
@@ -63,6 +65,7 @@ class RecipeRecommendationService:
         interactions: list[dict[str, Any]],
         preferences: dict[str, Any] | None = None,
         candidates: list[dict[str, Any]] | None = None,
+        pantry_items: list[dict[str, Any]] | None = None,
         culture: str | None = None,
         limit: int = 3,
     ) -> list[dict[str, Any]]:
@@ -76,9 +79,20 @@ class RecipeRecommendationService:
                 str(item.get("interaction_type") or "").lower(),
             ))
 
+        pantry = []
+        for item in pantry_items or []:
+            tokens = self._tokens(item.get("name"), item.get("category"))
+            if tokens:
+                pantry.append((tokens, str(item.get("name") or "ingredient").strip(), item.get("expiration_status")))
+
         ranked = []
         for index, candidate in enumerate(pool):
-            candidate_tokens = self._tokens(candidate.get("title"), candidate.get("direction"), candidate.get("cuisine"), candidate.get("tags"))
+            candidate_tokens = self._tokens(
+                candidate.get("title"),
+                candidate.get("direction"),
+                candidate.get("cuisine"),
+                candidate.get("tags"),
+            )
             score = 0
             reasons: list[str] = []
             signal_totals: dict[str, int] = defaultdict(int)
@@ -95,6 +109,21 @@ class RecipeRecommendationService:
                 score += 4 * min(len(preference_overlap), 3)
                 reasons.append("Matches preferences saved for this profile")
 
+            pantry_matches: list[str] = []
+            use_soon_matches: list[str] = []
+            for pantry_tokens, pantry_name, expiration_status in pantry:
+                if candidate_tokens & pantry_tokens:
+                    score += self.PANTRY_WEIGHT
+                    pantry_matches.append(pantry_name)
+                    if expiration_status == "use_soon":
+                        score += self.USE_SOON_BONUS
+                        use_soon_matches.append(pantry_name)
+
+            if use_soon_matches:
+                reasons.append(f"Helps use {', '.join(use_soon_matches[:2])} before it expires")
+            elif pantry_matches:
+                reasons.append(f"Uses {', '.join(pantry_matches[:2])} already in your pantry")
+
             if signal_totals.get("repeated", 0) > 0:
                 reasons.append("Similar to meals you choose again")
             elif signal_totals.get("cooked", 0) > 0:
@@ -106,7 +135,14 @@ class RecipeRecommendationService:
             if not reasons:
                 reasons.append("Provides a distinct direction for your request")
 
-            ranked.append({**candidate, "score": score, "why_this_fits": reasons[:2], "_order": index})
+            ranked.append({
+                **candidate,
+                "score": score,
+                "why_this_fits": reasons[:2],
+                "pantry_matches": pantry_matches[:5],
+                "use_soon_matches": use_soon_matches[:5],
+                "_order": index,
+            })
 
         ranked.sort(key=lambda item: (-item["score"], item["_order"]))
         selected: list[dict[str, Any]] = []
