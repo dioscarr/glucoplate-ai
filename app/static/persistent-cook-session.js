@@ -1,7 +1,7 @@
 (()=>{
   if(window.GlucoPlateCookingSession)return;
   const CACHE_PREFIX='glucoplate_private_cooking_session_v1';
-  let session=null,restoring=false,syncing=false;
+  let session=null,restoring=false,syncing=false,lastRestoredId=null;
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   const activeProfileId=()=>window.GlucoPlateUserData?.activeProfileId?.()||localStorage.getItem('glucoplate_active_profile_id')||'default';
   function userId(){try{return JSON.parse(localStorage.getItem('glucoplate_firebase_session')||'null')?.user?.uid||'signed-out'}catch{return'signed-out'}}
@@ -62,7 +62,7 @@
   }
   async function persist(updates){
     if(!session)return;
-    session={...session,...updates,updated_at:new Date().toISOString()};writeCache(session);
+    session={...session,...updates,_pending_sync:true,updated_at:new Date().toISOString()};writeCache(session);
     if(!navigator.onLine||String(session.id).startsWith('local-'))return;
     try{
       const result=await request(`/api/user-data/cooking-sessions/${encodeURIComponent(session.id)}`,{method:'PATCH',body:JSON.stringify({...updates,profile_id:session.profile_id})});
@@ -73,14 +73,21 @@
   async function syncLocalSession(){
     if(syncing||!navigator.onLine||!localStorage.getItem('glucoplate_firebase_id_token'))return;
     const local=session||readCache();
-    if(!local||!String(local.id||'').startsWith('local-'))return;
+    if(!local||(!String(local.id||'').startsWith('local-')&&!local._pending_sync))return;
     syncing=true;
-    try{session=await createRemote(local);writeCache(session)}
-    catch(error){console.debug('Local cooking session is waiting to sync.',error?.message)}
+    try{
+      if(String(local.id||'').startsWith('local-'))session=await createRemote(local);
+      else{
+        const updates={current_step:local.current_step,completed_steps:local.completed_steps||[],status:local.status||'active',timer:local.timer,profile_id:local.profile_id};
+        session=(await request(`/api/user-data/cooking-sessions/${encodeURIComponent(local.id)}`,{method:'PATCH',body:JSON.stringify(updates)})).session;
+      }
+      writeCache(session);
+    }catch(error){console.debug('Local cooking session is waiting to sync.',error?.message)}
     finally{syncing=false}
   }
   async function restoreSession(){
     if(restoring)return null;
+    await syncLocalSession();
     let active=null;
     if(navigator.onLine&&localStorage.getItem('glucoplate_firebase_id_token')){
       try{active=(await request(`/api/user-data/cooking-sessions/active?profile_id=${encodeURIComponent(activeProfileId())}`)).session}
@@ -88,7 +95,8 @@
     }
     active=active||readCache();
     if(!active||active.status!=='active'||!active.recipe)return null;
-    session=active;writeCache(active);restoring=true;
+    if(lastRestoredId===active.id)return active;
+    session=active;writeCache(active);lastRestoredId=active.id;restoring=true;
     try{
       window.currentRecipe=active.recipe;window.cookIndex=Math.max(0,Number(active.current_step||0));
       window.showView?.('cookView');window.startCookMode?.();
@@ -123,6 +131,6 @@
   window.addEventListener('DOMContentLoaded',()=>{wrapCookMode();setTimeout(restoreSession,0)});
   window.addEventListener('online',()=>syncLocalSession());
   window.addEventListener('glucoplate:auth-session-changed',()=>{syncLocalSession().then(restoreSession)});
-  window.addEventListener('glucoplate:profilechange',()=>{session=null;restoreSession()});
+  window.addEventListener('glucoplate:profilechange',()=>{session=null;lastRestoredId=null;restoreSession()});
   window.GlucoPlateCookingSession={ensureSession,persist,restoreSession,syncLocalSession,getSession:()=>session};
 })();
