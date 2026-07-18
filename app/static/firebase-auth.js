@@ -1,5 +1,5 @@
 (()=>{
-  let sdk=null,authClient=null,currentMode='login';
+  let sdk=null,authClient=null,currentMode=location.pathname.endsWith('/register.html')?'register':'login';
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   const loadSdk=async()=>{
     if(sdk)return sdk;
@@ -29,21 +29,23 @@
   function ensureGate(){
     if(!document.getElementById('enterpriseAuthStyles')){const style=document.createElement('style');style.id='enterpriseAuthStyles';style.textContent=authStyle;document.head.appendChild(style)}
     if(document.getElementById('enterpriseAuthGate'))return;
-    document.body.insertAdjacentHTML('beforeend',`<div id="enterpriseAuthGate"><div class="enterprise-auth-card"><div class="enterprise-auth-brand"><div class="enterprise-auth-logo">🍽️</div><div><strong>GlucoPlate Enterprise</strong><span>Secure company access</span></div></div><div class="enterprise-auth-tabs"><button id="enterpriseLoginTab" class="enterprise-auth-tab active" type="button">Login</button><button id="enterpriseRegisterTab" class="enterprise-auth-tab" type="button">Register</button></div><h1 id="enterpriseAuthTitle">Welcome back</h1><p id="enterpriseAuthCopy" class="enterprise-auth-copy">Sign in with your company account and access code.</p><form id="enterpriseAuthForm"><div id="enterpriseNameField" class="enterprise-auth-field" style="display:none"><label for="enterpriseName">Full name</label><input id="enterpriseName" autocomplete="name" /></div><div class="enterprise-auth-field"><label for="enterpriseEmail">Work email</label><input id="enterpriseEmail" type="email" autocomplete="email" required /></div><div class="enterprise-auth-field"><label for="enterprisePassword">Password</label><input id="enterprisePassword" type="password" autocomplete="current-password" minlength="6" required /></div><div class="enterprise-auth-field"><label for="enterpriseAccessCode">Company access code</label><input id="enterpriseAccessCode" inputmode="numeric" autocomplete="one-time-code" required /></div><button id="enterpriseSubmit" class="enterprise-auth-submit" type="submit">Login</button><button id="enterpriseGoogle" class="enterprise-auth-google" type="button">Continue with Google</button><div id="enterpriseAuthError" class="enterprise-auth-error"></div><div class="enterprise-auth-note">Your access code identifies your company and permissions. Contact your administrator if you do not have one.</div></form></div></div>`);
+    document.body.insertAdjacentHTML('beforeend',`<div id="enterpriseAuthGate"><div class="enterprise-auth-card"><div class="enterprise-auth-brand"><div class="enterprise-auth-logo">🍽️</div><div><strong>GlucoPlate Enterprise</strong><span>Secure company access</span></div></div><div class="enterprise-auth-tabs"><button id="enterpriseLoginTab" class="enterprise-auth-tab" type="button">Sign in</button><button id="enterpriseRegisterTab" class="enterprise-auth-tab" type="button">Register</button></div><h1 id="enterpriseAuthTitle">Welcome back</h1><p id="enterpriseAuthCopy" class="enterprise-auth-copy">Continue with the Google account connected to GlucoPlate.</p><form id="enterpriseAuthForm"><div id="enterpriseAccessCodeField" class="enterprise-auth-field" style="display:none"><label for="enterpriseAccessCode">Organization access code</label><input id="enterpriseAccessCode" inputmode="numeric" autocomplete="one-time-code" /></div><button id="enterpriseGoogle" class="enterprise-auth-google" type="button"><span aria-hidden="true">G</span> Continue with Google</button><div id="enterpriseAuthError" class="enterprise-auth-error"></div><div id="enterpriseAuthNote" class="enterprise-auth-note">Returning members only need their Google account.</div></form></div></div>`);
     document.getElementById('enterpriseLoginTab').addEventListener('click',()=>setMode('login'));
     document.getElementById('enterpriseRegisterTab').addEventListener('click',()=>setMode('register'));
-    document.getElementById('enterpriseAuthForm').addEventListener('submit',submitCredentials);
+    document.getElementById('enterpriseAuthForm').addEventListener('submit',event=>event.preventDefault());
     document.getElementById('enterpriseGoogle').addEventListener('click',signInGoogle);
+    setMode(currentMode);
   }
   function setMode(mode){
     currentMode=mode;const registering=mode==='register';
     document.getElementById('enterpriseLoginTab').classList.toggle('active',!registering);
     document.getElementById('enterpriseRegisterTab').classList.toggle('active',registering);
-    document.getElementById('enterpriseNameField').style.display=registering?'grid':'none';
-    document.getElementById('enterpriseAuthTitle').textContent=registering?'Create your account':'Welcome back';
-    document.getElementById('enterpriseAuthCopy').textContent=registering?'Register with your company-issued access code.':'Sign in with your company account and access code.';
-    document.getElementById('enterpriseSubmit').textContent=registering?'Create account':'Login';
-    document.getElementById('enterprisePassword').autocomplete=registering?'new-password':'current-password';
+    const codeField=document.getElementById('enterpriseAccessCodeField'),codeInput=document.getElementById('enterpriseAccessCode');
+    codeField.style.display=registering?'grid':'none';codeInput.required=registering;
+    document.getElementById('enterpriseAuthTitle').textContent=registering?'Join your organization':'Welcome back';
+    document.getElementById('enterpriseAuthCopy').textContent=registering?'Enter your organization access code once, then connect your Google account.':'Continue with the Google account connected to GlucoPlate.';
+    document.getElementById('enterpriseGoogle').innerHTML=registering?'<span aria-hidden="true">G</span> Register with Google':'<span aria-hidden="true">G</span> Continue with Google';
+    document.getElementById('enterpriseAuthNote').textContent=registering?'The access code is used only for initial organization enrollment.':'Returning members do not need an access code.';
     setError('');
   }
   const setError=message=>{const target=document.getElementById('enterpriseAuthError');if(target)target.textContent=message||''};
@@ -72,27 +74,32 @@
     localStorage.setItem('glucoplate_firebase_session',JSON.stringify(session));
     localStorage.setItem('glucoplate_firebase_id_token',token);
     if(session.enterprise)hideGate();else showGate();
+    window.dispatchEvent(new CustomEvent('glucoplate:auth-session-changed',{detail:{session}}));
     renderPanel();return session;
   }
-  async function submitCredentials(event){
-    event.preventDefault();setError('');
-    const email=document.getElementById('enterpriseEmail').value.trim();
-    const password=document.getElementById('enterprisePassword').value;
-    const code=accessCode();
-    if(!code)return setError('Company access code is required.');
-    try{
-      const api=await loadSdk(),client=await getAuthClient();let credential;
-      if(currentMode==='register'){
-        credential=await api.createUserWithEmailAndPassword(client,email,password);
-        const name=document.getElementById('enterpriseName').value.trim();
-        if(name)await api.updateProfile(credential.user,{displayName:name});
-      }else credential=await api.signInWithEmailAndPassword(client,email,password);
-      await enroll(credential.user,code);notify(currentMode==='register'?'Account created.':'Signed in.');
-    }catch(error){setError((error.message||'Authentication failed.').replace('Firebase: ',''));}
-  }
   async function signInGoogle(){
-    setError('');const code=accessCode();if(!code)return setError('Enter your company access code first.');
-    try{const api=await loadSdk(),client=await getAuthClient();const credential=await api.signInWithPopup(client,new api.GoogleAuthProvider());await enroll(credential.user,code);notify('Signed in with Google.')}catch(error){if(error?.code!=='auth/popup-closed-by-user')setError(error.message||'Google sign-in failed.');}
+    setError('');const registering=currentMode==='register',code=accessCode();
+    if(registering&&!code)return setError('Enter your organization access code first.');
+    const button=document.getElementById('enterpriseGoogle');button.disabled=true;
+    try{
+      const api=await loadSdk(),client=await getAuthClient();
+      let user=registering?client.currentUser:null;
+      if(!user){
+        const provider=new api.GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
+        user=(await api.signInWithPopup(client,provider)).user;
+      }
+      if(registering){
+        await enroll(user,code);notify('Registration complete. Welcome to GlucoPlate.');
+      }else{
+        const session=await syncSession(user);
+        if(!session?.enterprise){
+          setMode('register');
+          return setError('This Google account is not registered yet. Enter your organization access code to continue.');
+        }
+        notify('Signed in with Google.');
+      }
+    }catch(error){if(error?.code!=='auth/popup-closed-by-user')setError((error.message||'Google sign-in failed.').replace('Firebase: ',''));}
+    finally{button.disabled=false}
   }
   async function signOut(){
     try{const api=await loadSdk(),client=await getAuthClient();await api.signOut(client);notify('Signed out.')}catch(error){notify(error.message||'Sign-out failed.');}
