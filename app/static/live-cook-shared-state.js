@@ -129,7 +129,7 @@
     if(!section){
       section=document.createElement('section');
       section.dataset.sharedCookingState='1';
-      section.style.cssText='display:grid;gap:.8rem;margin:.8rem 0;padding:.8rem;border:1px solid var(--border,#ddd);border-radius:14px';
+      section.className='live-room-shared-state';
       const lifecycle=body.querySelector('[data-session-lifecycle]');
       lifecycle?.insertAdjacentElement('afterend',section)||body.prepend(section);
     }
@@ -145,8 +145,8 @@
         :'<input data-timer-minutes type="number" inputmode="numeric" min="1" max="1440" value="5" aria-label="Timer minutes"><button type="button" data-timer-action="start">Start timer</button>';
 
     section.innerHTML=`
-      <div><strong>Shared ingredients</strong><div style="display:grid;gap:.35rem;margin-top:.45rem">${ingredients.length?ingredients.map((item,index)=>`<label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" data-ingredient-index="${index}" ${checks[String(index)]?'checked':''} ${active?'':'disabled'}><span>${escapeHtml(ingredientLabel(item,index))}</span></label>`).join(''):'<span class="live-room-empty">No ingredients are attached to this recipe.</span>'}</div></div>
-      <div><strong>Shared timer</strong><div style="display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;margin-top:.45rem"><output data-shared-timer-clock style="font-size:1.35rem;font-weight:800">${formatSeconds(time)}</output><span>${escapeHtml(timer.status||'idle')}</span>${active?timerButtons:'<span class="live-room-empty">Available after the host starts cooking.</span>'}</div></div>`;
+      <div class="live-room-shared-section"><div class="live-room-section-heading"><div><strong>Shared ingredients</strong><span>Tap an image to enlarge and hear its name</span></div><span aria-hidden="true">🥬</span></div><ul class="ingredient-list live-room-ingredient-list">${ingredients.length?ingredients.map((item,index)=>{const label=ingredientLabel(item,index),icon=window.GlucoPlateIngredients?.ingredientIconFor?.(label)||'🥄';return `<li><label><input type="checkbox" data-ingredient-index="${index}" ${checks[String(index)]?'checked':''} ${active?'':'disabled'}><span class="ingredient-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(label)}</span></label></li>`}).join(''):'<li class="live-room-empty">No ingredients are attached to this recipe.</li>'}</ul></div>
+      <div class="live-room-shared-section"><div class="live-room-section-heading"><div><strong>Shared timer</strong><span>Keep every cook on the same pace</span></div><span aria-hidden="true">⏱</span></div><div class="live-room-timer-controls"><output data-shared-timer-clock style="font-size:1.35rem;font-weight:800">${formatSeconds(time)}</output><span>${escapeHtml(timer.status||'idle')}</span>${active?timerButtons:'<span class="live-room-empty">Available after the host starts cooking.</span>'}</div></div>`;
 
     clearInterval(clock);
     clock=setInterval(()=>{
