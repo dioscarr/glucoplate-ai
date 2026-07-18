@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -93,5 +95,20 @@ def test_static_auth_pages_are_served_with_no_cache_headers() -> None:
     assert register.status_code == 200
     assert "Welcome back" in login.text
     assert "Access-code registration" in register.text
+    assert "No username, password, or access code is needed." in login.text
+    assert "Future sign-ins use Google only." in register.text
     assert login.headers["cache-control"] == "no-cache, no-store, must-revalidate"
     assert register.headers["cache-control"] == "no-cache, no-store, must-revalidate"
+
+
+def test_firebase_gate_uses_google_only_and_access_code_only_for_registration() -> None:
+    source = (Path(__file__).resolve().parents[1] / "app" / "static" / "firebase-auth.js").read_text(encoding="utf-8")
+    assert "Continue with Google" in source
+    assert "Register with Google" in source
+    assert "enterpriseAccessCodeField" in source
+    assert "codeField.style.display=registering?'grid':'none'" in source
+    assert "codeInput.required=registering" in source
+    assert "signInWithEmailAndPassword" not in source
+    assert "createUserWithEmailAndPassword" not in source
+    assert "enterpriseEmail" not in source
+    assert "enterprisePassword" not in source

@@ -11,23 +11,11 @@
 <body>
   <main class="card">
     <div class="logo">🍽️</div>
-    <div class="eyebrow">Local demo provider</div>
+    <div class="eyebrow">Secure Google sign-in</div>
     <h1>Welcome back.</h1>
-    <p>Sign in with the email you registered. This MVP uses a simple local provider; Auth0 or Google can replace it later.</p>
-    <form id="loginForm">
-      <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com" /></div>
-      <button id="loginBtn" type="submit">Login</button>
-    </form>
-    <div id="message" class="status">No password yet — access-code registration creates the user and profile.</div>
-    <div id="profile" class="profile" hidden></div>
-    <div class="actions"><button class="ghost" onclick="location.href='/static/register.html'">Create account with access code</button><button class="ghost" onclick="location.href='/static/index.html'">Back to app</button></div>
-    <div class="footer">New here? <a href="/static/register.html">Register with an access code</a>.</div>
+    <p>Returning members sign in with the Google account already connected to GlucoPlate. No username, password, or access code is needed.</p>
+    <div class="status success">The secure Google sign-in panel opens automatically.</div>
+    <div class="actions"><button onclick="location.href='/static/index.html'">Continue to GlucoPlate</button><button class="ghost" onclick="location.href='/static/register.html'">Register a new organization account</button></div>
   </main>
-<script>
-const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-function saveSession(data){localStorage.setItem('glucoplate_session',JSON.stringify(data));}
-function renderProfile(data){const profile=data.active_profile||{};$('profile').hidden=false;$('profile').innerHTML=`<strong>${esc(data.user?.name||data.user?.email)}</strong><span>${esc(profile.company_name||'No company profile')} · ${esc(profile.user_type_name||profile.user_type||'User')}</span><span>${esc((profile.permissions||[]).join(', '))}</span>`;}
-$('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginBtn').disabled=true;$('loginBtn').textContent='Signing in…';try{const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('email').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.detail||'Login failed');saveSession(data);$('message').className='status success';$('message').textContent=data.message||'Signed in.';renderProfile(data);setTimeout(()=>location.href='/static/index.html',900)}catch(err){$('message').className='status';$('message').textContent=err.message}finally{$('loginBtn').disabled=false;$('loginBtn').textContent='Login'}});
-</script>
 </body>
 </html>
