@@ -57,6 +57,7 @@ HTML_SCRIPT_PATHS = (
     "/static/offline-actions.js",
     "/static/firebase-auth.js",
     "/static/firebase-user-data.js",
+    "/static/persistent-cook-session.js",
     "/static/profile-personalization.js",
     "/static/pantry-ui.js",
     "/static/shopping-list-ui.js",

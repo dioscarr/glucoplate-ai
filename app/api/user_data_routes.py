@@ -26,6 +26,24 @@ class CookedPayload(BaseModel):
     profile_id: str | None = None
 
 
+class CookingSessionCreatePayload(BaseModel):
+    recipe_id: str | None = Field(default=None, max_length=200)
+    recipe_name: str | None = Field(default=None, max_length=240)
+    recipe: dict[str, Any]
+    current_step: int = Field(default=0, ge=0, le=1000)
+    completed_steps: list[int] = Field(default_factory=list, max_length=1000)
+    started_at: str | None = None
+    profile_id: str | None = Field(default=None, max_length=120)
+
+
+class CookingSessionUpdatePayload(BaseModel):
+    current_step: int | None = Field(default=None, ge=0, le=1000)
+    completed_steps: list[int] | None = Field(default=None, max_length=1000)
+    status: Literal["active", "completed", "abandoned"] | None = None
+    timer: dict[str, Any] | None = None
+    profile_id: str | None = Field(default=None, max_length=120)
+
+
 class RecipeInteractionPayload(BaseModel):
     interaction_type: Literal["saved", "cooked", "dismissed", "repeated"]
     recipe_id: str | None = Field(default=None, max_length=200)
@@ -136,6 +154,48 @@ def list_cooked(
     profile_id: str | None = Query(default=None),
 ) -> list[dict[str, Any]]:
     return service().list_cooked(user.enterprise_id, user.uid, limit, profile_id)
+
+
+@router.post("/cooking-sessions", status_code=201)
+def create_cooking_session(
+    payload: CookingSessionCreatePayload,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    session = service().create_cooking_session(
+        user.enterprise_id,
+        user.uid,
+        payload.model_dump(exclude_none=True),
+        payload.profile_id,
+    )
+    return {"ok": True, "session": session}
+
+
+@router.get("/cooking-sessions/active")
+def active_cooking_session(
+    user: Annotated[AuthContext, Depends(scoped_user)],
+    profile_id: str | None = Query(default=None),
+) -> dict[str, Any]:
+    session = service().active_cooking_session(user.enterprise_id, user.uid, profile_id)
+    return {"session": session}
+
+
+@router.patch("/cooking-sessions/{session_id}")
+def update_cooking_session(
+    session_id: str,
+    payload: CookingSessionUpdatePayload,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    updates = payload.model_dump(exclude_none=True)
+    session = service().update_cooking_session(
+        user.enterprise_id,
+        user.uid,
+        session_id,
+        updates,
+        payload.profile_id,
+    )
+    if session is None:
+        raise HTTPException(status_code=404, detail="Cooking session not found")
+    return {"ok": True, "session": session}
 
 
 @router.post("/recipe-interactions")

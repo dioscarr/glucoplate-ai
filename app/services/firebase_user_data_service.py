@@ -281,6 +281,80 @@ class FirebaseUserDataService:
             ],
         }
 
+    def create_cooking_session(
+        self,
+        enterprise_id: str,
+        uid: str,
+        payload: dict[str, Any],
+        profile_id: str | None = None,
+    ) -> dict[str, Any]:
+        selected_profile_id = self._profile_id(profile_id or payload.get("profile_id"))
+        sessions_ref = self._profile_root(enterprise_id, uid, selected_profile_id).child("cooking_sessions")
+        existing = sessions_ref.get() or {}
+        now = self._now()
+        for session_id, session in existing.items():
+            if session.get("status") == "active":
+                sessions_ref.child(session_id).update({"status": "abandoned", "abandoned_at": now, "updated_at": now})
+
+        session_id = uuid.uuid4().hex
+        recipe = payload.get("recipe") or {}
+        record = self._normalize({
+            **payload,
+            "id": session_id,
+            "profile_id": selected_profile_id,
+            "recipe_id": payload.get("recipe_id") or recipe.get("id") or recipe.get("recipe_id"),
+            "recipe_name": payload.get("recipe_name") or recipe.get("title") or "Untitled recipe",
+            "status": "active",
+            "current_step": max(0, int(payload.get("current_step") or 0)),
+            "completed_steps": list(payload.get("completed_steps") or []),
+            "started_at": payload.get("started_at") or now,
+            "created_at": now,
+            "updated_at": now,
+        })
+        sessions_ref.child(session_id).set(record)
+        return record
+
+    def active_cooking_session(
+        self,
+        enterprise_id: str,
+        uid: str,
+        profile_id: str | None = None,
+    ) -> dict[str, Any] | None:
+        data = self._profile_root(enterprise_id, uid, profile_id).child("cooking_sessions").get() or {}
+        active = [item for item in data.values() if item.get("status") == "active"]
+        if not active:
+            return None
+        return max(active, key=lambda item: str(item.get("updated_at") or item.get("started_at") or ""))
+
+    def update_cooking_session(
+        self,
+        enterprise_id: str,
+        uid: str,
+        session_id: str,
+        updates: dict[str, Any],
+        profile_id: str | None = None,
+    ) -> dict[str, Any] | None:
+        selected_profile_id = self._profile_id(profile_id or updates.get("profile_id"))
+        ref = self._profile_root(enterprise_id, uid, selected_profile_id).child(f"cooking_sessions/{session_id}")
+        current = ref.get()
+        if current is None:
+            return None
+        allowed = {
+            key: value
+            for key, value in updates.items()
+            if key in {"current_step", "completed_steps", "status", "timer"}
+        }
+        if "current_step" in allowed:
+            allowed["current_step"] = max(0, int(allowed["current_step"]))
+        now = self._now()
+        allowed["updated_at"] = now
+        if allowed.get("status") == "completed":
+            allowed["completed_at"] = now
+        elif allowed.get("status") == "abandoned":
+            allowed["abandoned_at"] = now
+        ref.update(self._normalize(allowed))
+        return ref.get()
+
     def save_preferences(self, enterprise_id: str, uid: str, preferences: dict[str, Any], profile_id: str | None = None) -> dict[str, Any]:
         record = self._normalize({**preferences, "updated_at": self._now()})
         self._profile_root(enterprise_id, uid, profile_id).child("preferences").update(record)

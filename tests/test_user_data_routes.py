@@ -10,6 +10,7 @@ class FakeUserDataService:
         self.saved = []
         self.cooked = []
         self.interactions = []
+        self.cooking_sessions = []
         self.preferences = {}
 
     def save_recipe(self, enterprise_id, uid, recipe):
@@ -36,6 +37,26 @@ class FakeUserDataService:
 
     def list_cooked(self, enterprise_id, uid, limit=50, profile_id=None):
         return self.cooked
+
+    def create_cooking_session(self, enterprise_id, uid, payload, profile_id=None):
+        record = {
+            **payload,
+            "id": f"session-{len(self.cooking_sessions) + 1}",
+            "profile_id": profile_id or "default",
+            "status": "active",
+        }
+        self.cooking_sessions.append(record)
+        return record
+
+    def active_cooking_session(self, enterprise_id, uid, profile_id=None):
+        return next((item for item in reversed(self.cooking_sessions) if item["status"] == "active"), None)
+
+    def update_cooking_session(self, enterprise_id, uid, session_id, updates, profile_id=None):
+        session = next((item for item in self.cooking_sessions if item["id"] == session_id), None)
+        if session is None:
+            return None
+        session.update(updates)
+        return session
 
     def record_recipe_interaction(self, enterprise_id, uid, payload, profile_id=None):
         record = {**payload, "id": f"interaction-{len(self.interactions) + 1}", "profile_id": profile_id or "default"}
@@ -158,3 +179,49 @@ def test_user_without_enterprise_is_rejected(monkeypatch):
 
     response = TestClient(app).get("/api/user-data/recipes")
     assert response.status_code == 403
+
+
+def test_private_cooking_session_create_progress_and_complete(monkeypatch):
+    client, fake = authenticated_client(monkeypatch)
+
+    created = client.post(
+        "/api/user-data/cooking-sessions",
+        json={
+            "recipe_id": "recipe-1",
+            "recipe_name": "Mangú",
+            "recipe": {"id": "recipe-1", "title": "Mangú", "steps": ["Boil", "Mash"]},
+            "profile_id": "luna",
+        },
+    )
+    assert created.status_code == 201
+    session = created.json()["session"]
+    assert session["status"] == "active"
+    assert session["profile_id"] == "luna"
+
+    active = client.get("/api/user-data/cooking-sessions/active?profile_id=luna")
+    assert active.status_code == 200
+    assert active.json()["session"]["id"] == session["id"]
+
+    progressed = client.patch(
+        f"/api/user-data/cooking-sessions/{session['id']}",
+        json={"current_step": 1, "completed_steps": [0], "profile_id": "luna"},
+    )
+    assert progressed.status_code == 200
+    assert progressed.json()["session"]["current_step"] == 1
+
+    completed = client.patch(
+        f"/api/user-data/cooking-sessions/{session['id']}",
+        json={"status": "completed", "completed_steps": [0, 1], "profile_id": "luna"},
+    )
+    assert completed.status_code == 200
+    assert completed.json()["session"]["status"] == "completed"
+    assert fake.active_cooking_session("glucoplate", "firebase-user-1", "luna") is None
+
+
+def test_unknown_private_cooking_session_returns_404(monkeypatch):
+    client, _fake = authenticated_client(monkeypatch)
+    response = client.patch(
+        "/api/user-data/cooking-sessions/missing",
+        json={"current_step": 1},
+    )
+    assert response.status_code == 404
