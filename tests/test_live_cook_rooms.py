@@ -61,5 +61,6 @@ def test_live_room_client_exposes_app_state_and_validation_errors():
     assert "Object.defineProperties(window" in index
     assert "window.renderCookStep" in index
     assert "function errorMessage" in source
+    assert "escapeHtml" in source
     assert "normalizeInviteCode" in source
     assert "Sign in before using a live cook room." in source
