@@ -2,16 +2,16 @@
   const MIN_SERVINGS=1,MAX_SERVINGS=12;
   const FRACTIONS={'¼':.25,'½':.5,'¾':.75,'⅓':1/3,'⅔':2/3,'⅛':.125,'⅜':.375,'⅝':.625,'⅞':.875};
   function stableHash(value){let hash=2166136261;for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619)}return(hash>>>0).toString(36)}
-  function canonical(value){return String(value||'').trim().toLowerCase().replace(/\\s+/g,' ')}
+  function canonical(value){return String(value||'').trim().toLowerCase().replace(/\s+/g,' ')}
   function parseNumber(token){
     if(!token)return null;if(FRACTIONS[token]!==undefined)return FRACTIONS[token];
-    if(/^\\d+\\s+\\d+\\/\\d+$/.test(token)){const parts=token.split(/\\s+/),fraction=parts[1].split('/').map(Number);return Number(parts[0])+fraction[0]/fraction[1]}
-    if(/^\\d+\\/\\d+$/.test(token)){const fraction=token.split('/').map(Number);return fraction[1]?fraction[0]/fraction[1]:null}
+    if(/^\d+\s+\d+\/\d+$/.test(token)){const parts=token.split(/\s+/),fraction=parts[1].split('/').map(Number);return Number(parts[0])+fraction[0]/fraction[1]}
+    if(/^\d+\/\d+$/.test(token)){const fraction=token.split('/').map(Number);return fraction[1]?fraction[0]/fraction[1]:null}
     const value=Number(token);return Number.isFinite(value)?value:null;
   }
   function parseIngredient(value){
     const text=typeof value==='string'?value:String(value&&value.text||value&&value.name||''),normalized=text.trim();
-    const match=normalized.match(/^(\\d+\\s+\\d+\\/\\d+|\\d+\\/\\d+|\\d+(?:\\.\\d+)?|[¼½¾⅓⅔⅛⅜⅝⅞])(?:\\s+|$)(.*)$/);
+    const match=normalized.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?|[¼½¾⅓⅔⅛⅜⅝⅞])(?:\s+|$)(.*)$/);
     if(!match)return{text:normalized,quantity:null,remainder:normalized};
     return{text:normalized,quantity:parseNumber(match[1]),remainder:match[2].trim()};
   }
