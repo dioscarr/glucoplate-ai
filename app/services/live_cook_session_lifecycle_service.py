@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from firebase_admin import db
@@ -16,6 +17,10 @@ class LiveCookSessionLifecycleService:
         firebase = FirebaseAuthService()
         self.app = firebase._firebase_app()
 
+    @staticmethod
+    def _now() -> str:
+        return datetime.now(UTC).isoformat()
+
     def _room(self, enterprise_id: str, room_id: str):
         return db.reference(
             f"{self.ROOT}/enterprises/{enterprise_id}/live_cook_rooms/{room_id}",
@@ -26,7 +31,7 @@ class LiveCookSessionLifecycleService:
     def phase(room: dict[str, Any]) -> str:
         return str((room.get("state") or {}).get("session_status") or "waiting")
 
-    def initialize_waiting(self, enterprise_id: str, room_id: str, host_uid: str) -> None:
+    def initialize_waiting(self, enterprise_id: str, room_id: str) -> None:
         room_ref = self._room(enterprise_id, room_id)
         room = room_ref.get() or {}
         state = room.get("state") or {}
@@ -60,7 +65,7 @@ class LiveCookSessionLifecycleService:
         if target == "active":
             if current != "waiting":
                 raise ValueError("Only a waiting room can be started")
-            now = FirebaseAuthService.utcnow_iso()
+            now = self._now()
             state.update(
                 {
                     "session_status": "active",
@@ -76,7 +81,7 @@ class LiveCookSessionLifecycleService:
         elif target == "completed":
             if current != "active":
                 raise ValueError("Only an active cooking session can be completed")
-            now = FirebaseAuthService.utcnow_iso()
+            now = self._now()
             state.update(
                 {
                     "session_status": "completed",
