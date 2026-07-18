@@ -7,22 +7,30 @@
   let pending=null;
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const activeProfileId=()=>window.GlucoPlateUserData?.activeProfileId?.()||localStorage.getItem('glucoplate_active_profile_id')||'default';
-  const authHeaders=()=>{
+  async function authToken(forceRefresh=false){
+    const provider=window.GlucoPlateFirebaseAuth?.getIdToken;
+    if(typeof provider==='function')return provider(Boolean(forceRefresh));
     const token=localStorage.getItem('glucoplate_firebase_id_token');
-    return token?{'Content-Type':'application/json','Authorization':`Bearer ${token}`}:{'Content-Type':'application/json'};
-  };
+    if(!token)throw new Error('Sign in is required for personalized suggestions.');
+    return token;
+  }
+  async function authenticatedFetch(path,options={}){
+    const request=async forceRefresh=>fetch(path,{...options,headers:{'Content-Type':'application/json',...(options.headers||{}),Authorization:`Bearer ${await authToken(forceRefresh)}`}});
+    let response=await request(false);
+    if(response.status===401&&typeof window.GlucoPlateFirebaseAuth?.getIdToken==='function')response=await request(true);
+    return response;
+  }
 
-  async function recordFeedback(sessionId,eventType,conceptId=null,metadata={}){
+  async function recordFeedback(sessionId,eventType,conceptId=null,metadata={},profileId=activeProfileId()){
     if(!sessionId||!localStorage.getItem('glucoplate_firebase_id_token'))return;
     try{
-      const response=await fetch('/api/recommendations/events',{
+      const response=await authenticatedFetch('/api/recommendations/events',{
         method:'POST',
-        headers:authHeaders(),
         body:JSON.stringify({
           session_id:sessionId,
           event_type:eventType,
           concept_id:conceptId,
-          profile_id:activeProfileId(),
+          profile_id:profileId,
           metadata
         })
       });
@@ -50,11 +58,16 @@
     document.getElementById('recipeConceptOverlay')?.remove();
     pending=null;
   }
+  function dismissConcepts(reason='closed'){
+    const value=pending;
+    closeDialog();
+    if(value?.sessionId)void recordFeedback(value.sessionId,'skipped',null,{reason},value.profileId);
+  }
 
   function renderConcepts(result,context){
     ensureStyles();
     closeDialog();
-    pending={...context,sessionId:result?.session_id||null};
+    pending={...context,sessionId:result?.session_id||null,profileId:result?.profile_id||activeProfileId()};
     const concepts=Array.isArray(result?.concepts)?result.concepts:[];
     if(!concepts.length)throw new Error('No recipe directions were returned.');
     const overlay=document.createElement('div');
@@ -63,26 +76,28 @@
     overlay.setAttribute('role','dialog');
     overlay.setAttribute('aria-modal','true');
     overlay.setAttribute('aria-labelledby','recipeConceptTitle');
-    overlay.innerHTML=`<div class="card concept-dialog"><div class="concept-dialog-head"><div><span class="eyebrow">Chosen for this profile</span><h2 id="recipeConceptTitle">Pick tonight’s direction</h2><p>GlucoPlate ranked these ideas using your request and Flavor Memory. The complete recipe is generated after you choose.</p></div><button class="concept-close" type="button" aria-label="Close">×</button></div><div class="concept-list">${concepts.map((concept,index)=>`<button type="button" class="concept-card" data-concept-index="${index}"><span class="concept-rank">${index+1}</span><span><strong>${esc(concept.title)}</strong><span class="concept-direction">${esc(concept.direction)}</span><span class="concept-reason">${esc(concept.why_this_fits||'A practical match for your request.')}</span></span><span class="concept-score">${Number(concept.score||0)>0?'+':''}${esc(concept.score||0)}</span></button>`).join('')}</div><div class="concept-actions"><span class="concept-note">Ranking version: ${esc(result.ranking_version||'flavor-memory-v1')}</span><button id="skipConceptsBtn" type="button" class="btn ghost">Skip suggestions</button></div></div>`;
+    const reasonList=concept=>Array.isArray(concept.why_this_fits)?concept.why_this_fits:[concept.why_this_fits||'A practical match for your request.'];
+    overlay.innerHTML=`<div class="card concept-dialog"><div class="concept-dialog-head"><div><span class="eyebrow">Chosen for this profile</span><h2 id="recipeConceptTitle">Pick tonight’s direction</h2><p>These are ranked suggestions—not guarantees. GlucoPlate uses this profile’s cooking choices and available pantry context, then generates the full recipe after you choose.</p><div class="concept-context"><span>${Number(result.interaction_count||0)} Flavor Memory signals</span><span>${Number(result.pantry_count||0)} pantry items considered</span>${Number(result.use_soon_count||0)?`<span>${Number(result.use_soon_count)} use-soon matches</span>`:''}</div></div><button class="concept-close" type="button" aria-label="Close suggestions">×</button></div><div class="concept-list">${concepts.map((concept,index)=>`<button type="button" class="concept-card" data-concept-index="${index}"><span class="concept-rank">${index+1}</span><span><strong>${esc(concept.title)}</strong><span class="concept-direction">${esc(concept.direction)}</span><span class="concept-reasons">${reasonList(concept).slice(0,2).map(reason=>`<span class="concept-reason">${esc(reason)}</span>`).join('')}</span></span><span class="concept-score" aria-label="Personalization score ${esc(concept.score||0)}">${Number(concept.score||0)>0?'+':''}${esc(concept.score||0)}</span></button>`).join('')}</div><div class="concept-actions"><span class="concept-note">You can skip these and generate directly. Ranking: ${esc(result.ranking_version||'flavor-memory-v1')}</span><button id="skipConceptsBtn" type="button" class="btn ghost">Skip suggestions</button></div></div>`;
     document.body.appendChild(overlay);
-    overlay.querySelector('.concept-close').onclick=closeDialog;
-    overlay.addEventListener('click',event=>{if(event.target===overlay)closeDialog()});
+    overlay.querySelector('.concept-close').onclick=()=>dismissConcepts('close_button');
+    overlay.addEventListener('click',event=>{if(event.target===overlay)dismissConcepts('backdrop')});
+    overlay.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();dismissConcepts('escape_key')}});
     overlay.querySelector('#skipConceptsBtn').onclick=()=>{
       const value=pending;
       closeDialog();
-      void recordFeedback(value.sessionId,'skipped',null,{reason:'user_requested_direct_generation'});
+      void recordFeedback(value.sessionId,'skipped',null,{reason:'user_requested_direct_generation'},value.profileId);
       originalGenerate(value.goal,value.culture,value.emoji);
-      void recordFeedback(value.sessionId,'generated',null,{source:'skip_suggestions'});
+      void recordFeedback(value.sessionId,'generated',null,{source:'skip_suggestions'},value.profileId);
     };
     overlay.querySelectorAll('[data-concept-index]').forEach(button=>button.onclick=()=>{
       const index=Number(button.dataset.conceptIndex);
       const concept=concepts[index];
       const value=pending;
       closeDialog();
-      void recordFeedback(value.sessionId,'selected',concept.id||null,{rank:index+1,score:concept.score||0});
+      void recordFeedback(value.sessionId,'selected',concept.id||null,{rank:index+1,score:concept.score||0},value.profileId);
       const selectedGoal=`${concept.direction}\n\nOriginal request: ${value.goal}`;
       originalGenerate(selectedGoal,concept.cuisine||value.culture,value.emoji);
-      void recordFeedback(value.sessionId,'generated',concept.id||null,{rank:index+1});
+      void recordFeedback(value.sessionId,'generated',concept.id||null,{rank:index+1},value.profileId);
     });
     overlay.querySelector('[data-concept-index]')?.focus();
   }
@@ -90,11 +105,15 @@
   async function requestConcepts(goal,culture){
     const token=localStorage.getItem('glucoplate_firebase_id_token');
     if(!token)throw new Error('Sign in is required for personalized suggestions.');
-    const response=await fetch('/api/recommendations/recipe-concepts',{
-      method:'POST',
-      headers:authHeaders(),
-      body:JSON.stringify({goal,culture,profile_id:activeProfileId(),limit:3,candidates:[]})
-    });
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
+    let response;
+    try{
+      response=await authenticatedFetch('/api/recommendations/recipe-concepts',{
+        method:'POST',
+        signal:controller.signal,
+        body:JSON.stringify({goal,culture,profile_id:activeProfileId(),limit:3,candidates:[]})
+      });
+    }finally{clearTimeout(timeout)}
     if(!response.ok){
       let detail='Could not rank recipe directions.';
       try{detail=(await response.json()).detail||detail}catch(_error){}
@@ -125,5 +144,5 @@
   }
 
   window.generateRecipe=recommendBeforeGenerate;
-  window.GlucoPlateRecommendationUi={requestConcepts,renderConcepts,recommendBeforeGenerate,recordFeedback,closeDialog};
+  window.GlucoPlateRecommendationUi={requestConcepts,renderConcepts,recommendBeforeGenerate,recordFeedback,closeDialog,dismissConcepts};
 })();
