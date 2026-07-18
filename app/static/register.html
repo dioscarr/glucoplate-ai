@@ -12,24 +12,10 @@
   <main class="card">
     <div class="logo">🍽️</div>
     <div class="eyebrow">Access-code registration</div>
-    <h1>Create your kitchen profile.</h1>
-    <p>Enter an access code first. GlucoPlate looks up the company, then creates either a new user or a new user-type profile for an existing user.</p>
-    <div class="field"><label for="accessCode">Access code</label><div class="row"><input id="accessCode" autocomplete="one-time-code" inputmode="numeric" placeholder="Try 0001 for Admin" /><button id="lookupBtn" type="button">Find company</button></div></div>
-    <div id="companyCard" class="company" hidden></div>
-    <form id="registerForm" class="grid">
-      <div class="field"><label for="name">Name</label><input id="name" autocomplete="name" required placeholder="Your name" /></div>
-      <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com" /></div>
-      <button id="registerBtn" type="submit" disabled>Register profile</button>
-    </form>
-    <div id="message" class="status">Access code 0001 creates an Admin profile. Other codes create company profiles.</div>
-    <div class="actions"><button class="ghost" onclick="location.href='/static/login.html'">Login instead</button><button class="ghost" onclick="location.href='/static/index.html'">Back to app</button></div>
+    <h1>Join your organization.</h1>
+    <p>Enter your organization access code once, then register with Google. Future sign-ins use Google only.</p>
+    <div class="status success">The registration panel opens automatically and requests only your access code and Google account.</div>
+    <div class="actions"><button onclick="location.href='/static/index.html'">Continue to GlucoPlate</button><button class="ghost" onclick="location.href='/static/login.html'">Already registered? Sign in</button></div>
   </main>
-<script>
-const $=id=>document.getElementById(id);let matchedCompany=null;const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-function saveSession(data){localStorage.setItem('glucoplate_session',JSON.stringify(data));}
-function renderCompany(company){matchedCompany=company;$('companyCard').hidden=false;$('companyCard').innerHTML=`<strong>${esc(company.company_name)}</strong><span>Access code ${esc(company.access_code)} · ${esc(company.user_type_name)} (${esc(company.user_type)})</span><span>Permissions: ${esc((company.permissions||[]).join(', '))}</span>`;$('registerBtn').disabled=false;}
-$('lookupBtn').addEventListener('click',async()=>{const access_code=$('accessCode').value.trim();if(!access_code){$('message').textContent='Enter an access code first.';return}$('lookupBtn').disabled=true;$('lookupBtn').textContent='Checking…';try{const r=await fetch('/api/auth/access-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({access_code})});const data=await r.json();if(!data.ok)throw new Error(data.message||'Access code not found');renderCompany(data.company);$('message').className='status success';$('message').textContent=data.message}catch(err){matchedCompany=null;$('companyCard').hidden=true;$('registerBtn').disabled=true;$('message').className='status';$('message').textContent=err.message}finally{$('lookupBtn').disabled=false;$('lookupBtn').textContent='Find company'}});
-$('registerForm').addEventListener('submit',async e=>{e.preventDefault();if(!matchedCompany){$('message').textContent='Find a company before registering.';return}$('registerBtn').disabled=true;$('registerBtn').textContent='Creating…';try{const payload={access_code:$('accessCode').value.trim(),name:$('name').value.trim(),email:$('email').value.trim(),provider:'local'};const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await r.json();if(!r.ok)throw new Error(data.detail||'Registration failed');saveSession(data);$('message').className='status success';$('message').textContent=`${data.message} Status: ${data.status}.`;setTimeout(()=>location.href='/static/index.html',1100)}catch(err){$('message').className='status';$('message').textContent=err.message}finally{$('registerBtn').disabled=false;$('registerBtn').textContent='Register profile'}});
-</script>
 </body>
 </html>
