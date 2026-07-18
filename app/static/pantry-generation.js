@@ -42,7 +42,15 @@
     const buy=Array.isArray(recipe.need_to_buy)?recipe.need_to_buy:[];
     const soon=Array.isArray(recipe.use_soon_matches)?recipe.use_soon_matches:[];
     const chips=items=>items.map(item=>`<span class="chip">${esc(item)}</span>`).join(' ');
-    card.innerHTML=`<div style="padding:16px"><span class="eyebrow">Pantry coverage</span><h3 style="margin:6px 0">You already have ${Number(coverage.available_count||0)} of ${Number(coverage.required_count||0)} ingredients</h3><p style="margin:0 0 12px;color:var(--muted,#756f69)">${Number(coverage.coverage_percent||0)}% covered${soon.length?` · Uses ${soon.length} item${soon.length===1?'':'s'} soon`:''}</p><div style="display:grid;gap:10px"><div><strong>Already have</strong><div>${have.length?chips(have):'None matched'}</div></div><div><strong>Need to buy</strong><div id="pantryShoppingGap">${buy.length?chips(buy):'Nothing — your pantry covers this recipe.'}</div></div></div></div>`;
+    card.innerHTML=`<div style="padding:16px"><span class="eyebrow">Pantry coverage</span><h3 style="margin:6px 0">You already have ${Number(coverage.available_count||0)} of ${Number(coverage.required_count||0)} ingredients</h3><p style="margin:0 0 12px;color:var(--muted,#756f69)">${Number(coverage.coverage_percent||0)}% covered${soon.length?` · Uses ${soon.length} item${soon.length===1?'':'s'} soon`:''}</p><div style="display:grid;gap:10px"><div><strong>Already have</strong><div>${have.length?chips(have):'None matched'}</div></div><div><strong>Need to buy</strong><div id="pantryShoppingGap">${buy.length?chips(buy):'Nothing — your pantry covers this recipe.'}</div>${buy.length?'<button id="addShoppingGapBtn" type="button" class="btn" style="margin-top:10px">Add missing items to shopping list</button>':''}</div></div></div>`;
+    card.querySelector('#addShoppingGapBtn')?.addEventListener('click',async event=>{
+      event.currentTarget.disabled=true;
+      try{
+        await window.GlucoPlateShoppingList?.addItems(buy,recipe.title||null);
+      }finally{
+        event.currentTarget.disabled=false;
+      }
+    });
     const target=document.getElementById('result')||document.getElementById('recipeResult')||document.querySelector('main');
     target?.prepend(card);
   }
