@@ -66,20 +66,19 @@
           <div class="cook-empty-visual" aria-hidden="true"><span>🍳</span></div>
           <h2>Your kitchen is ready</h2>
           <p>Choose a recipe and we’ll guide you through every step, timer, and ingredient.</p>
-          <div class="cook-controls">
-            <button class="btn primary" type="button" data-find-recipe>Explore recipes</button>
+          <div class="cook-controls cook-empty-actions">
+            <button class="btn primary" type="button" data-find-recipe>Browse recipes</button>
+            <button class="btn ghost" type="button" data-open-cookbook>Open cookbook</button>
           </div>
         </section>
         <section class="cook-empty-tools" aria-label="Cooking tools">
-          <div class="cook-tool-card cook-tool-timer" data-cook-timer-slot>
-            <div class="cook-tool-heading"><span>⏱</span><div><strong>Quick timer</strong><small>Start a kitchen timer anytime</small></div></div>
-          </div>
           <div class="cook-tool-card cook-tool-live" data-cook-live-slot>
             <div class="cook-tool-heading"><span>◉</span><div><strong>Cook together</strong><small>Start or join a live room</small></div></div>
           </div>
         </section>
       </div>`;
     cook.querySelector('[data-find-recipe]').onclick=()=>window.showView?.('discoverView');
+    cook.querySelector('[data-open-cookbook]').onclick=()=>window.showView?.('savedView');
   }
 
   function enhanceCookControls(){
