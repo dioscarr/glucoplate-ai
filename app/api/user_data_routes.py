@@ -37,6 +37,7 @@ class CookingSessionCreatePayload(BaseModel):
 
 
 class CookingSessionUpdatePayload(BaseModel):
+    recipe: dict[str, Any] | None = None
     current_step: int | None = Field(default=None, ge=0, le=1000)
     completed_steps: list[int] | None = Field(default=None, max_length=1000)
     status: Literal["active", "completed", "abandoned"] | None = None
