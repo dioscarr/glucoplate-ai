@@ -117,6 +117,7 @@
       <h4>Activity</h4><div class="live-room-feed">${activity.length?activity.slice(0,10).map(a=>`<div class="live-room-event">${escapeHtml(a.message||a.type)}</div>`).join(''):'<div class="live-room-empty">Room activity will appear here.</div>'}</div>`;
     panel.querySelector('[data-copy-code]').onclick=async()=>{await navigator.clipboard?.writeText(room.invite_code);notify('Invite code copied.')};
     panel.querySelector('[data-ready]').onclick=()=>setReady(true);panel.querySelector('[data-not-ready]').onclick=()=>setReady(false);panel.querySelector('[data-help]').onclick=()=>chat('help');panel.querySelector('[data-leave]').onclick=leave;panel.querySelector('[data-send]').onclick=()=>chat('message');panel.querySelector('#liveRoomChatInput').onkeydown=e=>{if(e.key==='Enter')chat('message')};
+    window.dispatchEvent(new CustomEvent('glucoplate:live-room-updated',{detail:{roomId:room.id,revision:Number(room.state?.revision||0)}}));
   }
 
   function wrapCookNavigation(){
