@@ -10,6 +10,7 @@ from app.api.firebase_auth_routes import router as firebase_auth_router
 from app.api.pantry_routes import router as pantry_router
 from app.api.price_observation_routes import router as price_observation_router
 from app.api.push_routes import router as push_router
+from app.api.receipt_import_routes import router as receipt_import_router
 from app.api.recommendation_routes import router as recommendation_router
 from app.api.routes import router
 from app.api.shopping_list_routes import router as shopping_list_router
@@ -21,7 +22,7 @@ setup_logging()
 app = FastAPI(
     title="GlucoPlate AI",
     description="AI-powered recipe generation, personalization, saving, and grocery planning API.",
-    version="0.14.0",
+    version="0.15.0",
 )
 
 app.include_router(router)
@@ -33,6 +34,7 @@ app.include_router(recommendation_router)
 app.include_router(pantry_router)
 app.include_router(shopping_list_router)
 app.include_router(price_observation_router)
+app.include_router(receipt_import_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 HTML_SCRIPT_PATHS = (
@@ -46,6 +48,7 @@ HTML_SCRIPT_PATHS = (
     "/static/profile-personalization.js",
     "/static/pantry-ui.js",
     "/static/shopping-list-ui.js",
+    "/static/receipt-import-ui.js",
     "/static/pantry-generation.js",
     "/static/recommendation-ui.js",
     "/static/theme-runtime.js",
@@ -130,6 +133,7 @@ async def log_requests(request: Request, call_next):
             "/api/pantry",
             "/api/shopping-list",
             "/api/price-observations",
+            "/api/receipt-imports",
             "/api/push",
         ]
         if method in ("POST", "PUT", "PATCH", "DELETE") and any(route in path for route in tracked_routes):
