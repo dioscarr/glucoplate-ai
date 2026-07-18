@@ -193,13 +193,15 @@
     const panel=ensurePanel();panel.hidden=dismissed;ensureReopenButton().hidden=!dismissed;
     panel.querySelector('#liveRoomTitle').textContent=room.title||'Live Cook Room';
     const participants=room.participants||[],activity=room.activity||[],messages=room.chat||[];
-    panel.querySelector('#liveRoomBody').innerHTML=`
+    const body=panel.querySelector('#liveRoomBody'),media=body.querySelector('[data-live-media]');
+    body.innerHTML=`
       <div class="live-room-row"><span>Invite:</span><span class="live-room-code">${escapeHtml(room.invite_code)}</span><button type="button" data-copy-code>Copy</button></div>
       <div class="live-room-actions"><button type="button" data-ready>Ready</button><button type="button" data-not-ready>Not ready</button><button type="button" data-help>Need help</button><button type="button" data-leave>Leave</button></div>
       <h4>Participants</h4><div class="live-room-members">${participants.length?participants.map(p=>`<div class="live-room-member">${escapeHtml(p.display_name||'Cook')} · ${p.ready?'ready':'not ready'}${p.online===false?' · away':''}</div>`).join(''):'<div class="live-room-empty">No participants yet.</div>'}</div>
       <h4>Chat</h4><div class="live-room-chat">${messages.length?messages.slice(-8).map(m=>`<div class="live-room-message"><strong>${escapeHtml(m.display_name||'Cook')}</strong>${escapeHtml(m.message||'')}</div>`).join(''):'<div class="live-room-empty">No messages yet.</div>'}</div>
       <div class="live-room-row"><input id="liveRoomChatInput" maxlength="1000" placeholder="Message the room"><button type="button" data-send>Send</button></div>
       <h4>Activity</h4><div class="live-room-feed">${activity.length?activity.slice(0,10).map(a=>`<div class="live-room-event">${escapeHtml(a.message||a.type)}</div>`).join(''):'<div class="live-room-empty">Room activity will appear here.</div>'}</div>`;
+    if(media)body.prepend(media);
     panel.querySelector('[data-copy-code]').onclick=async()=>{await navigator.clipboard?.writeText(room.invite_code);notify('Invite code copied.')};
     panel.querySelector('[data-ready]').onclick=()=>setReady(true);panel.querySelector('[data-not-ready]').onclick=()=>setReady(false);panel.querySelector('[data-help]').onclick=()=>chat('help');panel.querySelector('[data-leave]').onclick=leave;panel.querySelector('[data-send]').onclick=()=>chat('message');panel.querySelector('#liveRoomChatInput').onkeydown=e=>{if(e.key==='Enter')chat('message')};
     window.dispatchEvent(new CustomEvent('glucoplate:live-room-updated',{detail:{roomId:room.id,revision:Number(room.state?.revision||0)}}));
