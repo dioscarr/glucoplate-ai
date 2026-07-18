@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from app.api.enterprise_admin_routes import AuthContext
 from app.api.user_data_routes import scoped_user
 from app.services.firebase_shopping_list_service import FirebaseShoppingListService
+from app.services.shopping_comparison_service import ShoppingComparisonService
 
 router = APIRouter(prefix="/api/shopping-list", tags=["shopping-list"])
 
@@ -30,6 +31,13 @@ class ShoppingListUpdatePayload(BaseModel):
     unit: str | None = Field(default=None, max_length=40)
     checked: bool | None = None
     profile_id: str | None = Field(default=None, max_length=120)
+
+
+class ShoppingComparisonPayload(BaseModel):
+    profile_id: str | None = Field(default=None, max_length=120)
+    store_id: str | None = Field(default=None, max_length=160)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
 
 
 def service() -> FirebaseShoppingListService:
@@ -65,6 +73,22 @@ def list_shopping_list_items(
         "count": len(items),
         "remaining_count": sum(not item.get("checked") for item in items),
     }
+
+
+@router.post("/compare")
+def compare_shopping_list(
+    payload: ShoppingComparisonPayload,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    items = service().list_items(user.enterprise_id, user.uid, payload.profile_id)
+    result = ShoppingComparisonService().compare(
+        items,
+        store_id=payload.store_id,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+    )
+    result["profile_id"] = payload.profile_id or FirebaseShoppingListService.DEFAULT_PROFILE_ID
+    return result
 
 
 @router.put("/items/{item_id}")

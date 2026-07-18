@@ -20,7 +20,7 @@ setup_logging()
 app = FastAPI(
     title="GlucoPlate AI",
     description="AI-powered recipe generation, personalization, saving, and grocery planning API.",
-    version="0.12.0",
+    version="0.13.0",
 )
 
 app.include_router(router)
