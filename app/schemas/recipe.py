@@ -13,6 +13,8 @@ class RecipeRequest(BaseModel):
     preferences: list[str] = Field(default_factory=list)
     avoid_ingredients: list[str] = Field(default_factory=list)
     culture: str | None = Field(default=None, examples=["Dominican", "Latin", "Mediterranean"])
+    pantry_items: list[str] = Field(default_factory=list, max_length=200)
+    use_soon_ingredients: list[str] = Field(default_factory=list, max_length=50)
 
 
 class NutritionEstimate(BaseModel):
@@ -31,6 +33,13 @@ class SafetyReview(BaseModel):
     disclaimer: str
 
 
+class PantryCoverage(BaseModel):
+    available_count: int = 0
+    required_count: int = 0
+    coverage_ratio: float = 0
+    coverage_percent: int = 0
+
+
 class RecipeResponse(BaseModel):
     title: str
     summary: str
@@ -40,3 +49,8 @@ class RecipeResponse(BaseModel):
     substitutions: list[str]
     safety_review: SafetyReview
     ai_provider: str = "fallback"
+    already_have: list[str] = Field(default_factory=list)
+    need_to_buy: list[str] = Field(default_factory=list)
+    optional: list[str] = Field(default_factory=list)
+    use_soon_matches: list[str] = Field(default_factory=list)
+    pantry_coverage: PantryCoverage = Field(default_factory=PantryCoverage)
