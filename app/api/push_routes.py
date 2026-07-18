@@ -71,7 +71,7 @@ def remove_token(
     request: UnsubscribeRequest,
     user: Annotated[AuthContext, Depends(current_user)],
 ) -> dict:
-    return {"ok": PushNotificationService().remove_token(request.token, user_id=user.uid)}
+    return {"ok": PushNotificationService().remove_token(request.token, user_id=user.uid, enterprise_id=user.enterprise_id)}
 
 
 @router.post("/test")
@@ -88,6 +88,7 @@ def send_test_push(
             "tag": "glucoplate-test",
         },
         user_id=user.uid,
+        enterprise_id=user.enterprise_id,
     )
     if not result.get("configured"):
         raise HTTPException(status_code=503, detail="Firebase server credentials are not configured")

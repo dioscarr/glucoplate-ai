@@ -2,7 +2,7 @@
   const token=()=>localStorage.getItem('glucoplate_firebase_id_token')||'';
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   const escapeHtml=value=>String(value??'').replace(/[&<>'\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]));
-  let room=null,pollTimer=null,applyingRemote=false,lastRevision=0;
+  let room=null,pollTimer=null,applyingRemote=false,lastRevision=0,dismissed=false;
 
   function errorMessage(body,status){
     const detail=body?.detail;
@@ -56,8 +56,29 @@
     if(panel)return panel;
     panel=document.createElement('aside');panel.id='liveCookRoomPanel';panel.className='live-room-panel';panel.hidden=true;
     panel.innerHTML=`<header><div><strong>Live Cook Room</strong><div id="liveRoomTitle"></div></div><button class="live-room-close" type="button" aria-label="Close">×</button></header><div id="liveRoomBody"></div>`;
-    panel.querySelector('.live-room-close').onclick=()=>panel.hidden=true;
-    document.body.appendChild(panel);return panel;
+    panel.querySelector('.live-room-close').onclick=()=>setDismissed(true);
+    document.body.appendChild(panel);ensureReopenButton();return panel;
+  }
+
+  function ensureReopenButton(){
+    let button=document.getElementById('liveRoomReopen');
+    if(button)return button;
+    button=document.createElement('button');
+    button.id='liveRoomReopen';
+    button.className='live-room-reopen';
+    button.type='button';
+    button.textContent='Open live room';
+    button.hidden=true;
+    button.onclick=()=>setDismissed(false);
+    document.body.appendChild(button);
+    return button;
+  }
+
+  function setDismissed(value){
+    dismissed=Boolean(value);
+    const panel=ensurePanel(),reopen=ensureReopenButton();
+    panel.hidden=dismissed||!room;
+    reopen.hidden=!dismissed||!room;
   }
 
   function launchControls(){
@@ -84,7 +105,7 @@
     try{const result=await api('/api/live-cook-rooms/join',{method:'POST',body:JSON.stringify({invite_code:code,display_name:displayName()})});activate(result.room)}catch(error){notify(error.message)}
   }
 
-  function activate(next){room=next;lastRevision=Number(room.state?.revision||0);render();startPolling();syncRemoteState(room)}
+  function activate(next){room=next;dismissed=false;lastRevision=Number(room.state?.revision||0);render();startPolling();syncRemoteState(room)}
 
   function startPolling(){clearInterval(pollTimer);pollTimer=setInterval(refresh,1800)}
   async function refresh(){if(!room)return;try{const result=await api(`/api/live-cook-rooms/${room.id}`);room=result.room;render();syncRemoteState(room)}catch(error){clearInterval(pollTimer);notify(error.message)}}
@@ -103,10 +124,10 @@
     const input=document.getElementById('liveRoomChatInput');const message=kind==='help'?'I need help with this step.':input?.value.trim();if(!message)return;
     try{await api(`/api/live-cook-rooms/${room.id}/chat`,{method:'POST',body:JSON.stringify({message,kind})});if(input)input.value='';refresh()}catch(error){notify(error.message)}
   }
-  async function leave(){if(!room)return;try{await api(`/api/live-cook-rooms/${room.id}/participants/me`,{method:'DELETE'});clearInterval(pollTimer);room=null;ensurePanel().hidden=true;notify('You left the cook room.')}catch(error){notify(error.message)}}
+  async function leave(){if(!room)return;try{await api(`/api/live-cook-rooms/${room.id}/participants/me`,{method:'DELETE'});clearInterval(pollTimer);room=null;dismissed=false;ensurePanel().hidden=true;ensureReopenButton().hidden=true;notify('You left the cook room.')}catch(error){notify(error.message)}}
 
   function render(){
-    const panel=ensurePanel();panel.hidden=false;
+    const panel=ensurePanel();panel.hidden=dismissed;ensureReopenButton().hidden=!dismissed;
     panel.querySelector('#liveRoomTitle').textContent=room.title||'Live Cook Room';
     const participants=room.participants||[],activity=room.activity||[],messages=room.chat||[];
     panel.querySelector('#liveRoomBody').innerHTML=`
