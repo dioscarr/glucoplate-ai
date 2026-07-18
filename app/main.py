@@ -9,6 +9,7 @@ from app.api.enterprise_admin_routes import router as enterprise_admin_router
 from app.api.firebase_auth_routes import router as firebase_auth_router
 from app.api.live_cook_room_routes import router as live_cook_room_router
 from app.api.live_cook_session_routes import router as live_cook_session_router
+from app.api.live_cook_shared_state_routes import router as live_cook_shared_state_router
 from app.api.pantry_routes import router as pantry_router
 from app.api.price_observation_routes import router as price_observation_router
 from app.api.push_routes import router as push_router
@@ -24,7 +25,7 @@ setup_logging()
 app = FastAPI(
     title="GlucoPlate AI",
     description="AI-powered recipe generation, personalization, saving, grocery planning, and collaborative cooking API.",
-    version="0.17.0",
+    version="0.18.0",
 )
 
 app.include_router(router)
@@ -39,6 +40,7 @@ app.include_router(price_observation_router)
 app.include_router(receipt_import_router)
 app.include_router(live_cook_room_router)
 app.include_router(live_cook_session_router)
+app.include_router(live_cook_shared_state_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 HTML_SCRIPT_PATHS = (
@@ -46,6 +48,7 @@ HTML_SCRIPT_PATHS = (
     "/static/native-cook.js",
     "/static/live-cook-rooms.js",
     "/static/live-cook-session-lifecycle.js",
+    "/static/live-cook-shared-state.js",
     "/static/native-timers.js",
     "/static/native-ingredients.js",
     "/static/offline-actions.js",

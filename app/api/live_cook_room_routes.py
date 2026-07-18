@@ -126,7 +126,17 @@ def update_room_state(
     updates = payload.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status_code=400, detail="No room state changes supplied")
-    room = service().update_state(user.enterprise_id, room_id, user.uid, updates)
+    room_api = service()
+    current = room_api.get_room(user.enterprise_id, room_id)
+    if current is None:
+        raise HTTPException(status_code=404, detail="Cook room not found")
+    require_participant(current, user.uid)
+    phase = str((current.get("state") or {}).get("session_status") or "waiting")
+    if phase != "active":
+        raise HTTPException(status_code=409, detail="Shared cooking state can only change while the session is active")
+    if "ingredient_checks" in updates or "timer" in updates:
+        raise HTTPException(status_code=409, detail="Use the shared ingredient and timer endpoints for conflict-safe updates")
+    room = room_api.update_state(user.enterprise_id, room_id, user.uid, updates)
     if room is None:
         raise HTTPException(status_code=404, detail="Cook room participant not found")
     return {"ok": True, "room": room}
