@@ -36,6 +36,7 @@ class ShoppingListUpdatePayload(BaseModel):
 class ShoppingComparisonPayload(BaseModel):
     profile_id: str | None = Field(default=None, max_length=120)
     store_id: str | None = Field(default=None, max_length=160)
+    store_name: str | None = Field(default=None, max_length=240)
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
 
@@ -83,7 +84,9 @@ def compare_shopping_list(
     items = service().list_items(user.enterprise_id, user.uid, payload.profile_id)
     result = ShoppingComparisonService().compare(
         items,
+        enterprise_id=user.enterprise_id,
         store_id=payload.store_id,
+        store_name=payload.store_name,
         latitude=payload.latitude,
         longitude=payload.longitude,
     )
