@@ -1,11 +1,17 @@
 (()=>{
-  const token=()=>localStorage.getItem('glucoplate_firebase_id_token')||'';
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   let clock=null;
+  async function authToken(){
+    const provider=window.GlucoPlateFirebaseAuth?.getIdToken;
+    if(typeof provider==='function')return provider(false);
+    const cached=localStorage.getItem('glucoplate_firebase_id_token')||'';
+    if(!cached)throw new Error('Sign in before using shared cooking controls.');
+    return cached;
+  }
 
   async function api(path,options={}){
-    const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${token()}`,...(options.headers||{})}});
+    const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${await authToken()}`,...(options.headers||{})}});
     const body=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(typeof body.detail==='string'?body.detail:'Shared cooking state could not be updated');
     return body;
@@ -86,7 +92,7 @@
     },1000);
   }
 
-  const observer=new MutationObserver(enhance);
-  window.addEventListener('DOMContentLoaded',()=>{observer.observe(document.body,{childList:true,subtree:true});enhance()});
+  window.addEventListener('DOMContentLoaded',enhance);
+  window.addEventListener('glucoplate:live-room-updated',enhance);
   window.addEventListener('pagehide',()=>clearInterval(clock));
 })();
