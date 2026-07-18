@@ -29,6 +29,20 @@ app.include_router(user_data_router)
 app.include_router(recommendation_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+HTML_SCRIPT_PATHS = (
+    "/static/device-manager.js",
+    "/static/native-cook.js",
+    "/static/native-timers.js",
+    "/static/native-ingredients.js",
+    "/static/offline-actions.js",
+    "/static/firebase-auth.js",
+    "/static/firebase-user-data.js",
+    "/static/profile-personalization.js",
+    "/static/recommendation-ui.js",
+    "/static/theme-runtime.js",
+    "/static/pwa.js",
+)
+
 
 @app.middleware("http")
 async def pwa_headers_and_script(request: Request, call_next):
@@ -48,38 +62,16 @@ async def pwa_headers_and_script(request: Request, call_next):
         head_marker = b"</head>"
         body_marker = b"</body>"
         native_style = b'<link rel="stylesheet" href="/static/native-pwa.css" /></head>'
-        native_scripts = (
-            b'<script src="/static/device-manager.js" defer></script>'
-            b'<script src="/static/native-cook.js" defer></script>'
-            b'<script src="/static/native-timers.js" defer></script>'
-            b'<script src="/static/native-ingredients.js" defer></script>'
-            b'<script src="/static/offline-actions.js" defer></script>'
-            b'<script src="/static/firebase-auth.js" defer></script>'
-            b'<script src="/static/firebase-user-data.js" defer></script>'
-            b'<script src="/static/profile-personalization.js" defer></script>'
-            b'<script src="/static/theme-runtime.js" defer></script>'
-            b'<script src="/static/pwa.js" defer></script></body>'
-        )
+
         if b"/static/native-pwa.css" not in body and head_marker in body:
             body = body.replace(head_marker, native_style)
-        if b"/static/device-manager.js" not in body and body_marker in body:
-            body = body.replace(body_marker, native_scripts)
-        else:
-            scripts = (
-                b"/static/native-cook.js",
-                b"/static/native-timers.js",
-                b"/static/native-ingredients.js",
-                b"/static/offline-actions.js",
-                b"/static/firebase-auth.js",
-                b"/static/firebase-user-data.js",
-                b"/static/profile-personalization.js",
-                b"/static/theme-runtime.js",
-                b"/static/pwa.js",
-            )
-            for script_path in scripts:
-                if script_path not in body and body_marker in body:
-                    tag = b'<script src="' + script_path + b'" defer></script></body>'
-                    body = body.replace(body_marker, tag)
+
+        for script_path in HTML_SCRIPT_PATHS:
+            encoded_path = script_path.encode()
+            if encoded_path not in body and body_marker in body:
+                tag = b'<script src="' + encoded_path + b'" defer></script></body>'
+                body = body.replace(body_marker, tag)
+
         headers = dict(response.headers)
         headers.pop("content-length", None)
         headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
