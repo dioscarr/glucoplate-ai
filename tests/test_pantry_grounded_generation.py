@@ -1,6 +1,5 @@
+import asyncio
 from pathlib import Path
-
-import pytest
 
 from app.schemas.recipe import NutritionEstimate, RecipeRequest, RecipeResponse, SafetyReview
 from app.services.pantry_coverage_service import PantryCoverageService
@@ -37,14 +36,15 @@ class FakeOrchestrator:
         )
 
 
-@pytest.mark.asyncio
-async def test_application_service_enriches_generated_recipe() -> None:
+def test_application_service_enriches_generated_recipe() -> None:
     request = RecipeRequest(
         goal="dinner",
         pantry_items=["chicken thighs"],
         use_soon_ingredients=["chicken thighs"],
     )
-    recipe = await RecipeApplicationService(orchestrator=FakeOrchestrator()).generate_recipe(request)
+    recipe = asyncio.run(
+        RecipeApplicationService(orchestrator=FakeOrchestrator()).generate_recipe(request)
+    )
 
     assert recipe.already_have == ["chicken thighs"]
     assert recipe.need_to_buy == ["rice"]
