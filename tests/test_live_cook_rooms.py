@@ -176,3 +176,11 @@ def test_live_room_has_premium_companion_layout() -> None:
     assert "live-room-invite" in source
     assert "linear-gradient(135deg" in css
     assert "height:76dvh" in css
+
+
+def test_active_room_reopens_inline_from_cook_mode_on_mobile() -> None:
+    source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    assert "data-live-reopen-inline" in source
+    assert "Open live room" in source
+    assert "Boolean(room)" in source
+    assert "setDismissed(false)" in source
