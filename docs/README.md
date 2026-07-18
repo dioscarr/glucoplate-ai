@@ -4,6 +4,7 @@ This folder is the working knowledge base for GlucoPlate AI. It should stay curr
 
 ## Start here
 
+- [System architecture](SYSTEM_ARCHITECTURE.md) — system-level flow across the PWA, FastAPI APIs, domain services, AI providers, persistence, and platform integrations
 - [Live Cooking Design Target](LIVE_COOKING_DESIGN_TARGET.md) — approved product experience and mandatory alignment contracts
 - [Live Cooking Flow](LIVE_COOKING_FLOW.md) — implementation-grounded create/join/cook flow and the required extension path for video, AI, substitutions, shopping, activity, and replay
 - [Product roadmap alignment](PRODUCT_ROADMAP_ALIGNMENT.md) — sequencing and scope rules for delivering the target incrementally
