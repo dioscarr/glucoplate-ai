@@ -22,6 +22,11 @@
 <div id="thinking" class="thinking"><div class="card thinking-card"><span class="eyebrow">AI kitchen</span><h2 id="thinkingText">Creating your recipe…</h2><div class="dots"><span></span><span></span><span></span></div><p id="thinkingDetail" class="muted">Preparing ingredients, steps, and estimated nutrition.</p></div></div>
 <script>
 const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));let currentRecipe=null,savedRecipes=[],selectedFoods=[],activeCategory='all',activeCuisine=null,cookIndex=0;
+Object.defineProperties(window,{
+  currentRecipe:{configurable:true,get:()=>currentRecipe,set:value=>{currentRecipe=value}},
+  cookIndex:{configurable:true,get:()=>cookIndex,set:value=>{const next=Number(value);if(Number.isFinite(next))cookIndex=Math.max(0,Math.trunc(next))}}
+});
+window.renderCookStep=()=>startCookMode();
 const cuisines=[
 {id:'Dominican',emoji:'🇩🇴',label:'Dominican'}, {id:'Mexican',emoji:'🇲🇽',label:'Mexican'}, {id:'Italian',emoji:'🇮🇹',label:'Italian'}, {id:'Asian',emoji:'🥢',label:'Asian'},
 {id:'Mediterranean',emoji:'🫒',label:'Mediterranean'}, {id:'American',emoji:'🇺🇸',label:'American'}, {id:'Indian',emoji:'🇮🇳',label:'Indian'}, {id:'Caribbean',emoji:'🌴',label:'Caribbean'}];
