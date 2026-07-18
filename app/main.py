@@ -7,6 +7,7 @@ from loguru import logger
 
 from app.api.enterprise_admin_routes import router as enterprise_admin_router
 from app.api.firebase_auth_routes import router as firebase_auth_router
+from app.api.live_cook_media_routes import router as live_cook_media_router
 from app.api.live_cook_room_routes import router as live_cook_room_router
 from app.api.live_cook_session_routes import router as live_cook_session_router
 from app.api.live_cook_shared_state_routes import router as live_cook_shared_state_router
@@ -39,6 +40,7 @@ app.include_router(shopping_list_router)
 app.include_router(price_observation_router)
 app.include_router(receipt_import_router)
 app.include_router(live_cook_room_router)
+app.include_router(live_cook_media_router)
 app.include_router(live_cook_session_router)
 app.include_router(live_cook_shared_state_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -47,6 +49,7 @@ HTML_SCRIPT_PATHS = (
     "/static/device-manager.js",
     "/static/native-cook.js",
     "/static/live-cook-rooms.js",
+    "/static/live-cook-media.js",
     "/static/live-cook-session-lifecycle.js",
     "/static/live-cook-shared-state.js",
     "/static/native-timers.js",
