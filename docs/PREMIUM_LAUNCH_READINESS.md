@@ -17,6 +17,35 @@ The first release should not attempt to be a full grocery marketplace, nutrition
 7. The user rates the result with lightweight feedback.
 8. GlucoPlate learns and improves the next recommendation.
 
+## Roadmap authority and synchronization
+
+This document is the authoritative source for launch priority and public go/no-go decisions.
+
+The detailed [Live Cooking, Shopping, and Substitution Plan](../Docs/live-cooking-shopping-plan.md) remains the design and architecture reference for ingredient intelligence, shopping lists, local store and price data, retailer adapters, live rooms, collaboration, points, and replay. Those capabilities must follow the priority boundaries below and must not delay the premium dinner-decision core.
+
+The synchronized execution map is documented in [Product Roadmap Alignment](PRODUCT_ROADMAP_ALIGNMENT.md).
+
+### Current implementation sequence
+
+1. Connect existing recipe UI actions to the Flavor Memory endpoints.
+2. Use behavioral signals to rank the three recipe directions.
+3. Complete concept selection, generation recovery, and trust states.
+4. Build persistent hands-free Cooking Mode.
+5. Complete premium recipe detail and lightweight post-cook feedback.
+6. Close cookbook, notification-control, privacy, analytics, and production-readiness gaps.
+
+Flavor Memory storage and API foundations are already implemented. Its minimal save/cook/dismiss/repeat learning loop is now part of completing the P0 core experience. Richer preference modeling remains a P2 differentiator.
+
+### Live-shopping scope by priority
+
+**P0:** substitution controls, confidence and allergy notes, add-to-list actions, stable recipe-ingredient identifiers, and a private cooking-session foundation.
+
+**P1:** Smart Pantry Lite, shared household lists, consolidated meal-plan lists, deterministic substitutions, ingredient normalization, and carefully labeled open-food metadata.
+
+**P2:** Confidence Coach, Dinner Decision Room, live video rooms, collaborative substitution challenges, points, activity feed, and replay.
+
+**Deferred:** central store routing, broad price discovery, live inventory claims, retailer OAuth, connected carts, and checkout.
+
 ## P0 — Blocking features required to ship
 
 ### 1. Real authentication and user isolation
@@ -132,7 +161,10 @@ A household receives three options, votes quickly, and GlucoPlate resolves ties 
 During cooking, users can ask context-aware questions tied to the current step: what “golden brown” looks like, whether a sauce is too thin, or what substitution is safest.
 
 ### Flavor Memory
-After a meal, users answer two taps: “make again?” and “change what?” The system learns spice, texture, cuisine, ingredient, and effort preferences without requiring a long profile.
+The P0 learning loop records save, cook, dismiss, repeat, and lightweight post-cook feedback signals. P2 expands this into richer spice, texture, cuisine, ingredient, and effort preference modeling without requiring a long profile.
+
+### Live Cooking Rooms
+Authenticated participants join a recipe-linked video room with the current step, ingredient events, substitution challenges, host-confirmed decisions, backend-controlled points, and authorized replay history.
 
 ### Realistic Recipe Promise
 Every generated recipe receives internal checks for ingredient-step consistency, plausible timing, missing quantities, unsafe handling, and impossible equipment assumptions before display.
@@ -140,6 +172,9 @@ Every generated recipe receives internal checks for ingredient-step consistency,
 ## Deliberately defer
 
 - Full store routing as a central launch experience.
+- Broad price discovery as primary navigation.
+- Live inventory claims without a reliable retailer source.
+- Retailer OAuth, connected carts, and checkout.
 - Social feed and creator economy.
 - Complex calorie or disease-management dashboards.
 - Paid subscriptions before retention is demonstrated.
@@ -167,6 +202,8 @@ A new user generates or selects a recipe, opens Cooking Mode, and completes or s
 - notification_permission_prompted / granted / denied
 - notification_opened
 - account_deleted
+
+Add later feature events only when their user journeys are activated, including shopping-list, substitution, pantry, Confidence Coach, decision-room, and live-room events. Sensitive allergy details must not be copied into analytics payloads.
 
 ### Initial launch targets
 - At least 70% recipe-generation success under normal production conditions.
