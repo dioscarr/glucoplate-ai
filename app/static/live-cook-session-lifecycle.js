@@ -1,6 +1,12 @@
 (()=>{
-  const token=()=>localStorage.getItem('glucoplate_firebase_id_token')||'';
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
+  async function authToken(){
+    const provider=window.GlucoPlateFirebaseAuth?.getIdToken;
+    if(typeof provider==='function')return provider(false);
+    const cached=localStorage.getItem('glucoplate_firebase_id_token')||'';
+    if(!cached)throw new Error('Sign in before using a live cook room.');
+    return cached;
+  }
 
   function currentUid(){
     try{return JSON.parse(localStorage.getItem('glucoplate_firebase_session')||'null')?.user?.uid||''}
@@ -10,7 +16,7 @@
   async function transition(roomId,action){
     const response=await fetch(`/api/live-cook-rooms/${encodeURIComponent(roomId)}/${action}`,{
       method:'POST',
-      headers:{'Content-Type':'application/json',Authorization:`Bearer ${token()}`}
+      headers:{'Content-Type':'application/json',Authorization:`Bearer ${await authToken()}`}
     });
     const body=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(body.detail||'Could not update the cooking session');
@@ -50,7 +56,6 @@
     });
   }
 
-  const observer=new MutationObserver(enhance);
-  window.addEventListener('DOMContentLoaded',()=>{observer.observe(document.body,{childList:true,subtree:true});enhance()});
+  window.addEventListener('DOMContentLoaded',enhance);
   window.addEventListener('glucoplate:live-room-updated',enhance);
 })();

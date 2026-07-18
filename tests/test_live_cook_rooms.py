@@ -75,3 +75,14 @@ def test_live_rooms_refresh_firebase_tokens_before_authenticated_requests():
     assert "GlucoPlateFirebaseAuth={signInGoogle,signOut,syncSession,getAuthClient,getIdToken,showGate}" in auth_source
     assert "response.status===401" in room_source
     assert "request(true)" in room_source
+
+
+def test_live_room_extensions_render_from_explicit_updates_without_mutation_loops():
+    core = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    lifecycle = (ROOT / "app" / "static" / "live-cook-session-lifecycle.js").read_text(encoding="utf-8")
+    shared = (ROOT / "app" / "static" / "live-cook-shared-state.js").read_text(encoding="utf-8")
+    assert "glucoplate:live-room-updated" in core
+    assert "glucoplate:live-room-updated" in lifecycle
+    assert "glucoplate:live-room-updated" in shared
+    assert "MutationObserver" not in lifecycle
+    assert "MutationObserver" not in shared
