@@ -46,4 +46,17 @@ def test_service_worker_caches_persistent_session_client() -> None:
     worker = client.get("/static/sw.js")
     assert worker.status_code == 200
     assert "/static/persistent-cook-session.js" in worker.text
-    assert "glucoplate-shell-v15" in worker.text
+    assert "glucoplate-shell-v17" in worker.text
+
+
+def test_serving_selection_is_persisted_in_active_session_recipe() -> None:
+    script = (ROOT / "app" / "static" / "persistent-cook-session.js").read_text(encoding="utf-8")
+    routes = (ROOT / "app" / "api" / "user_data_routes.py").read_text(encoding="utf-8")
+    assert "glucoplate:servings-changed" in script
+    assert "saveServingSelection" in script
+    assert "recipeKey(session.recipe)!==recipeKey(recipe)" in script
+    assert "recipeSnapshot={...recipe}" in script
+    assert "_pending_sync:true" in script
+    assert "setTimeout(()=>persist({recipe:recipeSnapshot}),250)" in script
+    assert "recipe:local.recipe" in script
+    assert "recipe: dict[str, Any] | None = None" in routes
