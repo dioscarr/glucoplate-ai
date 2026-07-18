@@ -34,6 +34,9 @@ def test_persistent_client_has_offline_cache_and_reconnect_sync() -> None:
     assert "activeProfileId()" in script
     assert "localStorage.setItem(cacheKey()" in script
     assert "syncLocalSession" in script
+    assert "_pending_sync:true" in script
+    assert "await syncLocalSession()" in script
+    assert "lastRestoredId" in script
     assert "window.addEventListener('online'" in script
     assert "GlucoPlateFirebaseAuth?.getIdToken" in script
     assert "response.status===401" in script
