@@ -33,6 +33,45 @@
     const match=INGREDIENT_ICONS.find(([pattern])=>pattern.test(value));
     return match?match[1]:'🥄';
   }
+  function ensureIngredientZoom(){
+    if(!document.querySelector('link[data-ingredient-zoom]')){
+      const link=document.createElement('link');link.rel='stylesheet';link.href='/static/ingredient-zoom.css';link.dataset.ingredientZoom='1';document.head.appendChild(link);
+    }
+    let dialog=document.getElementById('ingredientZoomDialog');
+    if(dialog)return dialog;
+    dialog=document.createElement('div');dialog.id='ingredientZoomDialog';dialog.className='ingredient-zoom';dialog.hidden=true;
+    dialog.innerHTML='<div class="ingredient-zoom-card" role="dialog" aria-modal="true" aria-labelledby="ingredientZoomName"><button type="button" class="ingredient-zoom-close" aria-label="Close ingredient preview">×</button><div class="ingredient-zoom-icon" aria-hidden="true"></div><strong id="ingredientZoomName"></strong><span>Tap anywhere outside to close</span></div>';
+    dialog.querySelector('.ingredient-zoom-close').onclick=closeIngredientZoom;
+    dialog.addEventListener('click',event=>{if(event.target===dialog)closeIngredientZoom()});
+    document.body.appendChild(dialog);return dialog;
+  }
+  function enhanceIngredientIcons(){
+    document.querySelectorAll('.ingredient-list li .ingredient-icon').forEach(icon=>{
+      if(icon.dataset.zoomReady)return;icon.dataset.zoomReady='1';icon.tabIndex=0;icon.setAttribute('role','button');
+      const label=icon.closest('li')?.querySelector('span:last-child')?.textContent?.trim()||'ingredient';
+      icon.setAttribute('aria-label',`Enlarge ${label}`);icon.title=`Tap to enlarge ${label}`;
+    });
+  }
+  function openIngredientZoom(icon){
+    const dialog=ensureIngredientZoom(),label=icon.closest('li')?.querySelector('span:last-child')?.textContent?.trim()||'Ingredient';
+    dialog.querySelector('.ingredient-zoom-icon').textContent=icon.textContent||'🥄';
+    dialog.querySelector('#ingredientZoomName').textContent=label;dialog.hidden=false;document.body.classList.add('ingredient-zoom-open');
+    dialog.querySelector('.ingredient-zoom-close').focus();window.DeviceManager?.haptic?.('light');
+  }
+  function closeIngredientZoom(){
+    const dialog=document.getElementById('ingredientZoomDialog');if(!dialog||dialog.hidden)return;
+    dialog.hidden=true;document.body.classList.remove('ingredient-zoom-open');
+  }
+  function installIngredientZoom(){
+    ensureIngredientZoom();enhanceIngredientIcons();
+    document.addEventListener('click',event=>{const icon=event.target.closest?.('.ingredient-list li .ingredient-icon');if(icon)openIngredientZoom(icon)});
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape'){closeIngredientZoom();return}
+      const icon=event.target.closest?.('.ingredient-list li .ingredient-icon');
+      if(icon&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openIngredientZoom(icon)}
+    });
+    new MutationObserver(enhanceIngredientIcons).observe(document.body,{childList:true,subtree:true});
+  }
   function parseIngredients(text){
     return [...new Set(String(text||'').split(/\n|,|;/).map(x=>x.replace(/^[-*•\d.)\s]+/,'').trim().toLowerCase()).filter(x=>x.length>1))].slice(0,30);
   }
@@ -77,7 +116,7 @@
     window.ingredientIcon=ingredientIconFor;
     const originalRender=window.renderRecipe;
     if(typeof originalRender==='function'&&!originalRender.__offlineWrapped){
-      const wrapped=function(recipe,...args){cacheRecipe(recipe).catch(()=>{});return originalRender.call(this,recipe,...args)};
+      const wrapped=function(recipe,...args){cacheRecipe(recipe).catch(()=>{});const result=originalRender.call(this,recipe,...args);queueMicrotask(enhanceIngredientIcons);return result};
       wrapped.__offlineWrapped=true;window.renderRecipe=wrapped;
     }
     const originalLoad=window.loadSaved;
@@ -95,6 +134,6 @@
   }
   window.addEventListener('offline',()=>{notify('Offline mode: cached recipes remain available.');window.loadSaved?.()});
   window.addEventListener('online',()=>notify('Back online'));
-  window.addEventListener('DOMContentLoaded',()=>{installImportPanel();wrapRecipeFunctions();setTimeout(()=>window.loadSaved?.(),0)});
-  window.GlucoPlateIngredients={importClipboard,choosePhoto,parseIngredients,ingredientIconFor,cacheRecipe,cachedRecipes};
+  window.addEventListener('DOMContentLoaded',()=>{installImportPanel();installIngredientZoom();wrapRecipeFunctions();setTimeout(()=>window.loadSaved?.(),0)});
+  window.GlucoPlateIngredients={importClipboard,choosePhoto,parseIngredients,ingredientIconFor,openIngredientZoom,closeIngredientZoom,cacheRecipe,cachedRecipes};
 })();
