@@ -20,8 +20,9 @@ def test_irrelevant_tools_are_hidden_without_a_recipe():
     assert "if(!window.currentRecipe){existing?.remove();return}" in timers
     assert "hasRecipe=Boolean(currentRecipe())" in live
     assert "Browse live rooms" in live
-    empty_branch = live.split(":")[1]
-    assert "Start live room" not in empty_branch
+    assert "wrap.innerHTML=hasRecipe" in live
+    assert "Start live room" in live
+    assert "Browse live rooms" in live
 
 
 def test_empty_cook_mode_uses_stable_feature_slots():
