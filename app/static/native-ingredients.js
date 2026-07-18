@@ -28,6 +28,25 @@
     [/egg/i,'🥚'],[/cheese/i,'🧀'],[/milk|cream|yogurt/i,'🥛'],[/butter/i,'🧈'],[/rice/i,'🍚'],[/pasta|spaghetti|noodle/i,'🍝'],[/bread|flour|tortilla|dough/i,'🍞'],
     [/bean|lentil|chickpea|pea/i,'🫘'],[/oil|olive/i,'🫒'],[/salt/i,'🧂'],[/sugar|honey|syrup/i,'🍯'],[/coconut/i,'🥥'],[/stock|broth|water/i,'🥣'],[/spice|seasoning|cumin|curry|cinnamon|nutmeg/i,'🌶️']
   ];
+  const INGREDIENT_SPEECH=[
+    [/plantain|plátano/i,{en:'plantain',es:'plátano'}],[/banana|guineo/i,{en:'banana',es:'banana'}],[/avocado|aguacate/i,{en:'avocado',es:'aguacate'}],
+    [/tomato|tomate/i,{en:'tomato',es:'tomate'}],[/onion|shallot|scallion|leek|cebolla/i,{en:'onion',es:'cebolla'}],[/garlic|ajo/i,{en:'garlic',es:'ajo'}],
+    [/pepper|chili|chile|jalapeño|paprika|pimiento/i,{en:'pepper',es:'pimiento'}],[/carrot|zanahoria/i,{en:'carrot',es:'zanahoria'}],
+    [/sweet potato|yam|batata/i,{en:'sweet potato',es:'batata'}],[/potato|papa/i,{en:'potato',es:'papa'}],[/yuca|cassava/i,{en:'cassava',es:'yuca'}],
+    [/corn|maize|maíz/i,{en:'corn',es:'maíz'}],[/broccoli|brócoli/i,{en:'broccoli',es:'brócoli'}],[/mushroom|champiñón/i,{en:'mushroom',es:'champiñón'}],
+    [/spinach|espinaca/i,{en:'spinach',es:'espinaca'}],[/lettuce|lechuga/i,{en:'lettuce',es:'lechuga'}],[/cilantro/i,{en:'cilantro',es:'cilantro'}],
+    [/lemon|limón/i,{en:'lemon',es:'limón'}],[/lime|lima/i,{en:'lime',es:'lima'}],[/chicken|pollo/i,{en:'chicken',es:'pollo'}],
+    [/beef|steak|ground meat|carne/i,{en:'beef',es:'carne de res'}],[/pork|ham|bacon|cerdo/i,{en:'pork',es:'cerdo'}],
+    [/fish|salmon|tuna|cod|tilapia|pescado/i,{en:'fish',es:'pescado'}],[/shrimp|prawn|camarón/i,{en:'shrimp',es:'camarón'}],
+    [/egg|huevo/i,{en:'egg',es:'huevo'}],[/cheese|queso/i,{en:'cheese',es:'queso'}],[/milk|leche/i,{en:'milk',es:'leche'}],
+    [/rice|arroz/i,{en:'rice',es:'arroz'}],[/bean|frijol|habichuela/i,{en:'beans',es:'frijoles'}],[/bread|pan/i,{en:'bread',es:'pan'}],
+    [/salt|sal/i,{en:'salt',es:'sal'}],[/sugar|azúcar/i,{en:'sugar',es:'azúcar'}],[/oil|aceite/i,{en:'oil',es:'aceite'}]
+  ];
+  function ingredientSpeechNames(label){
+    const displayed=String(label||'Ingredient').trim()||'Ingredient';
+    const match=INGREDIENT_SPEECH.find(([pattern])=>pattern.test(displayed));
+    return match?match[1]:{en:displayed,es:displayed};
+  }
   function ingredientIconFor(text){
     const value=String(text||'');
     const match=INGREDIENT_ICONS.find(([pattern])=>pattern.test(value));
@@ -40,8 +59,9 @@
     let dialog=document.getElementById('ingredientZoomDialog');
     if(dialog)return dialog;
     dialog=document.createElement('div');dialog.id='ingredientZoomDialog';dialog.className='ingredient-zoom';dialog.hidden=true;
-    dialog.innerHTML='<div class="ingredient-zoom-card" role="dialog" aria-modal="true" aria-labelledby="ingredientZoomName"><button type="button" class="ingredient-zoom-close" aria-label="Close ingredient preview">×</button><div class="ingredient-zoom-icon" aria-hidden="true"></div><strong id="ingredientZoomName"></strong><span>Tap anywhere outside to close</span></div>';
+    dialog.innerHTML='<div class="ingredient-zoom-card" role="dialog" aria-modal="true" aria-labelledby="ingredientZoomName"><button type="button" class="ingredient-zoom-close" aria-label="Close ingredient preview">×</button><div class="ingredient-zoom-icon" aria-hidden="true"></div><strong id="ingredientZoomName"></strong><div class="ingredient-zoom-audio" role="group" aria-label="Hear ingredient name"><button type="button" data-speak-ingredient="en" aria-label="Hear ingredient name in English"><span aria-hidden="true">🔊</span> English</button><button type="button" data-speak-ingredient="es" aria-label="Hear ingredient name in Spanish"><span aria-hidden="true">🔊</span> Español</button></div><span>Tap anywhere outside to close</span></div>';
     dialog.querySelector('.ingredient-zoom-close').onclick=closeIngredientZoom;
+    dialog.querySelectorAll('[data-speak-ingredient]').forEach(button=>button.onclick=event=>{event.stopPropagation();speakIngredient(button.dataset.speakIngredient)});
     dialog.addEventListener('click',event=>{if(event.target===dialog)closeIngredientZoom()});
     document.body.appendChild(dialog);return dialog;
   }
@@ -55,12 +75,23 @@
   function openIngredientZoom(icon){
     const dialog=ensureIngredientZoom(),label=icon.closest('li')?.querySelector('span:last-child')?.textContent?.trim()||'Ingredient';
     dialog.querySelector('.ingredient-zoom-icon').textContent=icon.textContent||'🥄';
+    const speech=ingredientSpeechNames(label);dialog.dataset.speechEnglish=speech.en;dialog.dataset.speechSpanish=speech.es;
     dialog.querySelector('#ingredientZoomName').textContent=label;dialog.hidden=false;document.body.classList.add('ingredient-zoom-open');
     dialog.querySelector('.ingredient-zoom-close').focus();window.DeviceManager?.haptic?.('light');
   }
+  function speakIngredient(language){
+    const dialog=document.getElementById('ingredientZoomDialog');
+    if(!dialog||dialog.hidden)return;
+    if(!('speechSynthesis' in window)||typeof window.SpeechSynthesisUtterance!=='function'){notify('Audio pronunciation is not supported on this device.');return}
+    const isSpanish=language==='es',text=isSpanish?dialog.dataset.speechSpanish:dialog.dataset.speechEnglish;
+    window.speechSynthesis.cancel();
+    const utterance=new window.SpeechSynthesisUtterance(text||dialog.querySelector('#ingredientZoomName')?.textContent||'Ingredient');
+    utterance.lang=isSpanish?'es-US':'en-US';utterance.rate=.88;utterance.pitch=1;
+    window.speechSynthesis.speak(utterance);window.DeviceManager?.haptic?.('light');
+  }
   function closeIngredientZoom(){
     const dialog=document.getElementById('ingredientZoomDialog');if(!dialog||dialog.hidden)return;
-    dialog.hidden=true;document.body.classList.remove('ingredient-zoom-open');
+    window.speechSynthesis?.cancel?.();dialog.hidden=true;document.body.classList.remove('ingredient-zoom-open');
   }
   function installIngredientZoom(){
     ensureIngredientZoom();enhanceIngredientIcons();
@@ -135,5 +166,5 @@
   window.addEventListener('offline',()=>{notify('Offline mode: cached recipes remain available.');window.loadSaved?.()});
   window.addEventListener('online',()=>notify('Back online'));
   window.addEventListener('DOMContentLoaded',()=>{installImportPanel();installIngredientZoom();wrapRecipeFunctions();setTimeout(()=>window.loadSaved?.(),0)});
-  window.GlucoPlateIngredients={importClipboard,choosePhoto,parseIngredients,ingredientIconFor,openIngredientZoom,closeIngredientZoom,cacheRecipe,cachedRecipes};
+  window.GlucoPlateIngredients={importClipboard,choosePhoto,parseIngredients,ingredientIconFor,ingredientSpeechNames,speakIngredient,openIngredientZoom,closeIngredientZoom,cacheRecipe,cachedRecipes};
 })();

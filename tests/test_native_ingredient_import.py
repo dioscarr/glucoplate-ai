@@ -61,3 +61,25 @@ def test_ingredient_zoom_is_touch_friendly_and_cached() -> None:
     assert 'touch-action:manipulation' in css
     assert 'prefers-reduced-motion:reduce' in css
     assert '/static/ingredient-zoom.css' in worker
+
+
+def test_ingredient_zoom_offers_bilingual_audio_pronunciation() -> None:
+    script = (ROOT / 'app' / 'static' / 'native-ingredients.js').read_text(encoding='utf-8')
+    assert 'INGREDIENT_SPEECH' in script
+    assert 'ingredientSpeechNames' in script
+    assert 'data-speak-ingredient="en"' in script
+    assert 'data-speak-ingredient="es"' in script
+    assert "es:'aguacate'" in script
+    assert "es:'cebolla'" in script
+    assert "es:'ajo'" in script
+    assert 'SpeechSynthesisUtterance' in script
+    assert "utterance.lang=isSpanish?'es-US':'en-US'" in script
+    assert 'window.speechSynthesis.speak(utterance)' in script
+    assert 'window.speechSynthesis?.cancel?.()' in script
+
+
+def test_ingredient_audio_controls_are_touch_friendly() -> None:
+    css = (ROOT / 'app' / 'static' / 'ingredient-zoom.css').read_text(encoding='utf-8')
+    assert '.ingredient-zoom-audio' in css
+    assert 'grid-template-columns:1fr 1fr' in css
+    assert 'min-height:48px' in css
