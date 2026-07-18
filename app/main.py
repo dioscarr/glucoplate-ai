@@ -7,6 +7,7 @@ from loguru import logger
 
 from app.api.enterprise_admin_routes import router as enterprise_admin_router
 from app.api.firebase_auth_routes import router as firebase_auth_router
+from app.api.live_cook_room_routes import router as live_cook_room_router
 from app.api.pantry_routes import router as pantry_router
 from app.api.price_observation_routes import router as price_observation_router
 from app.api.push_routes import router as push_router
@@ -21,8 +22,8 @@ setup_logging()
 
 app = FastAPI(
     title="GlucoPlate AI",
-    description="AI-powered recipe generation, personalization, saving, and grocery planning API.",
-    version="0.15.0",
+    description="AI-powered recipe generation, personalization, saving, grocery planning, and collaborative cooking API.",
+    version="0.16.0",
 )
 
 app.include_router(router)
@@ -35,11 +36,13 @@ app.include_router(pantry_router)
 app.include_router(shopping_list_router)
 app.include_router(price_observation_router)
 app.include_router(receipt_import_router)
+app.include_router(live_cook_room_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 HTML_SCRIPT_PATHS = (
     "/static/device-manager.js",
     "/static/native-cook.js",
+    "/static/live-cook-rooms.js",
     "/static/native-timers.js",
     "/static/native-ingredients.js",
     "/static/offline-actions.js",
@@ -134,6 +137,7 @@ async def log_requests(request: Request, call_next):
             "/api/shopping-list",
             "/api/price-observations",
             "/api/receipt-imports",
+            "/api/live-cook-rooms",
             "/api/push",
         ]
         if method in ("POST", "PUT", "PATCH", "DELETE") and any(route in path for route in tracked_routes):
