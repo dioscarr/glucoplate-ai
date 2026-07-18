@@ -88,11 +88,16 @@ def test_admin_without_enterprise_is_denied_user_listing() -> None:
 
 def test_admin_dashboard_client_loads_and_renders_enterprise_users() -> None:
     html = (ROOT / "app" / "static" / "admin.html").read_text(encoding="utf-8")
+    styles = (ROOT / "app" / "static" / "admin-premium.css").read_text(encoding="utf-8")
     script = (ROOT / "app" / "static" / "admin.js").read_text(encoding="utf-8")
 
     assert "GlucoPlate Enterprise Admin" in html
+    assert 'href="/static/admin-premium.css"' in html
+    assert 'aria-label="Administration"' in html
     assert 'id="userRows"' in html
     assert 'id="usersEmpty"' in html
+    assert "@media(max-width:820px)" in styles
+    assert "position:sticky" in styles
     assert "/api/enterprise/admin/users" in script
     assert "renderUsers" in script
     assert "result.users||[]" in script
