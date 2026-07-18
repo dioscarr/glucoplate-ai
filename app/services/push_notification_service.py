@@ -7,6 +7,8 @@ from pathlib import Path
 from threading import Lock
 from typing import Any
 
+from loguru import logger
+
 _STORE_LOCK = Lock()
 _FIREBASE_LOCK = Lock()
 
@@ -155,10 +157,23 @@ class PushNotificationService:
         try:
             self._send_token(token, payload)
             return {"configured": True, "registered": True, "sent": 1, "failed": 0}
-        except (messaging.UnregisteredError, messaging.SenderIdMismatchError):
+        except messaging.UnregisteredError:
+            logger.warning("Firebase test push rejected an unregistered device token")
             self.remove_token(token, user_id=user_id)
             return {"configured": True, "registered": True, "sent": 0, "failed": 1}
-        except Exception:
+        except messaging.SenderIdMismatchError:
+            logger.error(
+                "Firebase test push sender ID mismatch; verify that the web config, "
+                "VAPID key, and service account belong to the same project"
+            )
+            self.remove_token(token, user_id=user_id)
+            return {"configured": True, "registered": True, "sent": 0, "failed": 1}
+        except Exception as exc:
+            logger.exception(
+                "Firebase test push failed with {error_type}: {error}",
+                error_type=type(exc).__name__,
+                error=str(exc),
+            )
             return {"configured": True, "registered": True, "sent": 0, "failed": 1}
 
     def send(self, payload: dict[str, Any], user_id: str | None = None) -> dict[str, int | bool]:
@@ -175,9 +190,22 @@ class PushNotificationService:
             try:
                 self._send_token(token, payload)
                 sent += 1
-            except (messaging.UnregisteredError, messaging.SenderIdMismatchError):
+            except messaging.UnregisteredError:
                 failed += 1
+                logger.warning("Firebase bulk push rejected an unregistered device token")
                 self.remove_token(token, user_id=str(record.get("user_id") or ""))
-            except Exception:
+            except messaging.SenderIdMismatchError:
                 failed += 1
+                logger.error(
+                    "Firebase bulk push sender ID mismatch; verify that all Firebase "
+                    "credentials belong to the same project"
+                )
+                self.remove_token(token, user_id=str(record.get("user_id") or ""))
+            except Exception as exc:
+                failed += 1
+                logger.exception(
+                    "Firebase bulk push failed with {error_type}: {error}",
+                    error_type=type(exc).__name__,
+                    error=str(exc),
+                )
         return {"configured": True, "sent": sent, "failed": failed}
