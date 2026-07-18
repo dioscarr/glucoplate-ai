@@ -5,7 +5,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from app.api.enterprise_admin_routes import AuthContext, current_user
+from app.api.enterprise_admin_routes import AuthContext
 from app.api.user_data_routes import scoped_user, service
 from app.services.recipe_recommendation_service import RecipeRecommendationService
 
