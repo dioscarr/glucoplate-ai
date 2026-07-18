@@ -47,6 +47,7 @@
     if(document.getElementById('liveCookRoomStyles'))return;
     const style=document.createElement('style');style.id='liveCookRoomStyles';style.textContent=`
       .live-room-launch{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem}.live-room-panel{position:fixed;right:1rem;bottom:1rem;width:min(390px,calc(100vw - 2rem));max-height:78vh;overflow:auto;background:var(--surface,#fff);color:var(--text,#201a17);border:1px solid var(--border,#ddd);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.22);z-index:10000;padding:1rem}.live-room-panel[hidden]{display:none}.live-room-panel header{display:flex;justify-content:space-between;gap:.5rem;align-items:start}.live-room-code{font-weight:800;letter-spacing:.14em}.live-room-row{display:flex;gap:.5rem;align-items:center;margin:.65rem 0}.live-room-row input{flex:1}.live-room-members,.live-room-feed,.live-room-chat{display:grid;gap:.4rem;margin:.5rem 0}.live-room-member,.live-room-event,.live-room-message{padding:.5rem .65rem;border-radius:12px;background:var(--surfaceAlt,#f6f1ed);font-size:.9rem}.live-room-message strong{display:block}.live-room-panel h4{margin:.85rem 0 .35rem}.live-room-actions{display:flex;gap:.4rem;flex-wrap:wrap}.live-room-close{border:0;background:transparent;font-size:1.25rem}.live-room-empty{opacity:.7;font-size:.9rem}`;document.head.appendChild(style);
+    const link=document.createElement('link');link.rel='stylesheet';link.href='/static/live-cook-room-premium.css';link.dataset.liveRoomPremium='1';document.head.appendChild(link);
   }
 
   function ensurePanel(){
