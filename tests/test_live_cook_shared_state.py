@@ -44,3 +44,10 @@ def test_shared_state_ui_covers_checklist_and_timer_actions() -> None:
     assert 'data-timer-action="reset"' in source
     assert "ends_at" in source
     assert "session_status" in source
+
+
+def test_shared_state_client_uses_fresh_auth_and_explicit_room_updates() -> None:
+    source = read("app/static/live-cook-shared-state.js")
+    assert "GlucoPlateFirebaseAuth?.getIdToken" in source
+    assert "glucoplate:live-room-updated" in source
+    assert "MutationObserver" not in source
