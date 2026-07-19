@@ -37,7 +37,7 @@ def test_comparison_reports_known_and_unavailable_prices() -> None:
     assert result["known_total"] == 3.5
     assert result["estimate_complete"] is False
     assert result["items"][1]["price_status"] == "unavailable"
-    assert "Confirm with the retailer" in result["disclaimer"]
+    assert "Confirm price and availability" in result["disclaimer"]
 
 
 def test_route_and_ui_expose_comparison_contract() -> None:
