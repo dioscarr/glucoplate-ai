@@ -2,7 +2,7 @@
   const token=()=>localStorage.getItem('glucoplate_firebase_id_token')||'';
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   const escapeHtml=value=>String(value??'').replace(/[&<>'\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]));
-  let room=null,pollTimer=null,applyingRemote=false,lastRevision=0,dismissed=false;
+  let room=null,pollTimer=null,presenceTimer=null,applyingRemote=false,lastRevision=0,dismissed=false;
 
   function errorMessage(body,status){
     const detail=body?.detail;
@@ -180,9 +180,11 @@
     try{const result=await api('/api/live-cook-rooms/join',{method:'POST',body:JSON.stringify({invite_code:code,display_name:displayName()})});activate(result.room)}catch(error){notify(error.message)}
   }
 
-  function activate(next){room=next;dismissed=false;lastRevision=Number(room.state?.revision||0);render();startPolling();syncRemoteState(room)}
+  function activate(next){room=next;dismissed=false;lastRevision=Number(room.state?.revision||0);render();startPolling();startPresence();syncRemoteState(room)}
 
   function startPolling(){clearInterval(pollTimer);pollTimer=setInterval(refresh,1800)}
+  function startPresence(){clearInterval(presenceTimer);presenceTimer=setInterval(sendPresence,10000);sendPresence()}
+  async function sendPresence(){if(!room)return;try{const result=await api(`/api/live-cook-rooms/${room.id}/presence`,{method:'POST'});room=result.room;if(!isChatEditing())render()}catch(error){clearInterval(presenceTimer);if(room)notify(error.message)}}
   async function refresh(forceRender=false){
     if(!room)return;
     try{
@@ -206,7 +208,7 @@
     const input=document.getElementById('liveRoomChatInput');const message=kind==='help'?'I need help with this step.':input?.value.trim();if(!message)return;
     try{await api(`/api/live-cook-rooms/${room.id}/chat`,{method:'POST',body:JSON.stringify({message,kind})});if(input){input.value='';input.blur()}refresh(true)}catch(error){notify(error.message)}
   }
-  async function leave(){if(!room)return;try{await api(`/api/live-cook-rooms/${room.id}/participants/me`,{method:'DELETE'});clearInterval(pollTimer);room=null;dismissed=false;ensurePanel().hidden=true;ensureReopenButton().hidden=true;notify('You left the cook room.')}catch(error){notify(error.message)}}
+  async function leave(){if(!room)return;try{await api(`/api/live-cook-rooms/${room.id}/participants/me`,{method:'DELETE'});clearInterval(pollTimer);clearInterval(presenceTimer);room=null;dismissed=false;ensurePanel().hidden=true;ensureReopenButton().hidden=true;notify('You left the cook room.')}catch(error){notify(error.message)}}
 
   function render(){
     const panel=ensurePanel();panel.hidden=dismissed;ensureReopenButton().hidden=!dismissed;
@@ -236,6 +238,6 @@
 
   const observer=new MutationObserver(()=>{launchControls();wrapCookNavigation()});
   window.addEventListener('DOMContentLoaded',()=>{ensurePanel();ensureDirectory();launchControls();wrapCookNavigation();observer.observe(document.body,{childList:true,subtree:true});consumeLiveRoomDeepLink()});
-  window.addEventListener('pagehide',()=>clearInterval(pollTimer));
+  window.addEventListener('pagehide',()=>{clearInterval(pollTimer);clearInterval(presenceTimer)});
   window.GlucoPlateLiveCookRooms={createRoom,promptJoin,browseLiveRooms,joinRoomById,refresh,getRoom:()=>room};
 })();

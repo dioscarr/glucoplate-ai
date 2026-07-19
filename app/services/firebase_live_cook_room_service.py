@@ -3,7 +3,7 @@ from __future__ import annotations
 import secrets
 import string
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from firebase_admin import db
@@ -16,6 +16,7 @@ class FirebaseLiveCookRoomService:
 
     ROOT = "app_data"
     CODE_LENGTH = 6
+    PRESENCE_TIMEOUT = timedelta(seconds=35)
 
     def __init__(self) -> None:
         FirebaseAuthService()._firebase_app()
@@ -220,9 +221,11 @@ class FirebaseLiveCookRoomService:
         return self.join_room_by_id(enterprise_id, uid, room_id, display_name)
 
     def get_room(self, enterprise_id: str, room_id: str) -> dict[str, Any] | None:
-        room = self._room(enterprise_id, room_id).get()
+        room_ref = self._room(enterprise_id, room_id)
+        room = room_ref.get()
         if not room:
             return None
+        self._mark_stale_participants(room_ref, room)
         room["participants"] = list((room.get("participants") or {}).values())
         room["chat"] = sorted(
             (room.get("chat") or {}).values(),
@@ -234,6 +237,33 @@ class FirebaseLiveCookRoomService:
             reverse=True,
         )[:100]
         return room
+
+    def _mark_stale_participants(self, room_ref: Any, room: dict[str, Any]) -> None:
+        now = datetime.now(UTC)
+        participants = room.get("participants") or {}
+        for uid, participant in participants.items():
+            if not participant.get("online"):
+                continue
+            try:
+                last_seen = datetime.fromisoformat(str(participant.get("last_seen_at")))
+                if last_seen.tzinfo is None:
+                    last_seen = last_seen.replace(tzinfo=UTC)
+            except (TypeError, ValueError):
+                last_seen = now - self.PRESENCE_TIMEOUT - timedelta(seconds=1)
+            if now - last_seen > self.PRESENCE_TIMEOUT:
+                participant.update({"online": False, "ready": False})
+                room_ref.child("participants").child(uid).update({"online": False, "ready": False})
+
+    def heartbeat(self, enterprise_id: str, room_id: str, uid: str) -> dict[str, Any] | None:
+        room_ref = self._room(enterprise_id, room_id)
+        participant_ref = room_ref.child("participants").child(uid)
+        participant = participant_ref.get()
+        if participant is None:
+            return None
+        now = self._now()
+        participant_ref.update({"online": True, "last_seen_at": now})
+        room_ref.update({"updated_at": now})
+        return self.get_room(enterprise_id, room_id)
 
     def set_ready(
         self,

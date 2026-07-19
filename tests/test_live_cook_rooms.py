@@ -31,6 +31,7 @@ def test_room_api_supports_mvp_collaboration_actions():
     assert '@router.post("")' in source
     assert '@router.post("/join")' in source
     assert '@router.put("/{room_id}/ready")' in source
+    assert '@router.post("/{room_id}/presence")' in source
     assert '@router.patch("/{room_id}/state")' in source
     assert '@router.post("/{room_id}/chat"' in source
     assert '@router.delete("/{room_id}/participants/me")' in source
@@ -44,6 +45,16 @@ def test_cook_room_ui_syncs_steps_and_exposes_room_controls():
     assert "current_step" in source
     assert "invite_code" in source
     assert "setInterval(refresh,1800)" in source
+    assert "setInterval(sendPresence,10000)" in source
+    assert "/presence" in source
+
+
+def test_live_room_presence_marks_participants_online_and_stale_participants_away():
+    source = (ROOT / "app" / "services" / "firebase_live_cook_room_service.py").read_text(encoding="utf-8")
+    assert "PRESENCE_TIMEOUT" in source
+    assert "def heartbeat" in source
+    assert '"last_seen_at"' in source
+    assert '"online": False' in source
 
 
 def test_join_payload_normalizes_pasted_invite_codes():
