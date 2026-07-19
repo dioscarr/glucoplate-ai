@@ -64,3 +64,10 @@ Before recommending or attempting any pull-request merge:
 - If the PR is already merged, do not attempt to merge it again. Report the merge commit and identify whether remaining work belongs in a new branch and PR.
 - If a newer open PR exists for follow-up work, clearly distinguish it by number, title, branch, and draft status.
 - Re-check the head SHA and required status checks immediately before merging an open PR.
+
+## Feature testing gate
+Every production feature or behavior change must include tests in the same pull request.
+- Choose the lowest reliable layer: unit tests for business rules, API integration tests for contracts and authorization, and Playwright tests for critical user journeys, browser runtime behavior, or JavaScript interactions.
+- A feature is not complete merely because code was written. Its relevant tests and all required repository checks must pass on the pull request head commit before merge.
+- Do not merge first to discover whether a feature works. Use pull-request-triggered CI, review its artifacts and logs, fix failures on the branch, and rerun until green.
+- Never weaken, skip, or delete a failing test solely to make a pull request mergeable. Update stale assertions only when current documented behavior proves the contract changed.
