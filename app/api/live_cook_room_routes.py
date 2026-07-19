@@ -51,6 +51,10 @@ class ChatPayload(BaseModel):
     kind: Literal["message", "reaction", "help"] = "message"
 
 
+class InsightPayload(BaseModel):
+    provider: Literal["auto", "gemini", "groq", "local"] = "auto"
+
+
 def service() -> FirebaseLiveCookRoomService:
     try:
         return FirebaseLiveCookRoomService()
@@ -199,6 +203,21 @@ def add_chat(
     if item is None:
         raise HTTPException(status_code=404, detail="Cook room participant not found")
     return {"ok": True, "item": item}
+
+
+@router.post("/{room_id}/insights")
+def generate_room_insights(
+    room_id: str,
+    payload: InsightPayload,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    room = service().get_room(user.enterprise_id, room_id)
+    if room is None:
+        raise HTTPException(status_code=404, detail="Cook room not found")
+    require_participant(room, user.uid)
+    from app.services.live_cook_insight_service import LiveCookInsightService
+
+    return {"ok": True, "insight": LiveCookInsightService().generate(room, payload.provider)}
 
 
 @router.delete("/{room_id}/participants/me")

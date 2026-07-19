@@ -49,6 +49,7 @@ HTML_SCRIPT_PATHS = (
     "/static/device-manager.js",
     "/static/native-cook.js",
     "/static/live-cook-rooms.js",
+    "/static/live-kitchen-workspace.js",
     "/static/live-cook-media.js",
     "/static/live-cook-session-lifecycle.js",
     "/static/live-cook-shared-state.js",
