@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 import os
 from datetime import UTC, datetime
 from typing import Any
 
 from firebase_admin import db
+from livekit import api
 
 from app.services.firebase_auth_service import FirebaseAuthService
 
@@ -37,19 +39,63 @@ class LiveCookMediaService:
             raise ValueError("Media is unavailable after the cooking session is completed")
         provider = str(os.getenv("LIVE_COOK_MEDIA_PROVIDER", "browser")).strip().lower() or "browser"
         participant = participants.get(uid) or {}
-        return {
+        display_name = participant.get("display_name") or "Cook"
+        access: dict[str, Any] = {
             "room_id": room_id,
             "provider": provider,
-            "mode": "local-preview" if provider == "browser" else "provider",
-            "remote_enabled": provider not in {"browser", "disabled"},
+            "mode": "local-preview",
+            "remote_enabled": False,
             "participant": {
                 "uid": uid,
                 "role": participant.get("role") or "participant",
-                "display_name": participant.get("display_name") or "Cook",
+                "display_name": display_name,
             },
             "recording": {"enabled": False, "consent_required": True},
             "fallback": "The synchronized cooking room remains available without media.",
         }
+        if provider == "livekit":
+            server_url = str(os.getenv("LIVEKIT_URL", "")).strip()
+            api_key = str(os.getenv("LIVEKIT_API_KEY", "")).strip()
+            api_secret = str(os.getenv("LIVEKIT_API_SECRET", "")).strip()
+            if not all((server_url, api_key, api_secret)):
+                access["configuration_error"] = "LiveKit credentials are incomplete"
+                return access
+            livekit_room = f"glucoplate-{enterprise_id}-{room_id}"
+            identity = f"{enterprise_id}:{uid}"
+            token = (
+                api.AccessToken(api_key, api_secret)
+                .with_identity(identity)
+                .with_name(str(display_name))
+                .with_metadata(
+                    json.dumps(
+                        {
+                            "glucoplate_uid": uid,
+                            "enterprise_id": enterprise_id,
+                            "room_id": room_id,
+                        }
+                    )
+                )
+                .with_grants(
+                    api.VideoGrants(
+                        room_join=True,
+                        room=livekit_room,
+                        can_publish=True,
+                        can_subscribe=True,
+                        can_publish_data=False,
+                    )
+                )
+                .to_jwt()
+            )
+            access.update(
+                {
+                    "mode": "provider",
+                    "remote_enabled": True,
+                    "server_url": server_url,
+                    "token": token,
+                    "livekit_room": livekit_room,
+                }
+            )
+        return access
 
     def update_state(
         self,
