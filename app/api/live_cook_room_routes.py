@@ -146,6 +146,18 @@ def set_ready(
     return {"ok": True, "room": room}
 
 
+@router.post("/{room_id}/presence")
+def heartbeat(
+    room_id: str,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    room = service().heartbeat(user.enterprise_id, room_id, user.uid)
+    if room is None:
+        raise HTTPException(status_code=404, detail="Cook room participant not found")
+    require_participant(room, user.uid)
+    return {"ok": True, "room": room}
+
+
 @router.patch("/{room_id}/state")
 def update_room_state(
     room_id: str,
