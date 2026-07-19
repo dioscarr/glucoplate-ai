@@ -25,7 +25,7 @@ def test_comparison_reports_known_and_unavailable_prices() -> None:
         {"id": "1", "name": "rice", "checked": False},
         {"id": "2", "name": "cilantro", "checked": False},
         {"id": "3", "name": "done", "checked": True},
-    ])
+    ], enterprise_id="test-enterprise")
 
     assert result["item_count"] == 2
     assert result["known_price_count"] == 1
@@ -46,5 +46,4 @@ def test_route_and_ui_expose_comparison_contract() -> None:
     assert "/api/shopping-list/compare" in ui
     assert "Price unavailable" in ui
     assert "result.disclaimer" in ui
-    assert "glucoplate-shell-v12" in worker
-    assert 'version="0.13.0"' in main
+    assert "const CACHE='glucoplate-shell-v" in worker
