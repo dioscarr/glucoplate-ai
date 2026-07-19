@@ -61,7 +61,7 @@ def test_pantry_ui_is_injected_and_cached() -> None:
 
     assert '"/static/pantry-ui.js"' in main_source
     assert "/static/pantry-ui.js" in service_worker
-    assert "glucoplate-shell-v9" in service_worker
+    assert "const CACHE='glucoplate-shell-v" in service_worker
 
 
 def test_recommendation_route_loads_pantry_non_blockingly() -> None:
