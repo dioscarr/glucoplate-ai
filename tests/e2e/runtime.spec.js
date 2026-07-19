@@ -24,6 +24,11 @@ function collectRuntimeFailures(page) {
 }
 
 test.beforeEach(async ({ page }) => {
+  await page.route('**/api/user-data/recipes', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: '[]',
+  }));
   await page.route('**/api/recipes/list', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
