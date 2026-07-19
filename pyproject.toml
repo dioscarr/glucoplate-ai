@@ -42,6 +42,9 @@ ignore = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "live: tests that require a deployed production service",
+]
 
 [build-system]
 requires = ["setuptools>=65.5.0", "wheel"]
