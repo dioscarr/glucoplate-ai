@@ -29,6 +29,13 @@ class FirebaseLiveCookRoomService:
         cleaned = " ".join(str(value or "").strip().split())
         return cleaned[:80] or fallback
 
+    @staticmethod
+    def _servings(recipe: dict[str, Any]) -> int:
+        try:
+            return self._servings(recipe)
+        except (TypeError, ValueError):
+            return 4
+
     def _rooms(self, enterprise_id: str):
         return db.reference(f"{self.ROOT}/enterprises/{enterprise_id}/live_cook_rooms")
 
