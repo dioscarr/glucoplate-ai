@@ -11,7 +11,7 @@ Set these environment variables on the GlucoPlate web service:
 - `LIVEKIT_API_KEY=<server API key>`
 - `LIVEKIT_API_SECRET=<server API secret>`
 
-Redeploy after saving the values. Keep the API secret server-side; the application generates a participant token only after verifying the Firebase user belongs to the requested GlucoPlate organization and has joined the Live Room.
+Redeploy after saving the values. Keep the API secret server-side; the authenticated `/media/access` endpoint follows LiveKit's custom token-generation pattern and returns `serverUrl` plus `participantToken` only after verifying the Firebase user belongs to the requested GlucoPlate organization and has joined the Live Room.
 
 Without all three LiveKit credentials, the UI automatically remains in private device-preview mode.
 
