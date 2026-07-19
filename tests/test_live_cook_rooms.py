@@ -156,7 +156,9 @@ def test_mobile_live_room_reopen_badge_is_removed_from_navigation_layer() -> Non
 def test_live_room_polling_preserves_chat_composition() -> None:
     source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
     assert "function isChatEditing()" in source
-    assert "forceRender||!isChatEditing()" in source
+    assert "coreViewKey" in source
+    assert "sharedStateKey" in source
+    assert "applyRoomUpdate(result.room" in source
     assert "input.blur()" in source
     assert "refresh(true)" in source
 
@@ -195,3 +197,16 @@ def test_active_room_reopens_inline_from_cook_mode_on_mobile() -> None:
     assert "Open live room" in source
     assert "Boolean(room)" in source
     assert "setDismissed(false)" in source
+
+
+def test_polling_does_not_rebuild_live_kitchen_for_heartbeat_only_updates() -> None:
+    source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    assert "function coreViewKey" in source
+    assert "function sharedStateKey" in source
+    assert "function applyRoomUpdate" in source
+    assert "coreViewKey(room)!==previousView" in source
+    assert "sharedStateKey(room)!==previousState" in source
+    assert "applyRoomUpdate(result.room)" in source
+    assert "applyRoomUpdate(result.room,{forceRender})" in source
+    assert "body.scrollTop=scrollTop" in source
+    assert "sendPresence()" in source
