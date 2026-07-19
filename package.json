@@ -1,0 +1,10 @@
+{
+  "name": "glucoplate-ai-e2e",
+  "private": true,
+  "scripts": {
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "latest"
+  }
+}
