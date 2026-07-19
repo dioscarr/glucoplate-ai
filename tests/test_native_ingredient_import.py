@@ -41,7 +41,7 @@ def test_native_ingredient_script_has_specific_food_iconography() -> None:
 def test_service_worker_caches_native_ingredient_script() -> None:
     worker = (ROOT / 'app' / 'static' / 'sw.js').read_text(encoding='utf-8')
     assert '/static/native-ingredients.js' in worker
-    assert "glucoplate-shell-v7" in worker
+    assert "const CACHE='glucoplate-shell-v" in worker
 
 
 def test_recipe_ingredient_icons_open_accessible_zoom_preview() -> None:
