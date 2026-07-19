@@ -42,7 +42,7 @@
         <span>${abandoning?'The timeline will be saved as ended early.':'Everyone will leave the live room. Recipe progress, timers, and activity will be saved.'}</span>
         <div class="live-room-confirm-actions">
           <button type="button" data-cancel-complete>Keep cooking</button>
-          <button type="button" class="live-room-danger" data-confirm-lifecycle="${action}">${abandoning?'End early':'Finish now'}</button>
+          <button type="button" class="live-room-danger" data-confirm-complete data-confirm-lifecycle="${action}">${abandoning?'End early':'Finish now'}</button>
         </div>
         <small>Only the host can close the room. This action is recorded once.</small>
       </div>`;
@@ -100,7 +100,7 @@
   }
 
   async function handleClick(event){
-    const control=event.target.closest?.('[data-start-session],[data-complete-session],[data-abandon-session],[data-confirm-lifecycle],[data-cancel-complete],[data-view-history],[data-close-history]');
+    const control=event.target.closest?.('[data-start-session],[data-complete-session],[data-abandon-session],[data-confirm-lifecycle],[data-confirm-complete],[data-cancel-complete],[data-view-history],[data-close-history]');
     if(!control||pending)return;
     if(control.matches('[data-cancel-complete]')){confirming=false;enhance();return}
     if(control.matches('[data-close-history]')){showingHistory=false;enhance();return}
