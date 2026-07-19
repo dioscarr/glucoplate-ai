@@ -32,7 +32,7 @@ class FirebaseLiveCookRoomService:
     @staticmethod
     def _servings(recipe: dict[str, Any]) -> int:
         try:
-            return self._servings(recipe)
+            return max(1, min(12, int(recipe.get("selected_servings") or recipe.get("base_servings") or recipe.get("servings") or 4)))
         except (TypeError, ValueError):
             return 4
 
