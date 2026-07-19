@@ -81,7 +81,7 @@ def test_livekit_client_renders_remote_tracks_and_recovers_connections():
 
 def test_pwa_caches_live_media_shell():
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
-    assert "glucoplate-shell-v26" in worker
+    assert "glucoplate-shell-v27" in worker
     assert "'/static/live-cook-media.js'" in worker
     assert "'/static/live-cook-media.css'" in worker
 
@@ -121,7 +121,7 @@ def test_same_account_devices_receive_distinct_media_identities():
 
 def test_pwa_refreshes_multi_device_media_client():
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
-    assert "glucoplate-shell-v26" in worker
+    assert "glucoplate-shell-v27" in worker
 
 
 def test_partial_device_failure_keeps_live_call_connected():
@@ -148,7 +148,7 @@ def test_livekit_track_events_are_batched_and_control_errors_are_handled():
 
 def test_pwa_refreshes_partial_device_recovery():
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
-    assert "glucoplate-shell-v26" in worker
+    assert "glucoplate-shell-v27" in worker
 
 
 def test_live_video_presence_distinguishes_room_members_from_active_devices():
@@ -164,3 +164,26 @@ def test_live_video_presence_distinguishes_room_members_from_active_devices():
     assert "45000" in source
     assert "RoomEvent.ParticipantConnected" in source
     assert "mediaStateSummary(current)" in polling
+
+
+def test_livekit_reliability_states_preserve_the_cooking_experience():
+    source = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    styles = (ROOT / "app" / "static" / "live-cook-media.css").read_text(encoding="utf-8")
+    assert "RoomEvent.ConnectionQualityChanged" in source
+    assert "RoomEvent.Reconnecting" in source
+    assert "RoomEvent.Reconnected" in source
+    assert "RoomEvent.Disconnected" in source
+    assert "?'degraded':'connected'" in source
+    assert "connectionState='failed'" in source
+    assert "data-media-retry" in source
+    assert "Recipe, timer, and chat remain available." in source
+    assert "Cooking controls are unaffected." in source
+    assert "live-media-reliability" in styles
+
+
+def test_unchanged_media_updates_do_not_rebuild_video_tracks():
+    source = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    assert "section.dataset.renderSignature===signature" in source
+    assert "section.dataset.renderSignature=signature" in source
+    assert "participantQualities=new Map()" in source
+    assert "participantQualities.set" in source
