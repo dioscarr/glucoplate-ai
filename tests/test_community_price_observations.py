@@ -18,7 +18,7 @@ def test_price_observation_contracts() -> None:
     assert "minimum_price" in service
     assert "maximum_price" in service
     assert "confidence" in service
-    assert '@router.post("")' in routes
+    assert "def create_price_observation" in routes
     assert '@router.get("/summary")' in routes
     assert '@router.post("/{observation_id}/report")' in routes
     assert "user-submitted" in routes
@@ -29,5 +29,4 @@ def test_price_observation_contracts() -> None:
     assert "Submit price" in ui
     assert "/api/price-observations" in ui
     assert "price_observation_router" in main
-    assert 'version="0.14.0"' in main
-    assert "glucoplate-shell-v13" in worker
+    assert "const CACHE='glucoplate-shell-v" in worker

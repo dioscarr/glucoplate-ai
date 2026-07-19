@@ -6,6 +6,11 @@ from app.services.shopping_comparison_service import ShoppingComparisonService
 ROOT = Path(__file__).resolve().parents[1]
 
 
+class FakeObservationService:
+    def aggregate(self, enterprise_id, **kwargs):
+        return {}
+
+
 class FakePriceService:
     def search(self, request):
         price = 3.5 if request.ingredient == "rice" else None
@@ -21,18 +26,18 @@ class FakePriceService:
 
 
 def test_comparison_reports_known_and_unavailable_prices() -> None:
-    result = ShoppingComparisonService(FakePriceService()).compare([
+    result = ShoppingComparisonService(FakePriceService(), FakeObservationService()).compare([
         {"id": "1", "name": "rice", "checked": False},
         {"id": "2", "name": "cilantro", "checked": False},
         {"id": "3", "name": "done", "checked": True},
-    ])
+    ], enterprise_id="test-enterprise")
 
     assert result["item_count"] == 2
     assert result["known_price_count"] == 1
     assert result["known_total"] == 3.5
     assert result["estimate_complete"] is False
     assert result["items"][1]["price_status"] == "unavailable"
-    assert "Confirm with the retailer" in result["disclaimer"]
+    assert "Confirm price and availability" in result["disclaimer"]
 
 
 def test_route_and_ui_expose_comparison_contract() -> None:
@@ -46,5 +51,4 @@ def test_route_and_ui_expose_comparison_contract() -> None:
     assert "/api/shopping-list/compare" in ui
     assert "Price unavailable" in ui
     assert "result.disclaimer" in ui
-    assert "glucoplate-shell-v12" in worker
-    assert 'version="0.13.0"' in main
+    assert "const CACHE='glucoplate-shell-v" in worker

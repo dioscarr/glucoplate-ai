@@ -7,7 +7,7 @@ SOURCE = Path("app/static/live-cook-shared-state.js").read_text(encoding="utf-8"
 def test_shared_controls_use_delegated_events() -> None:
     assert "body.addEventListener('change',handleInteraction)" in SOURCE
     assert "body.addEventListener('click',handleInteraction)" in SOURCE
-    assert "data.sharedStateHandlers" in SOURCE
+    assert "body.dataset.sharedStateHandlers" in SOURCE
 
 
 def test_shared_controls_retry_authentication_and_stale_revisions() -> None:

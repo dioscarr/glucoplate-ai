@@ -33,13 +33,19 @@ class FakePushService:
         self.records[token] = str(user_id)
         return {"token": token, "user_id": user_id, **kwargs}
 
-    def remove_token(self, token: str, user_id: str | None = None) -> bool:
+    def remove_token(self, token: str, user_id: str | None = None, enterprise_id: str | None = None) -> bool:
         if self.records.get(token) != user_id:
             return False
         del self.records[token]
         return True
 
-    def send_to_registered_token(self, token: str, payload: dict, user_id: str | None = None) -> dict:
+    def send_to_registered_token(
+        self,
+        token: str,
+        payload: dict,
+        user_id: str | None = None,
+        enterprise_id: str | None = None,
+    ) -> dict:
         registered = self.records.get(token) == user_id
         return {"configured": True, "registered": registered, "sent": int(registered), "failed": 0}
 

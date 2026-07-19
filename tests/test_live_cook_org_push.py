@@ -25,7 +25,7 @@ def test_live_session_start_schedules_enterprise_push():
     assert 'enterprise_id=user.enterprise_id' not in source
     assert "enterprise_id=enterprise_id" in source
     assert "Live cooking started" in source
-    assert "join_room=" in source
+    assert "?live_room=" in source
 
 
 def test_push_delivery_supports_enterprise_filtering():

@@ -91,6 +91,7 @@ def authenticated_client(monkeypatch):
 
     app = FastAPI()
     app.include_router(user_data_routes.router)
+    app.dependency_overrides[user_data_routes.FirebaseUserDataService] = lambda: fake
     app.dependency_overrides[user_data_routes.current_user] = lambda: AuthContext(
         uid="firebase-user-1",
         enterprise_id="glucoplate",

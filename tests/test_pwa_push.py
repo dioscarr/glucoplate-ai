@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from app.api.enterprise_admin_routes import AuthContext, current_user
 from app.main import app
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,6 +61,9 @@ def test_push_config_is_safe_when_firebase_is_not_configured(monkeypatch) -> Non
 def test_push_token_can_be_saved(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("GLUCOPLATE_PUSH_STORE", str(tmp_path / "push.json"))
     token = "test-device-token-1234567890"
+    app.dependency_overrides[current_user] = lambda: AuthContext(
+        uid="user-1", enterprise_id="glucoplate", role="member"
+    )
     response = client.post(
         "/api/push/tokens",
         json={
@@ -69,10 +73,15 @@ def test_push_token_can_be_saved(tmp_path, monkeypatch) -> None:
             "device_name": "pytest device",
         },
     )
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["ok"] is True
-    assert payload["subscription"]["token"] == token
+    try:
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["ok"] is True
+        assert payload["subscription"]["token"] == token
+        assert payload["subscription"]["user_id"] == "user-1"
+        assert payload["subscription"]["enterprise_id"] == "glucoplate"
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_send_endpoint_requires_admin_key(monkeypatch) -> None:

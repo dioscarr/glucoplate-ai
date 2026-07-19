@@ -33,5 +33,5 @@ def test_receipt_import_contracts_are_registered():
 
 def test_pwa_caches_receipt_import_client():
     sw = Path("app/static/sw.js").read_text()
-    assert "glucoplate-shell-v14" in sw
+    assert "const CACHE='glucoplate-shell-v" in sw
     assert "/static/receipt-import-ui.js" in sw

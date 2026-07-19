@@ -30,3 +30,8 @@ htmlcov/
 
 # Pip stray install artifacts
 =*
+
+# Playwright authentication state contains impersonation credentials
+playwright/.auth/
+playwright-report/
+test-results/
