@@ -65,7 +65,7 @@ test('cached enterprise session restores the signed-in shell safely', async ({ p
   await expect(page.locator('#enterpriseAuthGate')).toHaveClass(/hidden/);
   await page.locator('.tab[data-view="discoverView"]').click();
   await expect(page.getByRole('heading', { name: '1. Choose a cuisine' })).toBeVisible();
-  await page.getByRole('button', { name: 'Profile', exact: true }).click();
+  await page.locator('.tab[data-view="profileView"]').click();
   await expect(page.locator('#firebaseAuthPanel')).toContainText('Playwright Cook');
   await expect(page.locator('#firebaseAuthPanel')).toContainText('GlucoPlate Test Kitchen');
 
