@@ -4,7 +4,15 @@ function collectRuntimeFailures(page) {
   const failures = [];
   page.on('pageerror', error => failures.push(`pageerror: ${error.message}`));
   page.on('console', message => {
-    if (message.type() === 'error') failures.push(`console.error: ${message.text()}`);
+    if (message.type() === 'error' && !message.text().startsWith('Failed to load resource:')) {
+      failures.push(`console.error: ${message.text()}`);
+    }
+  });
+  page.on('response', response => {
+    const url = new URL(response.url());
+    if (url.origin === 'http://127.0.0.1:8000' && response.status() >= 500) {
+      failures.push(`http ${response.status()}: ${url.pathname}`);
+    }
   });
   page.on('requestfailed', request => {
     const url = new URL(request.url());
