@@ -14,7 +14,8 @@ router = APIRouter(prefix="/api/live-cook-rooms", tags=["live-cook-shared-state"
 
 
 class IngredientStatePayload(BaseModel):
-    ingredient_index: int = Field(ge=0, le=1000)
+    ingredient_index: int | None = Field(default=None, ge=0, le=1000)
+    ingredient_id: str | None = Field(default=None, min_length=1, max_length=120)
     checked: bool
     expected_revision: int | None = Field(default=None, ge=0)
 
@@ -73,6 +74,7 @@ def set_shared_ingredient(
             room_id,
             user.uid,
             payload.ingredient_index,
+            payload.ingredient_id,
             payload.checked,
             payload.expected_revision,
         )

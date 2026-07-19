@@ -26,6 +26,11 @@
     return body;
   }
 
+  function ingredientId(room,index){
+    const value=room?.recipe?.ingredient_details?.[index]?.id;
+    return String(value||`legacy-index-${index}`).slice(0,120);
+  }
+
   function ingredientLabel(item,index,room){
     const fallback=typeof item==='string'?item:item?.name||item?.ingredient||item?.item||`Ingredient ${index+1}`;
     const detail=room?.recipe?.ingredient_details?.[index]||window.GlucoPlateRecipeDetail?.parseIngredient?.(fallback);
@@ -74,11 +79,11 @@
     }
   }
 
-  async function setIngredient(index,checked){
+  async function setIngredient(index,id,checked){
     return mutate(
       room=>`/api/live-cook-rooms/${encodeURIComponent(room.id)}/ingredients`,
       'PUT',
-      room=>({ingredient_index:index,checked,expected_revision:Number(room.state?.revision||0)})
+      room=>({ingredient_index:index,ingredient_id:id,checked,expected_revision:Number(room.state?.revision||0)})
     );
   }
 
@@ -112,7 +117,7 @@
     control.disabled=true;
     try{
       if(ingredient){
-        await setIngredient(Number(ingredient.dataset.ingredientIndex),ingredient.checked);
+        await setIngredient(Number(ingredient.dataset.ingredientIndex),ingredient.dataset.ingredientId,ingredient.checked);
       }else if(servingButton){
         const room=window.GlucoPlateLiveCookRooms?.getRoom?.();
         if(!isChef(room))throw new Error('Only the Chef can change servings for the room.');
@@ -171,7 +176,7 @@
 
     section.innerHTML=`
       <div class="live-room-shared-section live-room-serving-section"><div class="live-room-section-heading"><div><strong>Room servings</strong><span>${chef?'You are the Chef — this scales ingredients for everyone':'Chef-controlled for a consistent shared recipe'}</span></div><span aria-hidden="true">🍽️</span></div><div class="live-room-timer-controls">${chef&&active?`<button type="button" data-serving-delta="-1" aria-label="Decrease room servings">−</button>`:''}<output data-room-servings aria-live="polite" style="font-size:1.15rem;font-weight:800">${selectedServings} ${selectedServings===1?'serving':'servings'}</output>${chef&&active?`<button type="button" data-serving-delta="1" aria-label="Increase room servings">+</button>`:'<span class="live-room-empty">Only the Chef can adjust this.</span>'}</div></div>
-      <div class="live-room-shared-section"><div class="live-room-section-heading"><div><strong>Shared ingredients</strong><span>Tap an image to enlarge and hear its name</span></div><span aria-hidden="true">🥬</span></div><ul class="ingredient-list live-room-ingredient-list">${ingredients.length?ingredients.map((item,index)=>{const label=ingredientLabel(item,index,room),icon=window.GlucoPlateIngredients?.ingredientIconFor?.(label)||'🥄';return `<li><input type="checkbox" data-ingredient-index="${index}" aria-label="Mark ${escapeHtml(label)} ready" ${checks[String(index)]?'checked':''} ${active?'':'disabled'}><span class="ingredient-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(label)}</span></li>`}).join(''):'<li class="live-room-empty">No ingredients are attached to this recipe.</li>'}</ul></div>
+      <div class="live-room-shared-section"><div class="live-room-section-heading"><div><strong>Shared ingredients</strong><span>Tap an image to enlarge and hear its name</span></div><span aria-hidden="true">🥬</span></div><ul class="ingredient-list live-room-ingredient-list">${ingredients.length?ingredients.map((item,index)=>{const label=ingredientLabel(item,index,room),id=ingredientId(room,index),icon=window.GlucoPlateIngredients?.ingredientIconFor?.(label)||'🥄',checked=checks[id]??checks[String(index)]??false;return `<li data-ingredient-id="${escapeHtml(id)}"><input type="checkbox" data-ingredient-index="${index}" data-ingredient-id="${escapeHtml(id)}" aria-label="Mark ${escapeHtml(label)} ready" ${checked?'checked':''} ${active?'':'disabled'}><span class="ingredient-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(label)}</span></li>`}).join(''):'<li class="live-room-empty">No ingredients are attached to this recipe.</li>'}</ul></div>
       <div class="live-room-shared-section"><div class="live-room-section-heading"><div><strong>Shared timer</strong><span>Keep every cook on the same pace</span></div><span aria-hidden="true">⏱</span></div><div class="live-room-timer-controls"><output data-shared-timer-clock style="font-size:1.35rem;font-weight:800">${formatSeconds(time)}</output><span>${escapeHtml(timer.status||'idle')}</span>${active?timerButtons:'<span class="live-room-empty">Available after the host starts cooking.</span>'}</div></div>`;
 
     clearInterval(clock);
