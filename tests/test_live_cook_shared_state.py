@@ -51,3 +51,19 @@ def test_shared_state_client_uses_fresh_auth_and_explicit_room_updates() -> None
     assert "GlucoPlateFirebaseAuth?.getIdToken" in source
     assert "glucoplate:live-room-updated" in source
     assert "MutationObserver" not in source
+
+
+def test_chef_controls_shared_servings_for_every_participant() -> None:
+    service = read("app/services/live_cook_shared_state_service.py")
+    room_service = read("app/services/firebase_live_cook_room_service.py")
+    routes = read("app/api/live_cook_shared_state_routes.py")
+    client = read("app/static/live-cook-shared-state.js")
+    assert 'room.get("host_uid")' in service
+    assert "Only the Chef can change servings for the room" in service
+    assert '"selected_servings": servings' in service
+    assert '"servings_changed"' in service
+    assert "self._servings(recipe)" in room_service
+    assert '@router.put("/{room_id}/servings")' in routes
+    assert "data-serving-delta" in client
+    assert "Only the Chef can adjust this." in client
+    assert "ingredientLabel(item,index,room)" in client

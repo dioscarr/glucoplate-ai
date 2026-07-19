@@ -29,6 +29,13 @@ class FirebaseLiveCookRoomService:
         cleaned = " ".join(str(value or "").strip().split())
         return cleaned[:80] or fallback
 
+    @staticmethod
+    def _servings(recipe: dict[str, Any]) -> int:
+        try:
+            return max(1, min(12, int(recipe.get("selected_servings") or recipe.get("base_servings") or recipe.get("servings") or 4)))
+        except (TypeError, ValueError):
+            return 4
+
     def _rooms(self, enterprise_id: str):
         return db.reference(f"{self.ROOT}/enterprises/{enterprise_id}/live_cook_rooms")
 
@@ -101,6 +108,7 @@ class FirebaseLiveCookRoomService:
             "recipe": recipe,
             "state": {
                 "current_step": 0,
+                "selected_servings": self._servings(recipe),
                 "ingredient_checks": {str(index): False for index, _ in enumerate(ingredients)},
                 "timer": None,
                 "revision": 1,

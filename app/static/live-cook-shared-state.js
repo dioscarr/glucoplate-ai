@@ -2,6 +2,8 @@
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   let clock=null,busy=false;
+  function currentUid(){try{return JSON.parse(localStorage.getItem('glucoplate_firebase_session')||'null')?.user?.uid||''}catch{return''}}
+  const isChef=room=>Boolean(room&&String(room.host_uid||'')===String(currentUid()));
 
   async function authToken(forceRefresh=false){
     const provider=window.GlucoPlateFirebaseAuth?.getIdToken;
@@ -24,9 +26,15 @@
     return body;
   }
 
-  function ingredientLabel(item,index){
-    if(typeof item==='string')return item;
-    return item?.name||item?.ingredient||item?.item||`Ingredient ${index+1}`;
+  function ingredientLabel(item,index,room){
+    const fallback=typeof item==='string'?item:item?.name||item?.ingredient||item?.item||`Ingredient ${index+1}`;
+    const detail=room?.recipe?.ingredient_details?.[index]||window.GlucoPlateRecipeDetail?.parseIngredient?.(fallback);
+    const quantity=Number(detail?.quantity);
+    if(!Number.isFinite(quantity))return fallback;
+    const base=Math.max(1,Number(room?.recipe?.base_servings||room?.recipe?.servings)||4);
+    const selected=Math.max(1,Number(room?.state?.selected_servings||room?.recipe?.selected_servings)||base);
+    const amount=window.GlucoPlateRecipeDetail?.formatQuantity?.(quantity*selected/base)||String(quantity*selected/base);
+    return `${amount} ${detail?.remainder||detail?.name||''}`.trim();
   }
 
   function remaining(timer){
@@ -74,6 +82,14 @@
     );
   }
 
+  async function setRoomServings(servings){
+    return mutate(
+      room=>`/api/live-cook-rooms/${encodeURIComponent(room.id)}/servings`,
+      'PUT',
+      room=>({servings,expected_revision:Number(room.state?.revision||0)})
+    );
+  }
+
   async function timerAction(action,durationSeconds){
     return mutate(
       room=>`/api/live-cook-rooms/${encodeURIComponent(room.id)}/timer`,
@@ -87,15 +103,21 @@
     if(!body||busy)return;
     const ingredient=event.target.closest?.('[data-ingredient-index]');
     const timerButton=event.target.closest?.('[data-timer-action]');
-    if(!ingredient&&!timerButton)return;
+    const servingButton=event.target.closest?.('[data-serving-delta]');
+    if(!ingredient&&!timerButton&&!servingButton)return;
 
     event.preventDefault();
     busy=true;
-    const control=ingredient||timerButton;
+    const control=ingredient||timerButton||servingButton;
     control.disabled=true;
     try{
       if(ingredient){
         await setIngredient(Number(ingredient.dataset.ingredientIndex),ingredient.checked);
+      }else if(servingButton){
+        const room=window.GlucoPlateLiveCookRooms?.getRoom?.();
+        if(!isChef(room))throw new Error('Only the Chef can change servings for the room.');
+        const current=Math.max(1,Number(room?.state?.selected_servings||room?.recipe?.selected_servings||room?.recipe?.base_servings)||4);
+        await setRoomServings(Math.max(1,Math.min(12,current+Number(servingButton.dataset.servingDelta||0))));
       }else{
         const section=timerButton.closest('[data-shared-cooking-state]');
         const action=timerButton.dataset.timerAction;
@@ -134,6 +156,9 @@
       lifecycle?.insertAdjacentElement('afterend',section)||body.prepend(section);
     }
     const active=phase==='active';
+    const chef=isChef(room);
+    const baseServings=Math.max(1,Number(room.recipe?.base_servings||room.recipe?.servings)||4);
+    const selectedServings=Math.max(1,Number(room.state?.selected_servings||room.recipe?.selected_servings)||baseServings);
     const ingredients=room.recipe?.ingredients||[];
     const checks=room.state?.ingredient_checks||{};
     const timer=room.state?.timer||{status:'idle'};
@@ -145,7 +170,8 @@
         :'<input data-timer-minutes type="number" inputmode="numeric" min="1" max="1440" value="5" aria-label="Timer minutes"><button type="button" data-timer-action="start">Start timer</button>';
 
     section.innerHTML=`
-      <div class="live-room-shared-section"><div class="live-room-section-heading"><div><strong>Shared ingredients</strong><span>Tap an image to enlarge and hear its name</span></div><span aria-hidden="true">🥬</span></div><ul class="ingredient-list live-room-ingredient-list">${ingredients.length?ingredients.map((item,index)=>{const label=ingredientLabel(item,index),icon=window.GlucoPlateIngredients?.ingredientIconFor?.(label)||'🥄';return `<li><input type="checkbox" data-ingredient-index="${index}" aria-label="Mark ${escapeHtml(label)} ready" ${checks[String(index)]?'checked':''} ${active?'':'disabled'}><span class="ingredient-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(label)}</span></li>`}).join(''):'<li class="live-room-empty">No ingredients are attached to this recipe.</li>'}</ul></div>
+      <div class="live-room-shared-section live-room-serving-section"><div class="live-room-section-heading"><div><strong>Room servings</strong><span>${chef?'You are the Chef — this scales ingredients for everyone':'Chef-controlled for a consistent shared recipe'}</span></div><span aria-hidden="true">🍽️</span></div><div class="live-room-timer-controls">${chef&&active?`<button type="button" data-serving-delta="-1" aria-label="Decrease room servings">−</button>`:''}<output data-room-servings aria-live="polite" style="font-size:1.15rem;font-weight:800">${selectedServings} ${selectedServings===1?'serving':'servings'}</output>${chef&&active?`<button type="button" data-serving-delta="1" aria-label="Increase room servings">+</button>`:'<span class="live-room-empty">Only the Chef can adjust this.</span>'}</div></div>
+      <div class="live-room-shared-section"><div class="live-room-section-heading"><div><strong>Shared ingredients</strong><span>Tap an image to enlarge and hear its name</span></div><span aria-hidden="true">🥬</span></div><ul class="ingredient-list live-room-ingredient-list">${ingredients.length?ingredients.map((item,index)=>{const label=ingredientLabel(item,index,room),icon=window.GlucoPlateIngredients?.ingredientIconFor?.(label)||'🥄';return `<li><input type="checkbox" data-ingredient-index="${index}" aria-label="Mark ${escapeHtml(label)} ready" ${checks[String(index)]?'checked':''} ${active?'':'disabled'}><span class="ingredient-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(label)}</span></li>`}).join(''):'<li class="live-room-empty">No ingredients are attached to this recipe.</li>'}</ul></div>
       <div class="live-room-shared-section"><div class="live-room-section-heading"><div><strong>Shared timer</strong><span>Keep every cook on the same pace</span></div><span aria-hidden="true">⏱</span></div><div class="live-room-timer-controls"><output data-shared-timer-clock style="font-size:1.35rem;font-weight:800">${formatSeconds(time)}</output><span>${escapeHtml(timer.status||'idle')}</span>${active?timerButtons:'<span class="live-room-empty">Available after the host starts cooking.</span>'}</div></div>`;
 
     clearInterval(clock);
