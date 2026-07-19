@@ -11,6 +11,7 @@ from app.api.live_cook_media_routes import router as live_cook_media_router
 from app.api.live_cook_room_routes import router as live_cook_room_router
 from app.api.live_cook_session_routes import router as live_cook_session_router
 from app.api.live_cook_shared_state_routes import router as live_cook_shared_state_router
+from app.api.live_cook_transcript_routes import router as live_cook_transcript_router
 from app.api.pantry_routes import router as pantry_router
 from app.api.price_observation_routes import router as price_observation_router
 from app.api.push_routes import router as push_router
@@ -43,6 +44,7 @@ app.include_router(live_cook_room_router)
 app.include_router(live_cook_media_router)
 app.include_router(live_cook_session_router)
 app.include_router(live_cook_shared_state_router)
+app.include_router(live_cook_transcript_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 HTML_SCRIPT_PATHS = (
@@ -51,6 +53,7 @@ HTML_SCRIPT_PATHS = (
     "/static/live-cook-rooms.js",
     "/static/live-kitchen-workspace.js",
     "/static/live-cook-media.js",
+    "/static/live-cook-transcript.js",
     "/static/live-cook-session-lifecycle.js",
     "/static/live-cook-shared-state.js",
     "/static/native-timers.js",
