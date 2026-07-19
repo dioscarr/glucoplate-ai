@@ -23,6 +23,9 @@ Without all three LiveKit credentials, the UI automatically remains in private d
 - Cooks can select a camera or microphone without leaving the call.
 - Every browser installation appears as a separate participant, even when multiple devices use the same account.
 - Mobile cooks can flip between front and rear cameras with one tap.
+- The call panel distinguishes room membership from active media presence (for example, **3 people in room · 2 devices on video**).
+- Active device labels and camera/microphone state appear above the responsive tile grid.
+- A 15-second media heartbeat removes stale or disconnected devices from the presence list after 45 seconds.
 - Remote participant tracks appear in a responsive tile grid.
 - LiveKit reconnection events preserve the rest of the cooking experience.
 - Recording is disabled.
@@ -34,7 +37,7 @@ Without all three LiveKit credentials, the UI automatically remains in private d
 1. Create or join the same Live Room from two organization accounts.
 2. Select **Join video call** on both devices.
 3. Approve camera and microphone permissions.
-4. Confirm both participant tiles and remote audio.
+4. Confirm the member/device summary, both participant tiles, and remote audio.
 5. Toggle microphone and camera on each device.
 6. Background and restore the mobile PWA.
 7. Disconnect Wi-Fi briefly and confirm the reconnect state.
