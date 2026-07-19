@@ -28,6 +28,9 @@ Without all three LiveKit credentials, the UI automatically remains in private d
 - A 15-second media heartbeat removes stale or disconnected devices from the presence list after 45 seconds.
 - Remote participant tracks appear in a responsive tile grid.
 - LiveKit reconnection events preserve the rest of the cooking experience.
+- Reconnecting, weak-connection, and disconnected states appear without replacing the recipe, timer, or chat UI.
+- A disconnected call offers **Retry video** without requiring the cook to rejoin the room.
+- Connection quality is displayed per active device, while unchanged polling heartbeats do not rebuild video tracks.
 - Recording is disabled.
 - Completing the cooking session disconnects media.
 - Leaving the page stops local capture and disconnects the call.
@@ -40,5 +43,6 @@ Without all three LiveKit credentials, the UI automatically remains in private d
 4. Confirm the member/device summary, both participant tiles, and remote audio.
 5. Toggle microphone and camera on each device.
 6. Background and restore the mobile PWA.
-7. Disconnect Wi-Fi briefly and confirm the reconnect state.
-8. Complete the cooking session and confirm capture ends.
+7. Disconnect Wi-Fi briefly and confirm reconnecting/weak-connection feedback while recipe controls remain usable.
+8. Allow the call to disconnect and confirm **Retry video** reconnects inside the same cooking room.
+9. Complete the cooking session and confirm capture ends.
