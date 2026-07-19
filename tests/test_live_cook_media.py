@@ -46,3 +46,39 @@ def test_core_polling_preserves_media_preview_node():
     source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
     assert "media=body.querySelector('[data-live-media]')" in source
     assert "if(media)body.prepend(media)" in source
+
+
+def test_livekit_access_tokens_are_room_scoped_and_server_issued():
+    source = (ROOT / "app" / "services" / "live_cook_media_service.py").read_text(encoding="utf-8")
+    project = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert '"livekit-api>=1.0.0"' in project
+    assert 'os.getenv("LIVEKIT_API_SECRET"' in source
+    assert "api.AccessToken(api_key, api_secret)" in source
+    assert "api.VideoGrants(" in source
+    assert "room_join=True" in source
+    assert "can_publish=True" in source
+    assert "can_subscribe=True" in source
+    assert '"token": token' in source
+    assert "api_secret" not in source[source.index("access.update("):]
+
+
+def test_livekit_client_renders_remote_tracks_and_recovers_connections():
+    source = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    styles = (ROOT / "app" / "static" / "live-cook-media.css").read_text(encoding="utf-8")
+    assert "livekit-client@2.17.2" in source
+    assert "adaptiveStream:true" in source
+    assert "dynacast:true" in source
+    assert "RoomEvent.TrackSubscribed" in source
+    assert "RoomEvent.ParticipantConnected" in source
+    assert "RoomEvent.Reconnecting" in source
+    assert "setCameraEnabled" in source
+    assert "setMicrophoneEnabled" in source
+    assert "live-media-grid" in styles
+    assert "auto-fit" in styles
+
+
+def test_pwa_caches_live_media_shell():
+    worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
+    assert "glucoplate-shell-v20" in worker
+    assert "'/static/live-cook-media.js'" in worker
+    assert "'/static/live-cook-media.css'" in worker
