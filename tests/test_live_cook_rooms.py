@@ -210,3 +210,10 @@ def test_polling_does_not_rebuild_live_kitchen_for_heartbeat_only_updates() -> N
     assert "applyRoomUpdate(result.room,{forceRender})" in source
     assert "body.scrollTop=scrollTop" in source
     assert "sendPresence()" in source
+
+
+def test_active_room_launcher_does_not_bind_missing_invite_control() -> None:
+    source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
+    assert "querySelector('[data-live-join]')?.addEventListener" in source
+    assert "querySelector('[data-live-browse]')?.addEventListener" in source
+    assert "querySelector('[data-live-join]').onclick" not in source
