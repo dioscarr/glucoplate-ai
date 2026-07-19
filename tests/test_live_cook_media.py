@@ -82,3 +82,18 @@ def test_pwa_caches_live_media_shell():
     assert "glucoplate-shell-v20" in worker
     assert "'/static/live-cook-media.js'" in worker
     assert "'/static/live-cook-media.css'" in worker
+
+
+def test_video_device_controls_support_livekit_preview_and_mobile_flip():
+    source = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    styles = (ROOT / "app" / "static" / "live-cook-media.css").read_text(encoding="utf-8")
+    assert "enumerateDevices" in source
+    assert "devicechange" in source
+    assert "switchActiveDevice" in source
+    assert "deviceId:{exact:deviceId}" in source
+    assert 'data-media-device="videoinput"' in source
+    assert 'data-media-device="audioinput"' in source
+    assert "data-media-flip" in source
+    assert "flipCamera" in source
+    assert "live-media-devices" in styles
+    assert "min-height:46px" in styles
