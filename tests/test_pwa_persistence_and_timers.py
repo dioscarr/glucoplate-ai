@@ -14,7 +14,7 @@ def test_push_tokens_persist_in_sqlite(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("GLUCOPLATE_PUSH_DB", str(database))
 
     first = PushNotificationService()
-    first.save_token("token-abcdefghijklmnopqrstuvwxyz", user_id="user-1")
+    first.save_token("token-abcdefghijklmnopqrstuvwxyz", user_id="user-1", enterprise_id="glucoplate")
 
     second = PushNotificationService()
     assert second.token_registered("token-abcdefghijklmnopqrstuvwxyz") is True
