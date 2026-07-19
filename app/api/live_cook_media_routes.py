@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from app.api.enterprise_admin_routes import AuthContext
 from app.api.user_data_routes import scoped_user
@@ -13,6 +13,8 @@ router = APIRouter(prefix="/api/live-cook-rooms", tags=["live-cook-media"])
 
 
 class MediaStatePayload(BaseModel):
+    device_id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9_-]+$")
+    device_label: str | None = Field(default=None, max_length=40)
     camera_enabled: bool | None = None
     microphone_enabled: bool | None = None
     connection_state: Literal["idle", "requesting", "connected", "denied", "unsupported", "failed"] | None = None
@@ -29,9 +31,11 @@ def media_service() -> LiveCookMediaService:
 def media_access(
     room_id: str,
     user: Annotated[AuthContext, Depends(scoped_user)],
+    device_id: str = Query(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9_-]+$"),
+    device_label: str | None = Query(default=None, max_length=40),
 ) -> dict[str, Any]:
     try:
-        access = media_service().access(user.enterprise_id, room_id, user.uid)
+        access = media_service().access(user.enterprise_id, room_id, user.uid, device_id, device_label)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     if access is None:
@@ -50,6 +54,8 @@ def update_media_state(
         room_id,
         user.uid,
         payload.model_dump(exclude_none=True),
+        payload.device_id,
+        payload.device_label,
     )
     if state is None:
         raise HTTPException(status_code=403, detail="Join the cooking room before using media")
