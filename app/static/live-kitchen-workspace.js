@@ -32,7 +32,9 @@
     const url=new URL(location.href);
     if(mode==='workspace')url.searchParams.set('view','workspace');
     else url.searchParams.delete('view');
-    history.replaceState(history.state||{},'',url.pathname+url.search+url.hash);
+    const next=url.pathname+url.search+url.hash;
+    if(mode==='workspace'&&new URL(location.href).searchParams.get('view')!=='workspace')history.pushState(history.state||{},'',next);
+    else history.replaceState(history.state||{},'',next);
   }
 
   function setMode(next,{updateHistory=true}={}){
@@ -47,7 +49,10 @@
     document.documentElement.classList.toggle('live-kitchen-open',mode==='workspace');
     if(updateHistory)updateUrl();
     organize();
-    if(mode==='workspace')queueMicrotask(()=>panel.querySelector('#liveRoomTitle')?.focus?.());
+    if(mode==='workspace')queueMicrotask(()=>{
+      const title=panel.querySelector('#liveRoomTitle');
+      if(title){title.tabIndex=-1;title.focus()}
+    });
   }
 
   function ensureExpand(){
