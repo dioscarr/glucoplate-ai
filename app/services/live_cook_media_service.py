@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -23,13 +24,18 @@ class LiveCookMediaService:
     def _now() -> str:
         return datetime.now(UTC).isoformat()
 
+    @staticmethod
+    def _device_id(value: str | None) -> str:
+        cleaned = re.sub(r"[^A-Za-z0-9_-]", "", str(value or ""))[:80]
+        return cleaned or "default"
+
     def _room(self, enterprise_id: str, room_id: str):
         return db.reference(
             f"{self.ROOT}/enterprises/{enterprise_id}/live_cook_rooms/{room_id}",
             app=self.app,
         )
 
-    def access(self, enterprise_id: str, room_id: str, uid: str) -> dict[str, Any] | None:
+    def access(self, enterprise_id: str, room_id: str, uid: str, device_id: str | None = None, device_label: str | None = None) -> dict[str, Any] | None:
         room = self._room(enterprise_id, room_id).get()
         participants = (room or {}).get("participants") or {}
         if not room or uid not in participants:
@@ -40,6 +46,9 @@ class LiveCookMediaService:
         provider = str(os.getenv("LIVE_COOK_MEDIA_PROVIDER", "browser")).strip().lower() or "browser"
         participant = participants.get(uid) or {}
         display_name = participant.get("display_name") or "Cook"
+        safe_device_id = self._device_id(device_id)
+        safe_device_label = " ".join(str(device_label or "Device").strip().split())[:40] or "Device"
+        media_name = f"{display_name} · {safe_device_label}"
         access: dict[str, Any] = {
             "room_id": room_id,
             "provider": provider,
@@ -49,6 +58,8 @@ class LiveCookMediaService:
                 "uid": uid,
                 "role": participant.get("role") or "participant",
                 "display_name": display_name,
+                "device_id": safe_device_id,
+                "device_label": safe_device_label,
             },
             "recording": {"enabled": False, "consent_required": True},
             "fallback": "The synchronized cooking room remains available without media.",
@@ -61,17 +72,19 @@ class LiveCookMediaService:
                 access["configuration_error"] = "LiveKit credentials are incomplete"
                 return access
             livekit_room = f"glucoplate-{enterprise_id}-{room_id}"
-            identity = f"{enterprise_id}:{uid}"
+            identity = f"{enterprise_id}:{uid}:{safe_device_id}"
             token = (
                 api.AccessToken(api_key, api_secret)
                 .with_identity(identity)
-                .with_name(str(display_name))
+                .with_name(media_name)
                 .with_metadata(
                     json.dumps(
                         {
                             "glucoplate_uid": uid,
                             "enterprise_id": enterprise_id,
                             "room_id": room_id,
+                            "device_id": safe_device_id,
+                            "device_label": safe_device_label,
                         }
                     )
                 )
@@ -105,8 +118,11 @@ class LiveCookMediaService:
         room_id: str,
         uid: str,
         state: dict[str, Any],
+        device_id: str | None = None,
+        device_label: str | None = None,
     ) -> dict[str, Any] | None:
-        access = self.access(enterprise_id, room_id, uid)
+        safe_device_id = self._device_id(device_id)
+        access = self.access(enterprise_id, room_id, uid, safe_device_id, device_label)
         if access is None:
             return None
         allowed = {
@@ -117,8 +133,10 @@ class LiveCookMediaService:
         record = {
             **allowed,
             "uid": uid,
+            "device_id": safe_device_id,
+            "device_label": access["participant"]["device_label"],
             "provider": access["provider"],
             "updated_at": self._now(),
         }
-        self._room(enterprise_id, room_id).child("media").child("participants").child(uid).set(record)
+        self._room(enterprise_id, room_id).child("media").child("participants").child(uid).child(safe_device_id).set(record)
         return record
