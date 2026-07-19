@@ -182,7 +182,7 @@ class LiveCookInsightService:
         suggestions = []
         seen = set()
         intent = re.compile(
-            r"\b(?:we\s+need|need|buy|pick\s+up|grab|get|out\s+of)\s+(?:some\s+)?([^.!?]{2,80})",
+            r"\b(?:we\s+need|need|buy|pick\s+up|grab|get|out\s+of|no\s+more|(?:do not|don't|dont)\s+have|thought\s+we\s+had|cannot\s+find|can't\s+find|cant\s+find)\s+(?:any\s+|some\s+)?([^.!?]{2,80})",
             re.IGNORECASE,
         )
         negation = re.compile(r"\b(?:do not|don't|dont|no need|already have|not need)\b", re.IGNORECASE)
