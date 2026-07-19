@@ -101,3 +101,24 @@ def test_video_device_controls_support_livekit_preview_and_mobile_flip():
     assert "access.serverUrl||access.server_url" in source
     assert "access.participantToken||access.token" in source
     assert "min-height:46px" in styles
+
+
+def test_same_account_devices_receive_distinct_media_identities():
+    routes = (ROOT / "app" / "api" / "live_cook_media_routes.py").read_text(encoding="utf-8")
+    service = (ROOT / "app" / "services" / "live_cook_media_service.py").read_text(encoding="utf-8")
+    client = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    assert "device_id: str" in routes
+    assert "device_label: str | None" in routes
+    assert 'identity = f"{enterprise_id}:{uid}:{safe_device_id}"' in service
+    assert '"device_id": safe_device_id' in service
+    assert '.child(uid).child(safe_device_id).set(record)' in service
+    assert "glucoplate_live_media_device_id" in client
+    assert "crypto.randomUUID" in client
+    assert "device_id:mediaDeviceId" in client
+    assert "device_label:mediaDeviceLabel" in client
+    assert "media/access?device_id=" in client
+
+
+def test_pwa_refreshes_multi_device_media_client():
+    worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
+    assert "glucoplate-shell-v22" in worker
