@@ -94,6 +94,7 @@
     body.querySelector('.live-room-chat')?.setAttribute('data-workspace-zone','room');
     body.querySelector('#liveRoomChatInput')?.closest('.live-room-row')?.setAttribute('data-workspace-zone','room');
     body.querySelector('.live-room-feed')?.setAttribute('data-workspace-zone','room');
+    body.querySelector('[data-live-transcript]')?.setAttribute('data-workspace-zone','room');
     body.querySelectorAll('.live-room-shared-state,[data-live-media],[data-session-lifecycle],.live-session-history').forEach(node=>node.dataset.workspaceZone='cook');
     body.querySelector('[data-live-insight]')?.setAttribute('data-workspace-zone','ai');
     body.querySelector('[data-live-shopping-draft]')?.setAttribute('data-workspace-zone','list');

@@ -81,7 +81,7 @@ def test_livekit_client_renders_remote_tracks_and_recovers_connections():
 
 def test_pwa_caches_live_media_shell():
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
-    assert "glucoplate-shell-v27" in worker
+    assert "glucoplate-shell-v28" in worker
     assert "'/static/live-cook-media.js'" in worker
     assert "'/static/live-cook-media.css'" in worker
 
@@ -121,7 +121,7 @@ def test_same_account_devices_receive_distinct_media_identities():
 
 def test_pwa_refreshes_multi_device_media_client():
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
-    assert "glucoplate-shell-v27" in worker
+    assert "glucoplate-shell-v28" in worker
 
 
 def test_partial_device_failure_keeps_live_call_connected():
@@ -148,7 +148,7 @@ def test_livekit_track_events_are_batched_and_control_errors_are_handled():
 
 def test_pwa_refreshes_partial_device_recovery():
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
-    assert "glucoplate-shell-v27" in worker
+    assert "glucoplate-shell-v28" in worker
 
 
 def test_live_video_presence_distinguishes_room_members_from_active_devices():
