@@ -20,7 +20,7 @@ def test_irrelevant_tools_are_hidden_without_a_recipe():
     assert "if(!window.currentRecipe){existing?.remove();return}" in timers
     assert "hasRecipe=Boolean(currentRecipe())" in live
     assert "Browse live rooms" in live
-    assert "wrap.innerHTML=hasRecipe" in live
+    assert "wrap.innerHTML=room" in live
     assert "Start live room" in live
     assert "Browse live rooms" in live
 
