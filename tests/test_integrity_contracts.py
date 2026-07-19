@@ -45,6 +45,11 @@ def test_fallback_recipe_response_matches_public_contract() -> None:
         "substitutions",
         "safety_review",
         "ai_provider",
+        "already_have",
+        "need_to_buy",
+        "optional",
+        "use_soon_matches",
+        "pantry_coverage",
     }
     assert RecipeResponse.model_validate(payload)
     assert payload["ai_provider"] == "local-fallback"
