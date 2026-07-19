@@ -128,6 +128,48 @@ class LiveCookSharedStateService:
         )
         return room_ref.get() or room
 
+    def set_servings(
+        self,
+        enterprise_id: str,
+        room_id: str,
+        uid: str,
+        servings: int,
+        expected_revision: int | None = None,
+    ) -> dict[str, Any]:
+        room_ref, room, participant = self._load_active_participant(
+            enterprise_id, room_id, uid
+        )
+        if str(room.get("host_uid") or "") != str(uid):
+            raise PermissionError("Only the Chef can change servings for the room")
+        if servings < 1 or servings > 12:
+            raise ValueError("Servings must be between 1 and 12")
+        state = room.get("state") or {}
+        self._assert_revision(state, expected_revision)
+        now = self._iso(self._now())
+        state.update(
+            {
+                "selected_servings": servings,
+                "revision": int(state.get("revision") or 0) + 1,
+                "updated_at": now,
+                "updated_by": uid,
+            }
+        )
+        recipe = dict(room.get("recipe") or {})
+        recipe["selected_servings"] = servings
+        room_ref.child("state").set(state)
+        room_ref.child("recipe").set(recipe)
+        room_ref.update({"updated_at": now})
+        name = str(participant.get("display_name") or "Chef")
+        self._activity(
+            room_ref,
+            "servings_changed",
+            f"{name} set the room recipe to {servings} serving{'s' if servings != 1 else ''}.",
+            uid,
+            name,
+            {"selected_servings": servings},
+        )
+        return room_ref.get() or room
+
     def update_timer(
         self,
         enterprise_id: str,
