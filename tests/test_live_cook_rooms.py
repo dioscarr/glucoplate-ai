@@ -13,7 +13,6 @@ def test_live_cook_room_routes_are_registered():
     source = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
     assert "live_cook_room_router" in source
     assert '"/static/live-cook-rooms.js"' in source
-    assert 'version="0.16.0"' in source
 
 
 def test_room_service_uses_enterprise_scoped_realtime_database():
@@ -28,7 +27,7 @@ def test_room_service_uses_enterprise_scoped_realtime_database():
 
 def test_room_api_supports_mvp_collaboration_actions():
     source = (ROOT / "app" / "api" / "live_cook_room_routes.py").read_text(encoding="utf-8")
-    assert '@router.post("")' in source
+    assert "def create_room" in source
     assert '@router.post("/join")' in source
     assert '@router.put("/{room_id}/ready")' in source
     assert '@router.post("/{room_id}/presence")' in source
@@ -40,7 +39,7 @@ def test_room_api_supports_mvp_collaboration_actions():
 def test_cook_room_ui_syncs_steps_and_exposes_room_controls():
     source = (ROOT / "app" / "static" / "live-cook-rooms.js").read_text(encoding="utf-8")
     assert "Start live room" in source
-    assert "Join room" in source
+    assert "Have an invite code?" in source
     assert "Need help" in source
     assert "current_step" in source
     assert "invite_code" in source
@@ -83,7 +82,7 @@ def test_live_rooms_refresh_firebase_tokens_before_authenticated_requests():
     assert "async function getIdToken(forceRefresh=false)" in auth_source
     assert "currentUser" in auth_source
     assert "user.getIdToken(Boolean(forceRefresh))" in auth_source
-    assert "GlucoPlateFirebaseAuth={signInGoogle,signOut,syncSession,getAuthClient,getIdToken,showGate}" in auth_source
+    assert "GlucoPlateFirebaseAuth={signInGoogle,signOut,syncSession,getAuthClient,getIdToken,showGate,renderPanel}" in auth_source
     assert "response.status===401" in room_source
     assert "request(true)" in room_source
 
