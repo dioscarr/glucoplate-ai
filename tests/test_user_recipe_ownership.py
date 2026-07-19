@@ -41,7 +41,7 @@ def _user(uid: str, enterprise_id: str = "glucoplate") -> AuthContext:
 
 def test_saved_recipes_are_isolated_by_authenticated_user() -> None:
     store = FakeUserDataService()
-    app.dependency_overrides[user_data_routes.service] = lambda: store
+    app.dependency_overrides[user_data_routes.FirebaseUserDataService] = lambda: store
 
     try:
         app.dependency_overrides[user_data_routes.scoped_user] = lambda: _user("user-a")
@@ -67,7 +67,7 @@ def test_saved_recipes_are_isolated_by_authenticated_user() -> None:
 def test_user_cannot_delete_another_users_saved_recipe() -> None:
     store = FakeUserDataService()
     store.save_recipe("glucoplate", "user-a", {"id": "private-recipe", "title": "Private"})
-    app.dependency_overrides[user_data_routes.service] = lambda: store
+    app.dependency_overrides[user_data_routes.FirebaseUserDataService] = lambda: store
 
     try:
         app.dependency_overrides[user_data_routes.scoped_user] = lambda: _user("user-b")
@@ -84,7 +84,7 @@ def test_user_cannot_delete_another_users_saved_recipe() -> None:
 def test_saved_recipes_are_isolated_by_enterprise() -> None:
     store = FakeUserDataService()
     store.save_recipe("enterprise-a", "shared-uid", {"id": "enterprise-a-recipe", "title": "A"})
-    app.dependency_overrides[user_data_routes.service] = lambda: store
+    app.dependency_overrides[user_data_routes.FirebaseUserDataService] = lambda: store
 
     try:
         app.dependency_overrides[user_data_routes.scoped_user] = lambda: _user("shared-uid", "enterprise-b")
