@@ -19,6 +19,8 @@ Without all three LiveKit credentials, the UI automatically remains in private d
 
 - Joining video is optional.
 - Camera and microphone can be toggled independently.
+- Cooks can select a camera or microphone without leaving the call.
+- Mobile cooks can flip between front and rear cameras with one tap.
 - Remote participant tracks appear in a responsive tile grid.
 - LiveKit reconnection events preserve the rest of the cooking experience.
 - Recording is disabled.
