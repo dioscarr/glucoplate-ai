@@ -90,20 +90,47 @@ class LiveCookSharedStateService:
         enterprise_id: str,
         room_id: str,
         uid: str,
-        ingredient_index: int,
+        ingredient_index: int | None,
+        ingredient_id: str | None,
         checked: bool,
         expected_revision: int | None = None,
     ) -> dict[str, Any]:
         room_ref, room, participant = self._load_active_participant(
             enterprise_id, room_id, uid
         )
-        ingredients = (room.get("recipe") or {}).get("ingredients") or []
-        if ingredient_index < 0 or ingredient_index >= len(ingredients):
+        recipe = room.get("recipe") or {}
+        ingredients = recipe.get("ingredients") or []
+        details = recipe.get("ingredient_details") or []
+        stable_id = str(ingredient_id or "").strip()[:120]
+        resolved_index = ingredient_index
+        if stable_id:
+            resolved_index = next(
+                (
+                    index
+                    for index, detail in enumerate(details)
+                    if isinstance(detail, dict) and str(detail.get("id") or "") == stable_id
+                ),
+                resolved_index,
+            )
+            if resolved_index is None and stable_id.startswith("legacy-index-"):
+                try:
+                    resolved_index = int(stable_id.removeprefix("legacy-index-"))
+                except ValueError:
+                    resolved_index = None
+        if resolved_index is None or resolved_index < 0 or resolved_index >= len(ingredients):
             raise IndexError("Ingredient does not exist in this recipe")
+        if not stable_id:
+            detail = details[resolved_index] if resolved_index < len(details) else {}
+            stable_id = (
+                str(detail.get("id") or "").strip()[:120]
+                if isinstance(detail, dict)
+                else ""
+            ) or f"legacy-index-{resolved_index}"
         state = room.get("state") or {}
         self._assert_revision(state, expected_revision)
         checks = dict(state.get("ingredient_checks") or {})
-        checks[str(ingredient_index)] = bool(checked)
+        checks.pop(str(resolved_index), None)
+        checks[stable_id] = bool(checked)
         now = self._iso(self._now())
         state.update(
             {
@@ -116,7 +143,7 @@ class LiveCookSharedStateService:
         room_ref.child("state").set(state)
         room_ref.update({"updated_at": now})
         name = str(participant.get("display_name") or "Cook")
-        ingredient = ingredients[ingredient_index]
+        ingredient = ingredients[resolved_index]
         label = ingredient.get("name") if isinstance(ingredient, dict) else str(ingredient)
         self._activity(
             room_ref,
@@ -124,7 +151,11 @@ class LiveCookSharedStateService:
             f"{name} {'checked' if checked else 'unchecked'} {label or 'an ingredient'}.",
             uid,
             name,
-            {"ingredient_index": ingredient_index, "checked": bool(checked)},
+            {
+                "ingredient_id": stable_id,
+                "ingredient_index": resolved_index,
+                "checked": bool(checked),
+            },
         )
         return room_ref.get() or room
 
