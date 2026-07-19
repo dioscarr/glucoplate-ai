@@ -114,7 +114,7 @@
   }
   function renderPanel(){
     document.getElementById('firebaseAuthPanel')?.remove();
-    const profile=document.getElementById('profileView');const target=profile?.querySelector('.card')||document.querySelector('main')||document.body;
+    const profile=document.getElementById('profileView');const target=profile||document.querySelector('main')||document.body;
     target.insertAdjacentHTML('beforeend',panelHtml());
     document.getElementById('firebaseSignOutBtn')?.addEventListener('click',signOut);
     document.getElementById('firebaseOpenLoginBtn')?.addEventListener('click',showGate);
@@ -128,5 +128,5 @@
     renderPanel();
     try{const api=await loadSdk(),client=await getAuthClient();api.onAuthStateChanged(client,user=>syncSession(user).catch(error=>{setError(error.message);showGate()}))}catch(error){setError(error.message);console.info('Firebase Auth unavailable:',error.message)}
   });
-  window.GlucoPlateFirebaseAuth={signInGoogle,signOut,syncSession,getAuthClient,getIdToken,showGate};
+  window.GlucoPlateFirebaseAuth={signInGoogle,signOut,syncSession,getAuthClient,getIdToken,showGate,renderPanel};
 })();

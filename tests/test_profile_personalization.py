@@ -46,3 +46,22 @@ def test_personalization_gracefully_falls_back_without_active_profile() -> None:
     assert 'if(!api||!profileId)return null' in script
     assert "console.warn('Profile personalization unavailable'" in script
     assert "console.warn('Recipe personalization skipped'" in script
+
+
+def test_profile_switch_preserves_enterprise_account_and_admin_navigation() -> None:
+    auth = (ROOT / 'app' / 'static' / 'firebase-auth.js').read_text(encoding='utf-8')
+    user_data = (ROOT / 'app' / 'static' / 'firebase-user-data.js').read_text(encoding='utf-8')
+    assert "const target=profile||document.querySelector('main')" in auth
+    assert "Admin dashboard" in auth
+    assert "renderPanel" in auth
+    assert "GlucoPlateFirebaseAuth?.renderPanel?.()" in user_data
+    assert "finally{" in user_data
+
+
+def test_household_profile_has_mobile_return_to_account_action() -> None:
+    user_data = (ROOT / 'app' / 'static' / 'firebase-user-data.js').read_text(encoding='utf-8')
+    assert "Back to my account" in user_data
+    assert "data-return-account" in user_data
+    assert "setActiveProfile('default')" in user_data
+    assert "profile-account-return" in user_data
+    assert "min-height:44px" in user_data
