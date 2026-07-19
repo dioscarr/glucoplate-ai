@@ -12,6 +12,7 @@ class FirebaseAuthService:
     @property
     def client_config(self) -> dict[str, str]:
         return {
+            "authEmulatorUrl": os.getenv("FIREBASE_AUTH_EMULATOR_URL", ""),
             "apiKey": os.getenv("FIREBASE_WEB_API_KEY", ""),
             "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN", ""),
             "projectId": os.getenv("FIREBASE_PROJECT_ID", ""),
