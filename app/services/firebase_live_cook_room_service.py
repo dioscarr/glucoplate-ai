@@ -36,6 +36,15 @@ class FirebaseLiveCookRoomService:
         except (TypeError, ValueError):
             return 4
 
+    @staticmethod
+    def _ingredient_id(recipe: dict[str, Any], index: int) -> str:
+        details = recipe.get("ingredient_details") or []
+        if index < len(details) and isinstance(details[index], dict):
+            stable_id = str(details[index].get("id") or "").strip()
+            if stable_id:
+                return stable_id[:120]
+        return f"legacy-index-{index}"
+
     def _rooms(self, enterprise_id: str):
         return db.reference(f"{self.ROOT}/enterprises/{enterprise_id}/live_cook_rooms")
 
@@ -109,7 +118,7 @@ class FirebaseLiveCookRoomService:
             "state": {
                 "current_step": 0,
                 "selected_servings": self._servings(recipe),
-                "ingredient_checks": {str(index): False for index, _ in enumerate(ingredients)},
+                "ingredient_checks": {self._ingredient_id(recipe, index): False for index, _ in enumerate(ingredients)},
                 "timer": None,
                 "revision": 1,
                 "updated_at": now,

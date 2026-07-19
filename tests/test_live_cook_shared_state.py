@@ -67,3 +67,20 @@ def test_chef_controls_shared_servings_for_every_participant() -> None:
     assert "data-serving-delta" in client
     assert "Only the Chef can adjust this." in client
     assert "ingredientLabel(item,index,room)" in client
+
+
+def test_shared_ingredient_checks_use_stable_ids_with_legacy_fallback() -> None:
+    room_service = read("app/services/firebase_live_cook_room_service.py")
+    shared_service = read("app/services/live_cook_shared_state_service.py")
+    routes = read("app/api/live_cook_shared_state_routes.py")
+    client = read("app/static/live-cook-shared-state.js")
+    assert "def _ingredient_id" in room_service
+    assert "self._ingredient_id(recipe, index)" in room_service
+    assert "ingredient_id: str | None" in shared_service
+    assert 'f"legacy-index-{resolved_index}"' in shared_service
+    assert 'checks.pop(str(resolved_index), None)' in shared_service
+    assert '"ingredient_id": stable_id' in shared_service
+    assert "ingredient_id: str | None" in routes
+    assert "data-ingredient-id" in client
+    assert "ingredient_id:id" in client
+    assert "checks[id]??checks[String(index)]??false" in client
