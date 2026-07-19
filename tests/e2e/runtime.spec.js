@@ -48,7 +48,7 @@ test('application shell loads without browser runtime failures', async ({ page }
   await expect(page.getByRole('heading', { name: 'Choose a cuisine. Pick a dish. Generate it.' })).toBeVisible();
   await expect(page.locator('#enterpriseAuthGate')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Cuisines' }).click();
+  await page.locator('.tab[data-view="discoverView"]').click();
   await expect(page.getByRole('heading', { name: '1. Choose a cuisine' })).toBeVisible();
 
   expect(failures, failures.join('\n')).toEqual([]);
