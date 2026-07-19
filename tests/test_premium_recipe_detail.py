@@ -9,7 +9,7 @@ def test_premium_recipe_detail_is_injected_and_cached() -> None:
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
     assert '"/static/premium-recipe-detail.js"' in main
     assert "'/static/premium-recipe-detail.js'" in worker
-    assert "glucoplate-shell-v24" in worker
+    assert "glucoplate-shell-v25" in worker
 
 
 def test_recipe_normalization_preserves_legacy_strings_and_adds_stable_ids() -> None:

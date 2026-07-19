@@ -19,6 +19,7 @@ Without all three LiveKit credentials, the UI automatically remains in private d
 
 - Joining video is optional.
 - Camera and microphone can be toggled independently.
+- If one media device is missing, the call continues in video-only or audio-only mode.
 - Cooks can select a camera or microphone without leaving the call.
 - Every browser installation appears as a separate participant, even when multiple devices use the same account.
 - Mobile cooks can flip between front and rear cameras with one tap.

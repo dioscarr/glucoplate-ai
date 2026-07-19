@@ -6,7 +6,7 @@
   const mediaDeviceId=deviceInstanceId();
   const mediaDeviceLabel=String(navigator.userAgentData?.platform||navigator.platform||'Device').slice(0,40);
   const SDK_URL='https://cdn.jsdelivr.net/npm/livekit-client@2.17.2/dist/livekit-client.umd.min.js';
-  let stream=null,access=null,busy=false,liveRoom=null,sdkPromise=null,devices={audioinput:[],videoinput:[]};
+  let stream=null,access=null,busy=false,liveRoom=null,sdkPromise=null,renderFrame=null,devices={audioinput:[],videoinput:[]};
   async function authToken(forceRefresh=false){const provider=window.GlucoPlateFirebaseAuth?.getIdToken;if(typeof provider==='function')return provider(forceRefresh);const cached=localStorage.getItem('glucoplate_firebase_id_token')||'';if(!cached)throw new Error('Sign in before using live video.');return cached}
   async function api(path,options={}){const request=async forceRefresh=>fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:'Bearer '+await authToken(forceRefresh),...(options.headers||{})}});let response=await request(false);if(response.status===401&&window.GlucoPlateFirebaseAuth?.getIdToken)response=await request(true);const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.detail||'Live media is unavailable.');return body}
   function ensureStyles(){if(document.querySelector('link[data-live-media-styles]'))return;const link=document.createElement('link');link.rel='stylesheet';link.href='/static/live-cook-media.css';link.dataset.liveMediaStyles='1';document.head.appendChild(link)}
@@ -43,9 +43,24 @@
     section.innerHTML='<div class="live-media-header"><div><span>LIVE VIDEO</span><strong>Cook face to face</strong></div><span class="live-media-status">'+(remote?'Connected':on?'Preview ready':'Off')+'</span></div><div class="live-media-grid'+(on?'':' is-empty')+'" data-media-grid></div>'+(on?'':'<div class="live-media-empty"><span>◉</span><strong>Video is optional</strong><small>The recipe, timer, and chat keep working without it.</small></div>')+'<div class="live-media-actions">'+(on?'<button type="button" data-media-mic>'+(microphone?'Mute':'Unmute')+'</button><button type="button" data-media-camera>'+(camera?'Camera off':'Camera on')+'</button><button type="button" class="live-media-leave" data-media-leave>Leave call</button>':'<button type="button" class="live-media-enable" data-media-enable>Join video call</button>')+'</div>'+(on?'<div class="live-media-devices"><label><span>Camera</span><select data-media-device="videoinput" aria-label="Choose camera">'+deviceOptions('videoinput')+'</select></label><label><span>Microphone</span><select data-media-device="audioinput" aria-label="Choose microphone">'+deviceOptions('audioinput')+'</select></label>'+(devices.videoinput.length>1?'<button type="button" data-media-flip aria-label="Switch camera">Flip camera</button>':'')+'</div>':'')+'<p class="live-media-note">'+(remote?'Encrypted in transit through the configured LiveKit room. Recording is off.':access?.configuration_error?'Video calls need Render LiveKit credentials. Private preview remains available.':'Camera preview is private until a LiveKit provider is configured.')+'</p>';
     renderProviderTiles(section);
   }
+  function scheduleRender(){if(renderFrame!==null)return;renderFrame=requestAnimationFrame(()=>{renderFrame=null;render()})}
+  async function openLocalMedia(){
+    try{return await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true})}
+    catch(error){
+      if(!['NotFoundError','OverconstrainedError'].includes(error?.name))throw error;
+      const [video,audio]=await Promise.allSettled([
+        navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false}),
+        navigator.mediaDevices.getUserMedia({video:false,audio:true})
+      ]);
+      const available=[...(video.status==='fulfilled'?video.value.getVideoTracks():[]),...(audio.status==='fulfilled'?audio.value.getAudioTracks():[])];
+      if(!available.length)throw error;
+      notify(video.status==='rejected'?'Camera unavailable. Joining with audio only.':'Microphone unavailable. Joining with video only.');
+      return new MediaStream(available);
+    }
+  }
   function bindLiveKitEvents(sdk){
-    const refresh=()=>render();
-    liveRoom.on(sdk.RoomEvent.TrackSubscribed,refresh).on(sdk.RoomEvent.TrackUnsubscribed,refresh).on(sdk.RoomEvent.LocalTrackPublished,refresh).on(sdk.RoomEvent.LocalTrackUnpublished,refresh).on(sdk.RoomEvent.ParticipantConnected,refresh).on(sdk.RoomEvent.ParticipantDisconnected,refresh).on(sdk.RoomEvent.Reconnecting,()=>{notify('Video is reconnecting…');render()}).on(sdk.RoomEvent.Reconnected,refresh).on(sdk.RoomEvent.Disconnected,()=>{liveRoom=null;render()});
+    const refresh=()=>scheduleRender();
+    liveRoom.on(sdk.RoomEvent.TrackSubscribed,refresh).on(sdk.RoomEvent.TrackUnsubscribed,refresh).on(sdk.RoomEvent.LocalTrackPublished,refresh).on(sdk.RoomEvent.LocalTrackUnpublished,refresh).on(sdk.RoomEvent.ParticipantConnected,refresh).on(sdk.RoomEvent.ParticipantDisconnected,refresh).on(sdk.RoomEvent.Reconnecting,()=>{notify('Video is reconnecting…');render()}).on(sdk.RoomEvent.Reconnected,refresh).on(sdk.RoomEvent.Disconnected,()=>{liveRoom=null;scheduleRender()});
   }
   async function startMedia(){
     if(busy||connected())return;busy=true;
@@ -54,12 +69,16 @@
       access=(await api('/api/live-cook-rooms/'+encodeURIComponent(room.id)+'/media/access?device_id='+encodeURIComponent(mediaDeviceId)+'&device_label='+encodeURIComponent(mediaDeviceLabel))).access;
       await saveState({connection_state:'requesting'});
       if(access?.remote_enabled&&access?.provider==='livekit'){
-        const sdk=await loadLiveKit();liveRoom=new sdk.Room({adaptiveStream:true,dynacast:true});bindLiveKitEvents(sdk);await liveRoom.connect(access.serverUrl||access.server_url,access.participantToken||access.token);await liveRoom.localParticipant.setCameraEnabled(true);await liveRoom.localParticipant.setMicrophoneEnabled(true);
+        const sdk=await loadLiveKit();liveRoom=new sdk.Room({adaptiveStream:true,dynacast:true});bindLiveKitEvents(sdk);await liveRoom.connect(access.serverUrl||access.server_url,access.participantToken||access.token);
+        const [cameraResult,microphoneResult]=await Promise.allSettled([liveRoom.localParticipant.setCameraEnabled(true),liveRoom.localParticipant.setMicrophoneEnabled(true)]);
+        if(cameraResult.status==='rejected'&&microphoneResult.status==='rejected')throw cameraResult.reason||microphoneResult.reason||new Error('No camera or microphone is available.');
+        if(cameraResult.status==='rejected')notify('Camera unavailable. Joining with audio only.');
+        if(microphoneResult.status==='rejected')notify('Microphone unavailable. Joining with video only.');
       }else{
         if(!navigator.mediaDevices?.getUserMedia){await saveState({connection_state:'unsupported'});throw new Error('Camera and microphone are not supported on this device.')}
-        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true});
+        stream=await openLocalMedia();
       }
-      await saveState({connection_state:'connected',camera_enabled:true,microphone_enabled:true});await refreshDevices();window.DeviceManager?.haptic?.('success');render();
+      await saveState({connection_state:'connected',camera_enabled:cameraEnabled(),microphone_enabled:microphoneEnabled()});await refreshDevices();window.DeviceManager?.haptic?.('success');render();
     }catch(error){const denied=error?.name==='NotAllowedError';if(liveRoom){liveRoom.disconnect();liveRoom=null}await saveState({connection_state:denied?'denied':'failed',camera_enabled:false,microphone_enabled:false}).catch(()=>{});notify(denied?'Camera permission was declined. Cooking controls still work.':error.message)}
     finally{busy=false}
   }
@@ -69,7 +88,7 @@
     const enabled=kind==='video'?cameraEnabled():microphoneEnabled();await saveState(kind==='video'?{camera_enabled:enabled}:{microphone_enabled:enabled}).catch(()=>{});render();
   }
   async function stopMedia(report=true){stream?.getTracks?.().forEach(track=>track.stop());stream=null;if(liveRoom){liveRoom.disconnect();liveRoom=null}if(report)await saveState({connection_state:'idle',camera_enabled:false,microphone_enabled:false}).catch(()=>{});render()}
-  function handleClick(event){if(event.target.closest?.('[data-media-enable]'))startMedia();else if(event.target.closest?.('[data-media-mic]'))toggle('audio');else if(event.target.closest?.('[data-media-camera]'))toggle('video');else if(event.target.closest?.('[data-media-leave]'))stopMedia();else if(event.target.closest?.('[data-media-flip]'))flipCamera()}
+  function handleClick(event){if(event.target.closest?.('[data-media-enable]'))startMedia();else if(event.target.closest?.('[data-media-mic]'))toggle('audio').catch(error=>notify(error.message));else if(event.target.closest?.('[data-media-camera]'))toggle('video').catch(error=>notify(error.message));else if(event.target.closest?.('[data-media-leave]'))stopMedia();else if(event.target.closest?.('[data-media-flip]'))flipCamera().catch(error=>notify(error.message))}
   function handleChange(event){const select=event.target.closest?.('[data-media-device]');if(select)switchDevice(select.dataset.mediaDevice,select.value).catch(error=>notify(error.message))}
   window.addEventListener('DOMContentLoaded',()=>{document.body.addEventListener('click',handleClick);document.body.addEventListener('change',handleChange);navigator.mediaDevices?.addEventListener?.('devicechange',refreshDevices);render()});window.addEventListener('glucoplate:live-room-updated',render);window.addEventListener('pagehide',()=>stopMedia(false));window.GlucoPlateLiveMedia={startMedia,stopMedia,toggle,switchDevice,flipCamera,refreshDevices,getStream:()=>stream,getRoom:()=>liveRoom};
 })();
