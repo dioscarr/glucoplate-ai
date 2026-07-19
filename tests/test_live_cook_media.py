@@ -173,7 +173,7 @@ def test_livekit_reliability_states_preserve_the_cooking_experience():
     assert "RoomEvent.Reconnecting" in source
     assert "RoomEvent.Reconnected" in source
     assert "RoomEvent.Disconnected" in source
-    assert "connectionState='degraded'" in source
+    assert "?'degraded':'connected'" in source
     assert "connectionState='failed'" in source
     assert "data-media-retry" in source
     assert "Recipe, timer, and chat remain available." in source
