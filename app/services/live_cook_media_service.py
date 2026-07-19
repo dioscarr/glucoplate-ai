@@ -90,6 +90,8 @@ class LiveCookMediaService:
                 {
                     "mode": "provider",
                     "remote_enabled": True,
+                    "serverUrl": server_url,
+                    "participantToken": token,
                     "server_url": server_url,
                     "token": token,
                     "livekit_room": livekit_room,

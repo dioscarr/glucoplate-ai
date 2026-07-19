@@ -11,7 +11,7 @@ Set these environment variables on the GlucoPlate web service:
 - `LIVEKIT_API_KEY=<server API key>`
 - `LIVEKIT_API_SECRET=<server API secret>`
 
-Redeploy after saving the values. Keep the API secret server-side; the application generates a participant token only after verifying the Firebase user belongs to the requested GlucoPlate organization and has joined the Live Room.
+Redeploy after saving the values. Keep the API secret server-side; the authenticated `/media/access` endpoint follows LiveKit's custom token-generation pattern and returns `serverUrl` plus `participantToken` only after verifying the Firebase user belongs to the requested GlucoPlate organization and has joined the Live Room.
 
 Without all three LiveKit credentials, the UI automatically remains in private device-preview mode.
 
@@ -19,6 +19,8 @@ Without all three LiveKit credentials, the UI automatically remains in private d
 
 - Joining video is optional.
 - Camera and microphone can be toggled independently.
+- Cooks can select a camera or microphone without leaving the call.
+- Mobile cooks can flip between front and rear cameras with one tap.
 - Remote participant tracks appear in a responsive tile grid.
 - LiveKit reconnection events preserve the rest of the cooking experience.
 - Recording is disabled.
