@@ -108,7 +108,7 @@ def delete_profile(profile_id: str, user: Annotated[AuthContext, Depends(scoped_
 def save_recipe(
     payload: RecipePayload,
     user: Annotated[AuthContext, Depends(scoped_user)],
-    store: Annotated[FirebaseUserDataService, Depends(service)],
+    store: Annotated[FirebaseUserDataService, Depends(FirebaseUserDataService)],
 ) -> dict:
     recipe = store.save_recipe(user.enterprise_id, user.uid, payload.recipe)
     return {"ok": True, "recipe": recipe}
@@ -117,7 +117,7 @@ def save_recipe(
 @router.get("/recipes")
 def list_recipes(
     user: Annotated[AuthContext, Depends(scoped_user)],
-    store: Annotated[FirebaseUserDataService, Depends(service)],
+    store: Annotated[FirebaseUserDataService, Depends(FirebaseUserDataService)],
 ) -> list[dict[str, Any]]:
     return store.list_recipes(user.enterprise_id, user.uid)
 
@@ -126,7 +126,7 @@ def list_recipes(
 def delete_recipe(
     recipe_id: str,
     user: Annotated[AuthContext, Depends(scoped_user)],
-    store: Annotated[FirebaseUserDataService, Depends(service)],
+    store: Annotated[FirebaseUserDataService, Depends(FirebaseUserDataService)],
 ) -> dict:
     deleted = store.delete_recipe(user.enterprise_id, user.uid, recipe_id)
     if not deleted:
