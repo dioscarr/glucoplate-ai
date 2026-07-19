@@ -29,7 +29,8 @@ class FirebaseAuthService:
 
     def server_configured(self) -> bool:
         return bool(
-            os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+            os.getenv("FIREBASE_AUTH_EMULATOR_HOST")
+            or os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
             or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         )
 
