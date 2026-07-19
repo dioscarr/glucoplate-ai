@@ -122,3 +122,30 @@ def test_same_account_devices_receive_distinct_media_identities():
 def test_pwa_refreshes_multi_device_media_client():
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
     assert "glucoplate-shell-v22" in worker
+
+
+def test_partial_device_failure_keeps_live_call_connected():
+    source = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    assert "Promise.allSettled([liveRoom.localParticipant.setCameraEnabled(true)" in source
+    assert "cameraResult.status==='rejected'&&microphoneResult.status==='rejected'" in source
+    assert "Camera unavailable. Joining with audio only." in source
+    assert "Microphone unavailable. Joining with video only." in source
+    assert "openLocalMedia" in source
+    assert "new MediaStream(available)" in source
+    assert "camera_enabled:cameraEnabled()" in source
+    assert "microphone_enabled:microphoneEnabled()" in source
+
+
+def test_livekit_track_events_are_batched_and_control_errors_are_handled():
+    source = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    assert "function scheduleRender()" in source
+    assert "requestAnimationFrame" in source
+    assert "const refresh=()=>scheduleRender()" in source
+    assert "toggle('audio').catch" in source
+    assert "toggle('video').catch" in source
+    assert "flipCamera().catch" in source
+
+
+def test_pwa_refreshes_partial_device_recovery():
+    worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
+    assert "glucoplate-shell-v25" in worker
