@@ -43,6 +43,16 @@ class ThemeUpdate(BaseModel):
     elements: dict[str, Any] = Field(default_factory=dict)
 
 
+class EnterpriseCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=160)
+    slug: str | None = Field(default=None, min_length=2, max_length=100, pattern=r"^[a-z0-9][a-z0-9-]*$")
+    plan: str = Field(default="starter", max_length=40)
+
+
+class AccessCodeCreate(BaseModel):
+    label: str | None = Field(default=None, max_length=160)
+
+
 class ThemeCreate(BaseModel):
     name: str
     source_theme_id: str | None = None
@@ -226,3 +236,27 @@ def get_public_theme(enterprise_id: str, theme_id: str | None = None) -> dict:
 @router.get("/platform/enterprises")
 def list_enterprises(user: Annotated[AuthContext, Depends(require_platform_admin)]) -> dict:
     return {"enterprises": directory().list_enterprises()}
+
+@router.post("/platform/enterprises")
+def create_platform_enterprise(request: EnterpriseCreate, user: Annotated[AuthContext, Depends(require_platform_admin)]) -> dict:
+    name = request.name.strip()
+    slug = (request.slug or name.lower().replace(" ", "-")).strip("-")
+    try:
+        enterprise = directory().create_enterprise(name=name, slug=slug, plan=request.plan.strip() or "starter")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    directory().record_audit(enterprise_id=enterprise["id"], actor_uid=user.uid, action="enterprise.created", target_type="enterprise", target_id=enterprise["id"], details_json=json.dumps({"name": enterprise["name"], "slug": enterprise["slug"], "plan": enterprise["plan"]}, sort_keys=True))
+    return {"ok": True, "enterprise": enterprise}
+
+@router.post("/platform/enterprises/{enterprise_id}/access-codes")
+def create_platform_access_code(enterprise_id: str, request: AccessCodeCreate, user: Annotated[AuthContext, Depends(require_platform_admin)]) -> dict:
+    try:
+        code = directory().create_access_code(enterprise_id, label=request.label.strip() if request.label else None)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    directory().record_audit(enterprise_id=enterprise_id, actor_uid=user.uid, action="access_code.created", target_type="enterprise_access_code", target_id=code["id"], details_json=json.dumps({"label": code.get("label")}, sort_keys=True))
+    return {"ok": True, "access_code": code}
+
+@router.get("/platform/enterprises/{enterprise_id}/access-codes")
+def list_platform_access_codes(enterprise_id: str, user: Annotated[AuthContext, Depends(require_platform_admin)]) -> dict:
+    return {"enterprise_id": enterprise_id, "access_codes": directory().list_access_codes(enterprise_id)}
