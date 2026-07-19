@@ -1,13 +1,17 @@
 (()=>{
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   const escapeHtml=value=>String(value??'').replace(/[&<>\'\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+  const DEVICE_KEY='glucoplate_live_media_device_id';
+  function deviceInstanceId(){let value=localStorage.getItem(DEVICE_KEY);if(!value){value=crypto.randomUUID?.()||('device-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));localStorage.setItem(DEVICE_KEY,value)}return value.replace(/[^A-Za-z0-9_-]/g,'').slice(0,80)}
+  const mediaDeviceId=deviceInstanceId();
+  const mediaDeviceLabel=String(navigator.userAgentData?.platform||navigator.platform||'Device').slice(0,40);
   const SDK_URL='https://cdn.jsdelivr.net/npm/livekit-client@2.17.2/dist/livekit-client.umd.min.js';
   let stream=null,access=null,busy=false,liveRoom=null,sdkPromise=null,devices={audioinput:[],videoinput:[]};
   async function authToken(forceRefresh=false){const provider=window.GlucoPlateFirebaseAuth?.getIdToken;if(typeof provider==='function')return provider(forceRefresh);const cached=localStorage.getItem('glucoplate_firebase_id_token')||'';if(!cached)throw new Error('Sign in before using live video.');return cached}
   async function api(path,options={}){const request=async forceRefresh=>fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:'Bearer '+await authToken(forceRefresh),...(options.headers||{})}});let response=await request(false);if(response.status===401&&window.GlucoPlateFirebaseAuth?.getIdToken)response=await request(true);const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.detail||'Live media is unavailable.');return body}
   function ensureStyles(){if(document.querySelector('link[data-live-media-styles]'))return;const link=document.createElement('link');link.rel='stylesheet';link.href='/static/live-cook-media.css';link.dataset.liveMediaStyles='1';document.head.appendChild(link)}
   function loadLiveKit(){if(window.LivekitClient)return Promise.resolve(window.LivekitClient);if(sdkPromise)return sdkPromise;sdkPromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=SDK_URL;script.async=true;script.crossOrigin='anonymous';script.onload=()=>window.LivekitClient?resolve(window.LivekitClient):reject(new Error('LiveKit loaded without a browser client.'));script.onerror=()=>reject(new Error('The video-call client could not be loaded.'));document.head.appendChild(script)});return sdkPromise}
-  async function saveState(state){const room=window.GlucoPlateLiveCookRooms?.getRoom?.();if(!room)return;await api('/api/live-cook-rooms/'+encodeURIComponent(room.id)+'/media/state',{method:'PUT',body:JSON.stringify(state)})}
+  async function saveState(state){const room=window.GlucoPlateLiveCookRooms?.getRoom?.();if(!room)return;await api('/api/live-cook-rooms/'+encodeURIComponent(room.id)+'/media/state',{method:'PUT',body:JSON.stringify({...state,device_id:mediaDeviceId,device_label:mediaDeviceLabel})})}
   const tracks=kind=>stream?.getTracks?.().filter(track=>track.kind===kind)||[];
   const connected=()=>Boolean(stream||liveRoom);
   const cameraEnabled=()=>liveRoom?Boolean(liveRoom.localParticipant?.isCameraEnabled):tracks('video').some(track=>track.enabled);
@@ -47,7 +51,7 @@
     if(busy||connected())return;busy=true;
     try{
       const room=window.GlucoPlateLiveCookRooms?.getRoom?.();if(!room)throw new Error('Join a live room first.');
-      access=(await api('/api/live-cook-rooms/'+encodeURIComponent(room.id)+'/media/access')).access;
+      access=(await api('/api/live-cook-rooms/'+encodeURIComponent(room.id)+'/media/access?device_id='+encodeURIComponent(mediaDeviceId)+'&device_label='+encodeURIComponent(mediaDeviceLabel))).access;
       await saveState({connection_state:'requesting'});
       if(access?.remote_enabled&&access?.provider==='livekit'){
         const sdk=await loadLiveKit();liveRoom=new sdk.Room({adaptiveStream:true,dynacast:true});bindLiveKitEvents(sdk);await liveRoom.connect(access.serverUrl||access.server_url,access.participantToken||access.token);await liveRoom.localParticipant.setCameraEnabled(true);await liveRoom.localParticipant.setMicrophoneEnabled(true);
