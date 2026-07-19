@@ -108,7 +108,7 @@ class FirebaseLiveCookRoomService:
             "recipe": recipe,
             "state": {
                 "current_step": 0,
-                "selected_servings": max(1, min(12, int(recipe.get("selected_servings") or recipe.get("base_servings") or recipe.get("servings") or 4))),
+                "selected_servings": self._servings(recipe),
                 "ingredient_checks": {str(index): False for index, _ in enumerate(ingredients)},
                 "timer": None,
                 "revision": 1,
