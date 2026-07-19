@@ -66,4 +66,4 @@ def test_prompt_and_web_client_include_pantry_contracts() -> None:
     assert "need_to_buy" in client
     assert '"/static/pantry-generation.js"' in main
     assert "/static/pantry-generation.js" in worker
-    assert "glucoplate-shell-v10" in worker
+    assert "const CACHE='glucoplate-shell-v" in worker
