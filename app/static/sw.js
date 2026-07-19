@@ -1,4 +1,4 @@
-const CACHE='glucoplate-shell-v18';
+const CACHE='glucoplate-shell-v19';
 const SHELL=['/static/index.html','/static/login.html','/static/register.html','/static/manifest.webmanifest','/static/device-manager.js','/static/native-cook.js','/static/native-timers.js','/static/native-ingredients.js','/static/premium-recipe-detail.js','/static/ingredient-zoom.css','/static/offline-actions.js','/static/firebase-auth.js','/static/firebase-user-data.js','/static/persistent-cook-session.js','/static/profile-personalization.js','/static/pantry-ui.js','/static/shopping-list-ui.js','/static/receipt-import-ui.js','/static/pantry-generation.js','/static/recommendation-ui.js','/static/native-pwa.css','/static/pwa.js','/static/icons/icon-192.svg','/static/icons/icon-512.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
