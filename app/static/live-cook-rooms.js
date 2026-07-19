@@ -119,8 +119,8 @@
         :'<button type="button" class="btn" data-live-browse>Browse live rooms</button><button type="button" class="live-room-code-link" data-live-join>Have an invite code?</button>';
     wrap.querySelector('[data-live-reopen-inline]')?.addEventListener('click',()=>setDismissed(false));
     wrap.querySelector('[data-live-create]')?.addEventListener('click',createRoom);
-    wrap.querySelector('[data-live-browse]').onclick=browseLiveRooms;
-    wrap.querySelector('[data-live-join]').onclick=promptJoin;
+    wrap.querySelector('[data-live-browse]')?.addEventListener('click',browseLiveRooms);
+    wrap.querySelector('[data-live-join]')?.addEventListener('click',promptJoin);
     const target=cook.querySelector('[data-cook-live-slot]');
     target?target.appendChild(wrap):(cook.querySelector('.cook-controls')||cook).insertAdjacentElement('afterend',wrap);
   }
