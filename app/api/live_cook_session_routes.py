@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from pydantic import BaseModel, Field
 from loguru import logger
 
 from app.api.enterprise_admin_routes import AuthContext
@@ -12,6 +13,12 @@ from app.services.live_cook_session_lifecycle_service import LiveCookSessionLife
 from app.services.push_notification_service import PushNotificationService
 
 router = APIRouter(prefix="/api/live-cook-rooms", tags=["live-cook-room-lifecycle"])
+
+
+class PostCookFeedbackRequest(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    would_cook_again: bool = False
+    note: str | None = Field(default=None, max_length=500)
 
 
 def lifecycle() -> LiveCookSessionLifecycleService:
@@ -30,7 +37,7 @@ def room_service() -> FirebaseLiveCookRoomService:
 
 def transition_room(
     room_id: str,
-    target: Literal["active", "completed"],
+    target: Literal["active", "completed", "abandoned"],
     user: AuthContext,
 ) -> dict[str, Any]:
     try:
@@ -101,3 +108,49 @@ def complete_cooking(
     user: Annotated[AuthContext, Depends(scoped_user)],
 ) -> dict[str, Any]:
     return transition_room(room_id, "completed", user)
+
+
+@router.post("/{room_id}/abandon")
+def abandon_cooking(
+    room_id: str,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    return transition_room(room_id, "abandoned", user)
+
+
+@router.get("/{room_id}/history")
+def cooking_history(
+    room_id: str,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    try:
+        history = lifecycle().history(user.enterprise_id, room_id, user.uid)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    if history is None:
+        raise HTTPException(status_code=404, detail="Cook room not found")
+    return {"ok": True, "history": history}
+
+
+@router.post("/{room_id}/feedback")
+def post_cook_feedback(
+    room_id: str,
+    payload: PostCookFeedbackRequest,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    try:
+        feedback = lifecycle().record_feedback(
+            user.enterprise_id,
+            room_id,
+            user.uid,
+            rating=payload.rating,
+            would_cook_again=payload.would_cook_again,
+            note=payload.note,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if feedback is None:
+        raise HTTPException(status_code=404, detail="Cook room not found")
+    return {"ok": True, "feedback": feedback}
