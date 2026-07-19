@@ -23,6 +23,12 @@ def test_live_kitchen_supports_full_page_and_compact_modes():
     assert ".live-room-panel.is-full-page" in css
     assert "height:100dvh" in css
     assert "prefers-reduced-motion:reduce" in css
+    assert "#liveRoomBody::after" in css
+    assert "float:left;clear:left" in css
+    assert "float:right;clear:right" in css
+    assert "scrollbar-width:none" in css
+    assert "[data-live-media] video" in css
+    assert "{display:initial}" not in css
 
 
 def test_live_kitchen_insights_require_review_before_shopping_write():
