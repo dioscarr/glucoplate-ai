@@ -6,6 +6,11 @@ from app.services.shopping_comparison_service import ShoppingComparisonService
 ROOT = Path(__file__).resolve().parents[1]
 
 
+class FakeObservationService:
+    def aggregate(self, enterprise_id, **kwargs):
+        return {}
+
+
 class FakePriceService:
     def search(self, request):
         price = 3.5 if request.ingredient == "rice" else None
@@ -21,7 +26,7 @@ class FakePriceService:
 
 
 def test_comparison_reports_known_and_unavailable_prices() -> None:
-    result = ShoppingComparisonService(FakePriceService()).compare([
+    result = ShoppingComparisonService(FakePriceService(), FakeObservationService()).compare([
         {"id": "1", "name": "rice", "checked": False},
         {"id": "2", "name": "cilantro", "checked": False},
         {"id": "3", "name": "done", "checked": True},
