@@ -53,7 +53,15 @@
     const activity=(current.activity||[]).slice(0,10).map(item=>[item.id,item.type,item.message]);
     return JSON.stringify([current.id,current.title,current.invite_code,participants,chat,activity]);
   }
-  function sharedStateKey(current){return JSON.stringify([current?.state?.revision||0,current?.state?.session_status||'waiting'])}
+  function mediaStateSummary(current){
+    const root=current?.media?.participants||{},records=[];
+    Object.entries(root).forEach(([uid,value])=>{
+      if(value&&('connection_state'in value||'device_id'in value))records.push([uid,value.device_id||'legacy',value.connection_state,value.camera_enabled,value.microphone_enabled]);
+      else Object.entries(value||{}).forEach(([deviceId,state])=>records.push([uid,deviceId,state?.connection_state,state?.camera_enabled,state?.microphone_enabled]));
+    });
+    return records.sort((left,right)=>(left[0]+left[1]).localeCompare(right[0]+right[1]));
+  }
+  function sharedStateKey(current){return JSON.stringify([current?.state?.revision||0,current?.state?.session_status||'waiting',mediaStateSummary(current)])}
   function emitRoomUpdated(){if(!room)return;window.dispatchEvent(new CustomEvent('glucoplate:live-room-updated',{detail:{roomId:room.id,revision:Number(room.state?.revision||0)}}))}
   function applyRoomUpdate(next,{forceRender=false}={}){
     const previousView=coreViewKey(room),previousState=sharedStateKey(room);
