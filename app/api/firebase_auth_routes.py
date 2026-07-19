@@ -37,6 +37,7 @@ def firebase_auth_config() -> dict:
         "client_configured": service.client_configured(),
         "server_configured": service.server_configured(),
         "firebase_config": service.client_config,
+        "auth_emulator_url": service.client_config.get("authEmulatorUrl", ""),
     }
 
 

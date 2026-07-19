@@ -129,3 +129,12 @@ def test_deployment_secrets_document_covers_runtime_and_ci_secrets() -> None:
     assert "Deployment Secrets Strategy" in text
     assert "CI_NOTIFICATION_WEBHOOK_URL" in text
     assert "GEMINI_API_KEY" in text
+
+def test_firebase_auth_emulator_is_explicitly_opt_in() -> None:
+    service = __import__("app.services.firebase_auth_service", fromlist=["FirebaseAuthService"]).FirebaseAuthService()
+    config = service.client_config
+
+    assert "authEmulatorUrl" in config
+    auth_client = (ROOT / "app" / "static" / "firebase-auth.js").read_text(encoding="utf-8")
+    assert "connectAuthEmulator" in auth_client
+    assert "settings.auth_emulator_url" in auth_client
