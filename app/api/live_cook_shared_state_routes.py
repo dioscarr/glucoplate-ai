@@ -19,6 +19,11 @@ class IngredientStatePayload(BaseModel):
     expected_revision: int | None = Field(default=None, ge=0)
 
 
+class ServingsStatePayload(BaseModel):
+    servings: int = Field(ge=1, le=12)
+    expected_revision: int | None = Field(default=None, ge=0)
+
+
 class TimerStatePayload(BaseModel):
     action: Literal["start", "pause", "resume", "reset"]
     duration_seconds: int | None = Field(default=None, ge=1, le=86400)
@@ -69,6 +74,25 @@ def set_shared_ingredient(
             user.uid,
             payload.ingredient_index,
             payload.checked,
+            payload.expected_revision,
+        )
+    except Exception as exc:
+        raise _translate_error(exc) from exc
+    return _room_response(raw, user.enterprise_id, room_id)
+
+
+@router.put("/{room_id}/servings")
+def update_shared_servings(
+    room_id: str,
+    payload: ServingsStatePayload,
+    user: Annotated[AuthContext, Depends(scoped_user)],
+) -> dict[str, Any]:
+    try:
+        raw = shared_state().set_servings(
+            user.enterprise_id,
+            room_id,
+            user.uid,
+            payload.servings,
             payload.expected_revision,
         )
     except Exception as exc:
