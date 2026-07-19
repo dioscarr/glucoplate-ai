@@ -50,7 +50,7 @@
       access=(await api('/api/live-cook-rooms/'+encodeURIComponent(room.id)+'/media/access')).access;
       await saveState({connection_state:'requesting'});
       if(access?.remote_enabled&&access?.provider==='livekit'){
-        const sdk=await loadLiveKit();liveRoom=new sdk.Room({adaptiveStream:true,dynacast:true});bindLiveKitEvents(sdk);await liveRoom.connect(access.server_url,access.token);await liveRoom.localParticipant.setCameraEnabled(true);await liveRoom.localParticipant.setMicrophoneEnabled(true);
+        const sdk=await loadLiveKit();liveRoom=new sdk.Room({adaptiveStream:true,dynacast:true});bindLiveKitEvents(sdk);await liveRoom.connect(access.serverUrl||access.server_url,access.participantToken||access.token);await liveRoom.localParticipant.setCameraEnabled(true);await liveRoom.localParticipant.setMicrophoneEnabled(true);
       }else{
         if(!navigator.mediaDevices?.getUserMedia){await saveState({connection_state:'unsupported'});throw new Error('Camera and microphone are not supported on this device.')}
         stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true});
