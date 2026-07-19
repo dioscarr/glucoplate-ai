@@ -1,5 +1,5 @@
 (()=>{
-  let sdk=null,authClient=null,currentMode=location.pathname.endsWith('/register.html')?'register':'login';
+  let sdk=null,authClient=null,authEmulatorConnected=false,currentMode=location.pathname.endsWith('/register.html')?'register':'login';
   const notify=message=>typeof window.toast==='function'?window.toast(message):console.info(message);
   const loadSdk=async()=>{
     if(sdk)return sdk;
@@ -15,6 +15,10 @@
     const api=await loadSdk();
     const app=api.getApps().length?api.getApp():api.initializeApp(settings.firebase_config);
     authClient=api.getAuth(app);
+    if(settings.auth_emulator_url&&!authEmulatorConnected){
+      api.connectAuthEmulator(authClient,settings.auth_emulator_url,{disableWarnings:true});
+      authEmulatorConnected=true;
+    }
     await api.setPersistence(authClient,api.browserLocalPersistence);
     return authClient;
   }
