@@ -18,6 +18,8 @@ def test_live_kitchen_supports_full_page_and_compact_modes():
     assert "setMode('workspace')" in source
     assert "setMode('compact')" in source
     assert "event.key==='Escape'" in source
+    assert "history.pushState" in source
+    assert "title.focus()" in source
     assert ".live-room-panel.is-full-page" in css
     assert "height:100dvh" in css
     assert "prefers-reduced-motion:reduce" in css
