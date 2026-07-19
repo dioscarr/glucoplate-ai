@@ -46,7 +46,7 @@ def test_service_worker_caches_persistent_session_client() -> None:
     worker = client.get("/static/sw.js")
     assert worker.status_code == 200
     assert "/static/persistent-cook-session.js" in worker.text
-    assert "glucoplate-shell-v21" in worker.text
+    assert "glucoplate-shell-v22" in worker.text
 
 
 def test_serving_selection_is_persisted_in_active_session_recipe() -> None:
