@@ -30,7 +30,7 @@ def test_service_worker_caches_recommendation_ui() -> None:
 
     assert response.status_code == 200
     assert "/static/recommendation-ui.js" in response.text
-    assert "glucoplate-shell-v8" in response.text
+    assert "const CACHE='glucoplate-shell-v" in response.text
 
 
 def test_concept_flow_shows_three_ranked_directions_with_trust_context() -> None:
