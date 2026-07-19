@@ -59,6 +59,8 @@ def test_livekit_access_tokens_are_room_scoped_and_server_issued():
     assert "can_publish=True" in source
     assert "can_subscribe=True" in source
     assert '"token": token' in source
+    assert '"serverUrl": server_url' in source
+    assert '"participantToken": token' in source
     assert "api_secret" not in source[source.index("access.update("):]
 
 
@@ -96,4 +98,6 @@ def test_video_device_controls_support_livekit_preview_and_mobile_flip():
     assert "data-media-flip" in source
     assert "flipCamera" in source
     assert "live-media-devices" in styles
+    assert "access.serverUrl||access.server_url" in source
+    assert "access.participantToken||access.token" in source
     assert "min-height:46px" in styles
