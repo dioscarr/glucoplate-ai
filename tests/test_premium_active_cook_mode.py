@@ -10,7 +10,7 @@ def test_active_cook_mode_has_premium_stage_and_tool_slots():
     assert "cook-active-shell" in source
     assert "cook-active-stage" in source
     assert "cook-step-progress" in source
-    assert "data.cookTimerSlot" in source
+    assert "timerSlot.dataset.cookTimerSlot" in source
     assert "data-cook-live-slot" in source
     assert "View recipe" in source
 
