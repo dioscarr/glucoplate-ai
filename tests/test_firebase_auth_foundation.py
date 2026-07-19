@@ -41,11 +41,11 @@ def test_html_pages_receive_firebase_auth_client() -> None:
         assert '<script src="/static/firebase-auth.js" defer></script>' in response.text
 
 
-def test_firebase_auth_client_supports_google_email_and_signout() -> None:
+def test_firebase_auth_client_supports_google_and_signout() -> None:
     script = (ROOT / "app" / "static" / "firebase-auth.js").read_text(encoding="utf-8")
     assert "GoogleAuthProvider" in script
-    assert "createUserWithEmailAndPassword" in script
-    assert "signInWithEmailAndPassword" in script
+    assert "signInWithPopup" in script
+    assert "onAuthStateChanged" in script
     assert "signOut" in script
     assert "/api/firebase-auth/enterprise/enroll" in script
     assert "/api/firebase-auth/session" in script
