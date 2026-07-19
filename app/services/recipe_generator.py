@@ -24,7 +24,7 @@ class RecipeApplicationService:
             request.pantry_items,
             request.use_soon_ingredients,
         )
-        return recipe.model_copy(update=coverage)
+        return RecipeResponse.model_validate({**recipe.model_dump(), **coverage})
 
 
 async def generate_recipe(
