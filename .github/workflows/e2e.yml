@@ -14,7 +14,10 @@ jobs:
   playwright:
     name: Playwright runtime and UI smoke tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
+      FIREBASE_PROJECT_ID: demo-glucoplate
 
     steps:
       - name: Checkout
@@ -31,6 +34,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e '.[dev]'
 
+      - name: Set up Java for Firebase Emulator
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Start Firebase Auth Emulator
+        run: |
+          npx --yes firebase-tools@latest emulators:start --only auth --project demo-glucoplate > firebase-emulator.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:9099/ > /dev/null; then
+              echo 'Firebase Auth Emulator is ready.'
+              exit 0
+            fi
+            sleep 2
+          done
+          cat firebase-emulator.log
+          exit 1
+
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
@@ -44,6 +66,19 @@ jobs:
 
       - name: Run browser tests
         run: npm run e2e
+
+      - name: Run authenticated emulator API test
+        env:
+          AUTH_TEST_BASE_URL: http://127.0.0.1:8001
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8001 > api-emulator.log 2>&1 &
+          API_PID=$!
+          trap 'kill $API_PID' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8001/health > /dev/null; then break; fi
+            sleep 2
+          done
+          pytest -q tests/test_firebase_auth_emulator.py
 
       - name: Upload Playwright report
         if: failure()

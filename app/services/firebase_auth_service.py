@@ -29,7 +29,8 @@ class FirebaseAuthService:
 
     def server_configured(self) -> bool:
         return bool(
-            os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+            os.getenv("FIREBASE_AUTH_EMULATOR_HOST")
+            or os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
             or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         )
 
@@ -54,6 +55,9 @@ class FirebaseAuthService:
             except ValueError:
                 service_account_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
                 options: dict[str, str] = {}
+                project_id = os.getenv("FIREBASE_PROJECT_ID")
+                if project_id:
+                    options["projectId"] = project_id
                 database_url = os.getenv("FIREBASE_DATABASE_URL")
                 if database_url:
                     options["databaseURL"] = database_url
