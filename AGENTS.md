@@ -57,3 +57,10 @@ Premium means calm, intentional, distinctive, and highly usable.
 
 ## Required handoffs
 Every specialist reports: decisions, artifacts or files changed, validation performed, known risks, unresolved questions, and the exact next owner.
+
+## Pull request state guard
+Before recommending or attempting any pull-request merge:
+- Query GitHub for the PR's current state, `merged` flag, and `merged_at` value; never infer merge state from the browser page or prior conversation.
+- If the PR is already merged, do not attempt to merge it again. Report the merge commit and identify whether remaining work belongs in a new branch and PR.
+- If a newer open PR exists for follow-up work, clearly distinguish it by number, title, branch, and draft status.
+- Re-check the head SHA and required status checks immediately before merging an open PR.
