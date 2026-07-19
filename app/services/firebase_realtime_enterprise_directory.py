@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import secrets
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -28,6 +30,29 @@ class FirebaseRealtimeEnterpriseDirectory:
     def create_schema(self) -> None:
         # Realtime Database is schemaless. Keeping this method preserves the directory contract.
         return None
+
+    def create_enterprise(self, *, name: str, slug: str, plan: str = "starter") -> dict[str, Any]:
+        enterprise_id = slug
+        ref = self.root.child("enterprises").child(enterprise_id)
+        if ref.get() or any(item.get("name", "").lower() == name.lower() for item in (self.root.child("enterprises").get() or {}).values()):
+            raise ValueError("An enterprise with this name or slug already exists")
+        now = _utcnow()
+        item = {"id": enterprise_id, "name": name, "slug": slug, "status": "active", "plan": plan, "created_at": now, "updated_at": now}
+        ref.set(item)
+        return item
+
+    def create_access_code(self, enterprise_id: str, *, label: str | None = None) -> dict[str, Any]:
+        if not self.root.child("enterprises").child(enterprise_id).get():
+            raise LookupError("Enterprise not found")
+        code = f"{secrets.randbelow(100000000):08d}"
+        code_id = uuid.uuid4().hex
+        item = {"id": code_id, "enterprise_id": enterprise_id, "code_hash": hashlib.sha256(code.encode()).hexdigest(), "label": label, "status": "active", "created_at": _utcnow()}
+        self.root.child("access_codes").child(code_id).set(item)
+        return {**{key: value for key, value in item.items() if key != "code_hash"}, "code": code}
+
+    def list_access_codes(self, enterprise_id: str) -> list[dict[str, Any]]:
+        items = self.root.child("access_codes").get() or {}
+        return sorted([{key: value for key, value in item.items() if key != "code_hash"} for item in items.values() if item.get("enterprise_id") == enterprise_id], key=lambda item: item.get("created_at", ""), reverse=True)
 
     def seed_enterprise(self, *, enterprise_id: str, name: str, slug: str, plan: str = "starter") -> None:
         ref = self.root.child("enterprises").child(enterprise_id)

@@ -103,7 +103,7 @@
     try{
       const result=await api('/api/enterprise/platform/enterprises');
       const enterprises=result.enterprises||[];
-      byId('enterpriseCards').innerHTML=enterprises.length?enterprises.map(item=>`<article class="enterprise-card"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.slug||item.id)}</span><span>Plan: ${escapeHtml(titleCase(item.plan||'standard'))}</span><span>Status: ${escapeHtml(titleCase(item.status||'active'))}</span></article>`).join(''):'<div class="empty">No enterprises found.</div>';
+      byId('enterpriseCards').innerHTML=enterprises.length?enterprises.map(item=>`<article class="enterprise-card"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.slug||item.id)}</span><span>Plan: ${escapeHtml(titleCase(item.plan||'standard'))}</span><span>Status: ${escapeHtml(titleCase(item.status||'active'))}</span><button class="button secondary" data-generate-code="${escapeHtml(item.id)}">Generate access code</button></article>`).join(''):'<div class="empty">No enterprises found.</div>';
     }catch(error){alert(error.message);}
   }
 
@@ -112,7 +112,7 @@
     document.querySelectorAll('[data-open-view]').forEach(item=>item.addEventListener('click',()=>switchView(item.dataset.openView)));
     byId('refreshUsers').addEventListener('click',loadUsers);
     byId('refreshOverview').addEventListener('click',loadUsers);
-    byId('refreshEnterprises').addEventListener('click',loadEnterprises);
+    byId('refreshEnterprises').addEventListener('click',loadEnterprises);\n    byId('enterpriseCreateForm').addEventListener('submit',async event=>{event.preventDefault();try{const name=byId('enterpriseName').value.trim();const slug=byId('enterpriseSlug').value.trim()||undefined;await api('/api/enterprise/platform/enterprises',{method:'POST',body:JSON.stringify({name,slug})});byId('enterpriseCreateForm').reset();alert('Company registered.','success');await loadEnterprises();}catch(error){alert(error.message);}});\n    byId('enterpriseCards').addEventListener('click',async event=>{const button=event.target.closest('[data-generate-code]');if(!button)return;try{const result=await api(`/api/enterprise/platform/enterprises/${encodeURIComponent(button.dataset.generateCode)}/access-codes`,{method:'POST',body:JSON.stringify({})});const code=result.access_code.code;const node=byId('newAccessCode');node.innerHTML=`<strong>New access code</strong><code>${escapeHtml(code)}</code><span>Copy it now. For security, it will not be shown again.</span>`;node.classList.remove('hidden');await navigator.clipboard?.writeText(code);alert('Access code generated and copied.','success');}catch(error){alert(error.message);}});
     byId('userSearch').addEventListener('input',renderUsers);
     byId('statusFilter').addEventListener('change',renderUsers);
     byId('userRows').addEventListener('click',event=>{

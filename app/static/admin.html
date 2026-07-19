@@ -64,7 +64,7 @@
       <section id="enterprisesView" class="view platform-only">
         <article class="panel">
           <div class="panel-heading"><div><span class="section-label">Platform administration</span><h2>Enterprise portfolio</h2><p>Visible only to platform administrators.</p></div><button id="refreshEnterprises" class="button secondary">↻ Refresh</button></div>
-          <div id="enterpriseCards" class="enterprise-grid"></div>
+          <div class="enterprise-tools"><form id="enterpriseCreateForm" class="inline-form"><input id="enterpriseName" required minlength="2" placeholder="Company name" aria-label="Company name"><input id="enterpriseSlug" placeholder="slug" aria-label="Company slug"><button class="button" type="submit">Register company</button></form><p class="form-hint">Each company gets its own membership space. Generate an access code after registration.</p></div><div id="enterpriseCards" class="enterprise-grid"></div><div id="newAccessCode" class="access-code-result hidden" role="status"></div>
         </article>
       </section>
     </main>

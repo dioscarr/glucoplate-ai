@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import os
+import secrets
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -65,6 +67,17 @@ class EnterpriseMembership(Base):
     user: Mapped[EnterpriseUser] = relationship(back_populates="memberships")
 
 
+class AccessCode(Base):
+    __tablename__ = "enterprise_access_codes"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: uuid.uuid4().hex)
+    enterprise_id: Mapped[str] = mapped_column(String(64), index=True)
+    code_hash: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    label: Mapped[str | None] = mapped_column(String(160))
+    status: Mapped[str] = mapped_column(String(24), default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class AuditEvent(Base):
     __tablename__ = "enterprise_audit_events"
 
@@ -91,6 +104,30 @@ class EnterpriseDirectory:
 
     def create_schema(self) -> None:
         Base.metadata.create_all(self.engine)
+
+    def create_enterprise(self, *, name: str, slug: str, plan: str = "starter") -> dict[str, Any]:
+        enterprise_id = slug
+        with self.SessionLocal() as session:
+            if session.scalar(select(Enterprise).where((Enterprise.id == enterprise_id) | (Enterprise.slug == slug))):
+                raise ValueError("An enterprise with this name or slug already exists")
+            item = Enterprise(id=enterprise_id, name=name, slug=slug, plan=plan)
+            session.add(item)
+            session.commit()
+            return {"id": item.id, "name": item.name, "slug": item.slug, "status": item.status, "plan": item.plan, "created_at": item.created_at}
+
+    def create_access_code(self, enterprise_id: str, *, label: str | None = None) -> dict[str, Any]:
+        code = f"{secrets.randbelow(100000000):08d}"
+        with self.SessionLocal() as session:
+            if not session.get(Enterprise, enterprise_id):
+                raise LookupError("Enterprise not found")
+            item = AccessCode(enterprise_id=enterprise_id, code_hash=hashlib.sha256(code.encode()).hexdigest(), label=label)
+            session.add(item)
+            session.commit()
+            return {"id": item.id, "enterprise_id": enterprise_id, "label": item.label, "status": item.status, "created_at": item.created_at, "code": code}
+
+    def list_access_codes(self, enterprise_id: str) -> list[dict[str, Any]]:
+        with self.SessionLocal() as session:
+            return [{"id": item.id, "enterprise_id": item.enterprise_id, "label": item.label, "status": item.status, "created_at": item.created_at, "revoked_at": item.revoked_at} for item in session.scalars(select(AccessCode).where(AccessCode.enterprise_id == enterprise_id).order_by(AccessCode.created_at.desc())).all()]
 
     def seed_enterprise(self, *, enterprise_id: str, name: str, slug: str, plan: str = "starter") -> None:
         with self.SessionLocal() as session:
