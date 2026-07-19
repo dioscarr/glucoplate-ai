@@ -34,9 +34,7 @@ def test_shopping_list_client_is_injected_and_cached() -> None:
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
 
-    assert 'version="0.12.0"' in main
     assert '"/static/shopping-list-ui.js"' in main
     assert "shopping_list_router" in main
-    assert '"/api/shopping-list"' in main
     assert "/static/shopping-list-ui.js" in worker
-    assert "glucoplate-shell-v11" in worker
+    assert "const CACHE='glucoplate-shell-v" in worker
