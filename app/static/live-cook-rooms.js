@@ -46,6 +46,22 @@
     const participants=current?.participants||[];
     return participants.find(item=>item.role==='host')||participants.find(item=>String(item.uid||'')===String(current?.host_uid||''))||null;
   }
+  function coreViewKey(current){
+    if(!current)return '';
+    const participants=(current.participants||[]).map(item=>[item.uid,item.display_name,item.role,Boolean(item.ready),item.online!==false]);
+    const chat=(current.chat||[]).slice(-8).map(item=>[item.id,item.uid,item.display_name,item.message,item.kind]);
+    const activity=(current.activity||[]).slice(0,10).map(item=>[item.id,item.type,item.message]);
+    return JSON.stringify([current.id,current.title,current.invite_code,participants,chat,activity]);
+  }
+  function sharedStateKey(current){return JSON.stringify([current?.state?.revision||0,current?.state?.session_status||'waiting'])}
+  function emitRoomUpdated(){if(!room)return;window.dispatchEvent(new CustomEvent('glucoplate:live-room-updated',{detail:{roomId:room.id,revision:Number(room.state?.revision||0)}}))}
+  function applyRoomUpdate(next,{forceRender=false}={}){
+    const previousView=coreViewKey(room),previousState=sharedStateKey(room);
+    room=next;
+    if(forceRender||coreViewKey(room)!==previousView){if(!isChatEditing())render();else if(sharedStateKey(room)!==previousState)emitRoomUpdated()}
+    else if(sharedStateKey(room)!==previousState)emitRoomUpdated();
+  }
+
   function isChatEditing(){
     const input=document.getElementById('liveRoomChatInput');
     return Boolean(input&&document.activeElement===input);
@@ -184,12 +200,11 @@
 
   function startPolling(){clearInterval(pollTimer);pollTimer=setInterval(refresh,1800)}
   function startPresence(){clearInterval(presenceTimer);presenceTimer=setInterval(sendPresence,10000);sendPresence()}
-  async function sendPresence(){if(!room)return;try{const result=await api(`/api/live-cook-rooms/${room.id}/presence`,{method:'POST'});room=result.room;if(!isChatEditing())render()}catch(error){clearInterval(presenceTimer);if(room)notify(error.message)}}
+  async function sendPresence(){if(!room)return;try{const result=await api(`/api/live-cook-rooms/${room.id}/presence`,{method:'POST'});applyRoomUpdate(result.room)}catch(error){clearInterval(presenceTimer);if(room)notify(error.message)}}
   async function refresh(forceRender=false){
     if(!room)return;
     try{
-      const result=await api(`/api/live-cook-rooms/${room.id}`);room=result.room;
-      if(forceRender||!isChatEditing())render();
+      const result=await api(`/api/live-cook-rooms/${room.id}`);applyRoomUpdate(result.room,{forceRender});
       syncRemoteState(room);
     }catch(error){clearInterval(pollTimer);notify(error.message)}
   }
@@ -202,7 +217,7 @@
     }
   }
 
-  async function sendState(updates){if(!room||applyingRemote)return;try{const result=await api(`/api/live-cook-rooms/${room.id}/state`,{method:'PATCH',body:JSON.stringify(updates)});room=result.room;lastRevision=Number(room.state?.revision||lastRevision);render()}catch(error){notify(error.message)}}
+  async function sendState(updates){if(!room||applyingRemote)return;try{const result=await api(`/api/live-cook-rooms/${room.id}/state`,{method:'PATCH',body:JSON.stringify(updates)});room=result.room;lastRevision=Number(room.state?.revision||lastRevision);emitRoomUpdated()}catch(error){notify(error.message)}}
   async function setReady(ready){try{room=(await api(`/api/live-cook-rooms/${room.id}/ready`,{method:'PUT',body:JSON.stringify({ready})})).room;render()}catch(error){notify(error.message)}}
   async function chat(kind='message'){
     const input=document.getElementById('liveRoomChatInput');const message=kind==='help'?'I need help with this step.':input?.value.trim();if(!message)return;
@@ -215,7 +230,7 @@
     panel.querySelector('#liveRoomTitle').textContent=room.title||'Live Cook Room';
     const participants=room.participants||[],chef=roomChef(room),activity=room.activity||[],messages=room.chat||[];
     panel.querySelector('#liveRoomChef').innerHTML=chef?`Hosted by <strong>${escapeHtml(chef.display_name||'Chef')}</strong> · Chef`:'Chef details unavailable';
-    const body=panel.querySelector('#liveRoomBody'),media=body.querySelector('[data-live-media]');
+    const body=panel.querySelector('#liveRoomBody'),media=body.querySelector('[data-live-media]'),scrollTop=body.scrollTop;
     body.innerHTML=`
       <section class="live-room-invite"><div><span>Invite your kitchen</span><strong class="live-room-code">${escapeHtml(room.invite_code)}</strong></div><button type="button" data-copy-code>Copy code</button></section>
       <div class="live-room-actions"><button type="button" data-ready>Ready</button><button type="button" data-not-ready>Not ready</button><button type="button" data-help>Need help</button><button type="button" data-leave>Leave</button></div>
@@ -224,9 +239,10 @@
       <div class="live-room-row"><input id="liveRoomChatInput" maxlength="1000" placeholder="Message the room"><button type="button" data-send>Send</button></div>
       <h4>Activity</h4><div class="live-room-feed">${activity.length?activity.slice(0,10).map(a=>`<div class="live-room-event">${escapeHtml(a.message||a.type)}</div>`).join(''):'<div class="live-room-empty">Room activity will appear here.</div>'}</div>`;
     if(media)body.prepend(media);
+    body.scrollTop=scrollTop;
     panel.querySelector('[data-copy-code]').onclick=async()=>{await navigator.clipboard?.writeText(room.invite_code);notify('Invite code copied.')};
     panel.querySelector('[data-ready]').onclick=()=>setReady(true);panel.querySelector('[data-not-ready]').onclick=()=>setReady(false);panel.querySelector('[data-help]').onclick=()=>chat('help');panel.querySelector('[data-leave]').onclick=leave;panel.querySelector('[data-send]').onclick=()=>chat('message');panel.querySelector('#liveRoomChatInput').onkeydown=e=>{if(e.key==='Enter')chat('message')};
-    window.dispatchEvent(new CustomEvent('glucoplate:live-room-updated',{detail:{roomId:room.id,revision:Number(room.state?.revision||0)}}));
+    emitRoomUpdated();
   }
 
   function wrapCookNavigation(){
