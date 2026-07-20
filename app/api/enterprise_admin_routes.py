@@ -53,6 +53,12 @@ class AccessCodeCreate(BaseModel):
     label: str | None = Field(default=None, max_length=160)
 
 
+class RoleCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    permissions: list[str] = Field(default_factory=list, max_length=100)
+    visibility: list[str] = Field(default_factory=list, max_length=100)
+
+
 class ThemeCreate(BaseModel):
     name: str
     source_theme_id: str | None = None
@@ -260,3 +266,24 @@ def create_platform_access_code(enterprise_id: str, request: AccessCodeCreate, u
 @router.get("/platform/enterprises/{enterprise_id}/access-codes")
 def list_platform_access_codes(enterprise_id: str, user: Annotated[AuthContext, Depends(require_platform_admin)]) -> dict:
     return {"enterprise_id": enterprise_id, "access_codes": directory().list_access_codes(enterprise_id)}
+@router.post("/admin/roles")
+def create_role(request: RoleCreate, user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+    enterprise_id = _enterprise_id(user)
+    try:
+        role = directory().create_role(enterprise_id, name=request.name.strip(), permissions=request.permissions, visibility=request.visibility)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    directory().record_audit(enterprise_id=enterprise_id, actor_uid=user.uid, action="role.created", target_type="enterprise_role", target_id=role["id"], details_json=json.dumps({"name": role["name"], "permissions": role["permissions"], "visibility": role["visibility"]}, sort_keys=True))
+    return {"ok": True, "role": role}
+
+@router.get("/admin/roles")
+def list_roles(user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+    return {"enterprise_id": _enterprise_id(user), "roles": directory().list_roles(_enterprise_id(user))}
+
+@router.get("/authorization/profile")
+def authorization_profile(user: Annotated[AuthContext, Depends(current_user)]) -> dict:
+    if not user.enterprise_id:
+        return {"role": user.role, "permissions": [], "visibility": []}
+    return directory().authorization_profile(user.enterprise_id, user.role)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import secrets
 import uuid
@@ -67,6 +68,18 @@ class EnterpriseMembership(Base):
     user: Mapped[EnterpriseUser] = relationship(back_populates="memberships")
 
 
+class EnterpriseRole(Base):
+    __tablename__ = "enterprise_roles"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: uuid.uuid4().hex)
+    enterprise_id: Mapped[str] = mapped_column(String(64), index=True)
+    name: Mapped[str] = mapped_column(String(100), index=True)
+    permissions_json: Mapped[str] = mapped_column(String(8000), default="[]")
+    visibility_json: Mapped[str] = mapped_column(String(8000), default="[]")
+    status: Mapped[str] = mapped_column(String(24), default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
+
+
 class AccessCode(Base):
     __tablename__ = "enterprise_access_codes"
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: uuid.uuid4().hex)
@@ -114,6 +127,32 @@ class EnterpriseDirectory:
             session.add(item)
             session.commit()
             return {"id": item.id, "name": item.name, "slug": item.slug, "status": item.status, "plan": item.plan, "created_at": item.created_at}
+
+    def create_role(self, enterprise_id: str, *, name: str, permissions: list[str], visibility: list[str]) -> dict[str, Any]:
+        with self.SessionLocal() as session:
+            if not session.get(Enterprise, enterprise_id):
+                raise LookupError("Enterprise not found")
+            if session.scalar(select(EnterpriseRole).where(EnterpriseRole.enterprise_id == enterprise_id, EnterpriseRole.name == name)):
+                raise ValueError("A role with this name already exists")
+            item = EnterpriseRole(enterprise_id=enterprise_id, name=name, permissions_json=json.dumps(sorted(set(permissions))), visibility_json=json.dumps(sorted(set(visibility))))
+            session.add(item)
+            session.commit()
+            return self._role_payload(item)
+
+    def list_roles(self, enterprise_id: str) -> list[dict[str, Any]]:
+        with self.SessionLocal() as session:
+            return [self._role_payload(item) for item in session.scalars(select(EnterpriseRole).where(EnterpriseRole.enterprise_id == enterprise_id).order_by(EnterpriseRole.name)).all()]
+
+    def authorization_profile(self, enterprise_id: str, role_name: str) -> dict[str, Any]:
+        with self.SessionLocal() as session:
+            item = session.scalar(select(EnterpriseRole).where(EnterpriseRole.enterprise_id == enterprise_id, EnterpriseRole.name == role_name, EnterpriseRole.status == "active"))
+            if not item:
+                return {"role": role_name, "permissions": [], "visibility": []}
+            return self._role_payload(item)
+
+    @staticmethod
+    def _role_payload(item: EnterpriseRole) -> dict[str, Any]:
+        return {"id": item.id, "enterprise_id": item.enterprise_id, "name": item.name, "permissions": json.loads(item.permissions_json), "visibility": json.loads(item.visibility_json), "status": item.status, "created_at": item.created_at, "updated_at": item.updated_at}
 
     def create_access_code(self, enterprise_id: str, *, label: str | None = None) -> dict[str, Any]:
         code = f"{secrets.randbelow(100000000):08d}"
