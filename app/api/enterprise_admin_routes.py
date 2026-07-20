@@ -130,9 +130,10 @@ def require_platform_admin(user: Annotated[AuthContext, Depends(current_user)]) 
 
 
 def resolved_authorization_profile(user: AuthContext) -> dict[str, Any]:
+    role_directory = directory()
     configured = (
-        directory().authorization_profile(user.enterprise_id, user.role)
-        if user.enterprise_id
+        role_directory.authorization_profile(user.enterprise_id, user.role)
+        if user.enterprise_id and hasattr(role_directory, "authorization_profile")
         else {"role": user.role, "permissions": [], "visibility": []}
     )
     configured_permissions = set(configured.get("permissions") or [])
@@ -152,7 +153,12 @@ def require_permission(permission: str):
 
     def dependency(user: Annotated[AuthContext, Depends(current_user)]) -> AuthContext:
         if permission not in resolved_authorization_profile(user)["permissions"]:
-            raise HTTPException(status_code=403, detail=f"Permission required: {permission}")
+            detail = (
+                "Platform administrator permission is required"
+                if permission.startswith("platform.")
+                else "Enterprise administrator permission is required"
+            )
+            raise HTTPException(status_code=403, detail=detail)
         if permission.startswith("enterprise.") and not user.enterprise_id:
             raise HTTPException(status_code=403, detail="Enterprise membership is required")
         return user
