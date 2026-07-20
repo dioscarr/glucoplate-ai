@@ -24,8 +24,11 @@ def test_live_kitchen_supports_full_page_and_compact_modes():
     assert "height:100dvh" in css
     assert "prefers-reduced-motion:reduce" in css
     assert "#liveRoomBody::after" in css
-    assert "float:left;clear:left" in css
-    assert "float:right;clear:right" in css
+    semantic_css = (ROOT / "app" / "static" / "live-kitchen-workspace.css").read_text(encoding="utf-8")
+    assert "live-workspace-layout" in semantic_css
+    assert "display:grid" in semantic_css
+    assert "grid-template-columns:minmax(0,1fr)" in semantic_css
+    assert "[role=tabpanel]" in semantic_css
     assert "scrollbar-width:none" in css
     assert "[data-live-media] video" in css
     assert "{display:initial}" not in css
@@ -72,3 +75,24 @@ def test_local_insight_deduplicates_repeated_mentions():
     result = service.generate(room, provider="local")
 
     assert len(result["suggested_items"]) == 1
+
+
+def test_live_kitchen_uses_semantic_regions_and_keyboard_tabs():
+    source = (ROOT / "app" / "static" / "live-kitchen-workspace.js").read_text(encoding="utf-8")
+    assert 'class="live-workspace-layout"' in source
+    assert 'aria-label="Cooking stage"' in source
+    assert 'aria-label="Kitchen tools"' in source
+    assert 'role="tabpanel"' in source
+    assert "role','tablist" in source
+    assert "event.key==='ArrowRight'" in source
+    assert "event.key==='ArrowLeft'" in source
+    assert "mountRegions" in source
+    assert "data-live-region" in source
+
+
+def test_semantic_workspace_preserves_responsive_and_reduced_motion_contracts():
+    css = (ROOT / "app" / "static" / "live-kitchen-workspace.css").read_text(encoding="utf-8")
+    assert "@media(max-width:1023px)" in css
+    assert "@media(max-width:640px)" in css
+    assert "prefers-reduced-motion:reduce" in css
+    assert "min-height:44px" in css
