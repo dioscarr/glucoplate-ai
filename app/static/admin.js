@@ -2,7 +2,7 @@
   const ADMIN_ROLES=new Set(['platform_admin','enterprise_owner','enterprise_admin','admin']);
   const PLATFORM_ROLES=new Set(['platform_admin']);
   const ROLE_OPTIONS=['enterprise_owner','enterprise_admin','manager','member','viewer'];
-  let session=null,users=[];
+  let session=null,users=[],authorization={role:'member',permissions:[],visibility:[]};
 
   const byId=id=>document.getElementById(id);
   const token=()=>localStorage.getItem('glucoplate_firebase_id_token')||'';
@@ -37,9 +37,13 @@
   }
 
   function applyRoleVisibility(){
-    const role=session?.enterprise?.role||'member';
-    document.querySelectorAll('.platform-only').forEach(node=>node.classList.toggle('hidden',!PLATFORM_ROLES.has(role)));
-    if(!ADMIN_ROLES.has(role)){
+    const canReadUsers=can('enterprise.users.read');
+    const canReadThemes=can('enterprise.themes.read');
+    const canReadEnterprises=can('platform.enterprises.read');
+    document.querySelectorAll('[data-view="users"],[data-open-view="users"]').forEach(node=>node.classList.toggle('hidden',!canReadUsers));
+    document.querySelectorAll('a[href="/static/theme.html"]').forEach(node=>node.classList.toggle('hidden',!canReadThemes));
+    document.querySelectorAll('.platform-only').forEach(node=>node.classList.toggle('hidden',!canReadEnterprises));
+    if(!canReadUsers&&!canReadThemes&&!canReadEnterprises){
       alert('This account does not have enterprise administration permission.');
       document.querySelectorAll('.nav-item').forEach(item=>item.disabled=true);
       return false;
@@ -78,6 +82,7 @@
   }
 
   async function loadUsers(){
+    if(!can('enterprise.users.read'))return;
     try{
       const result=await api('/api/enterprise/admin/users');
       users=result.users||[];
@@ -90,6 +95,7 @@
   }
 
   async function updateUser(row,changes){
+    if(!can('enterprise.users.write')){alert('You can view members, but cannot change them.');return}
     const userId=row.dataset.userId;
     try{
       await api(`/api/enterprise/admin/users/${encodeURIComponent(userId)}`,{method:'PATCH',body:JSON.stringify(changes)});
@@ -99,7 +105,7 @@
   }
 
   async function loadEnterprises(){
-    if(!PLATFORM_ROLES.has(session?.enterprise?.role))return;
+    if(!can('platform.enterprises.read'))return;
     try{
       const result=await api('/api/enterprise/platform/enterprises');
       const enterprises=result.enterprises||[];
@@ -135,6 +141,7 @@
       window.setTimeout(initialize,700);return;
     }
     setIdentity();
+    try{await loadAuthorization()}catch(error){alert(error.message);return}
     if(!applyRoleVisibility())return;
     await loadUsers();
   }
