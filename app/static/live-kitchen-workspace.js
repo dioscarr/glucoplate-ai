@@ -86,22 +86,68 @@
     return nav;
   }
 
-  function classify(body){
-    body.querySelectorAll('[data-workspace-zone]').forEach(node=>delete node.dataset.workspaceZone);
-    body.querySelector('.live-room-invite')?.setAttribute('data-workspace-zone','room');
-    body.querySelector('.live-room-actions')?.setAttribute('data-workspace-zone','room');
-    body.querySelector('.live-room-members')?.setAttribute('data-workspace-zone','room');
-    body.querySelector('.live-room-chat')?.setAttribute('data-workspace-zone','room');
-    body.querySelector('#liveRoomChatInput')?.closest('.live-room-row')?.setAttribute('data-workspace-zone','room');
-    body.querySelector('.live-room-feed')?.setAttribute('data-workspace-zone','room');
-    body.querySelector('[data-live-transcript]')?.setAttribute('data-workspace-zone','room');
-    body.querySelectorAll('.live-room-shared-state,[data-live-media],[data-session-lifecycle],.live-session-history').forEach(node=>node.dataset.workspaceZone='cook');
-    body.querySelector('[data-live-insight]')?.setAttribute('data-workspace-zone','ai');
-    body.querySelector('[data-live-shopping-draft]')?.setAttribute('data-workspace-zone','list');
-    body.querySelectorAll('h4').forEach(heading=>{
-      const label=heading.textContent.trim().toLowerCase();
-      heading.dataset.workspaceZone=label.includes('participant')||label.includes('chat')||label.includes('activity')?'room':'cook';
+  function ensureWorkspace(body){
+    let shell=body.querySelector('[data-live-workspace-shell]');
+    if(shell)return shell;
+    shell=document.createElement('section');
+    shell.className='live-workspace-shell';
+    shell.dataset.liveWorkspaceShell='1';
+    shell.setAttribute('aria-label','Live Kitchen workspace');
+    shell.innerHTML=`<div class="live-workspace-layout">
+      <main class="live-workspace-stage" aria-label="Cooking stage"><div data-live-region="stage"></div></main>
+      <aside class="live-workspace-rail" aria-label="Kitchen tools">
+        <div data-live-workspace-nav></div>
+        <section id="liveKitchenRoomPanel" role="tabpanel" data-live-panel="room"><div data-live-region="room"></div></section>
+        <section id="liveKitchenAiPanel" role="tabpanel" data-live-panel="ai" hidden><div data-live-region="ai"></div></section>
+        <section id="liveKitchenListPanel" role="tabpanel" data-live-panel="list" hidden><div data-live-region="list"></div></section>
+      </aside>
+    </div>
+    <details class="live-workspace-activity"><summary>Room activity</summary><div data-live-region="activity"></div></details>`;
+    body.prepend(shell);
+    return shell;
+  }
+
+  function regionFor(node,current){
+    if(node.matches?.('[data-live-insight]'))return 'ai';
+    if(node.matches?.('[data-live-shopping-draft]'))return 'list';
+    if(node.matches?.('.live-room-feed'))return 'activity';
+    if(node.matches?.('.live-room-shared-state,[data-live-media],[data-session-lifecycle],.live-session-history'))return 'stage';
+    if(node.matches?.('.live-room-invite,.live-room-actions,.live-room-members,.live-room-chat,.live-room-row,[data-live-transcript]'))return 'room';
+    if(node.matches?.('h4')){
+      const label=node.textContent.trim().toLowerCase();
+      if(label.includes('activity'))return 'activity';
+      if(label.includes('participant')||label.includes('chat'))return 'room';
+      return 'stage';
+    }
+    return current;
+  }
+
+  function mountRegions(body,shell){
+    let current='stage';
+    [...body.children].filter(node=>node!==shell).forEach(node=>{
+      current=regionFor(node,current);
+      shell.querySelector(`[data-live-region="${current}"]`)?.appendChild(node);
     });
+  }
+
+  function ensureNavigation(body){
+    const shell=ensureWorkspace(body);
+    const host=shell.querySelector('[data-live-workspace-nav]');
+    let nav=host.querySelector('[role=tablist]');
+    if(nav)return nav;
+    nav=document.createElement('div');
+    nav.className='live-workspace-nav';
+    nav.setAttribute('role','tablist');
+    nav.setAttribute('aria-label','Kitchen tools');
+    nav.innerHTML=['room','ai','list'].map(tab=>`<button type="button" role="tab" id="liveKitchen${tab}Tab" aria-controls="liveKitchen${tab[0].toUpperCase()+tab.slice(1)}Panel" data-workspace-tab="${tab}">${tab==='ai'?'AI brief':tab==='list'?'Shopping':'Room'}</button>`).join('');
+    nav.addEventListener('keydown',event=>{
+      const tabs=[...nav.querySelectorAll('[role=tab]')],index=tabs.indexOf(document.activeElement);
+      const delta=event.key==='ArrowRight'?1:event.key==='ArrowLeft'?-1:0;
+      if(!delta||index<0)return;
+      event.preventDefault();tabs[(index+delta+tabs.length)%tabs.length].focus();tabs[(index+delta+tabs.length)%tabs.length].click();
+    });
+    nav.addEventListener('click',event=>{const button=event.target.closest?.('[data-workspace-tab]');if(button){activeTab=button.dataset.workspaceTab;organize()}});
+    host.appendChild(nav);return nav;
   }
 
   function organize(){
@@ -110,11 +156,16 @@
     const body=panel?.querySelector('#liveRoomBody');
     if(!panel||!body)return;
     panel.classList.toggle('is-full-page',mode==='workspace');
-    const nav=ensureNavigation(body);
-    nav.querySelectorAll('[data-workspace-tab]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.workspaceTab===activeTab)));
     renderInsights(body);
-    classify(body);
-    body.dataset.activeTab=activeTab;
+    const shell=ensureWorkspace(body);
+    mountRegions(body,shell);
+    const nav=ensureNavigation(body);
+    nav.querySelectorAll('[role=tab]').forEach(button=>{
+      const selected=button.dataset.workspaceTab===activeTab;
+      button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;
+    });
+    shell.querySelectorAll('[data-live-panel]').forEach(panelNode=>panelNode.hidden=panelNode.dataset.livePanel!==activeTab);
+    shell.dataset.activeTab=activeTab;
   }
 
   function summaryList(items,empty){
