@@ -18,6 +18,23 @@ ADMIN_ROLES = {"platform_admin", "enterprise_owner", "enterprise_admin", "admin"
 PLATFORM_ROLES = {"platform_admin"}
 ALLOWED_ROLES = {"enterprise_owner", "enterprise_admin", "manager", "member", "viewer"}
 
+PERMISSION_REGISTRY = {
+    "enterprise.users.read": "View enterprise members",
+    "enterprise.users.write": "Change enterprise membership roles and status",
+    "enterprise.themes.read": "View enterprise themes",
+    "enterprise.themes.write": "Create, update, activate, and delete enterprise themes",
+    "enterprise.roles.read": "View custom enterprise roles",
+    "enterprise.roles.write": "Create custom enterprise roles",
+    "platform.enterprises.read": "View enterprises across the platform",
+    "platform.enterprises.write": "Create enterprises and access codes",
+}
+BUILTIN_ROLE_PERMISSIONS = {
+    "platform_admin": set(PERMISSION_REGISTRY),
+    "enterprise_owner": {permission for permission in PERMISSION_REGISTRY if permission.startswith("enterprise.")},
+    "enterprise_admin": {permission for permission in PERMISSION_REGISTRY if permission.startswith("enterprise.")},
+    "admin": {permission for permission in PERMISSION_REGISTRY if permission.startswith("enterprise.")},
+}
+
 
 class AuthContext(BaseModel):
     uid: str
@@ -112,6 +129,37 @@ def require_platform_admin(user: Annotated[AuthContext, Depends(current_user)]) 
     return user
 
 
+def resolved_authorization_profile(user: AuthContext) -> dict[str, Any]:
+    configured = (
+        directory().authorization_profile(user.enterprise_id, user.role)
+        if user.enterprise_id
+        else {"role": user.role, "permissions": [], "visibility": []}
+    )
+    configured_permissions = set(configured.get("permissions") or [])
+    permissions = sorted(configured_permissions | BUILTIN_ROLE_PERMISSIONS.get(user.role, set()))
+    return {
+        **configured,
+        "role": user.role,
+        "permissions": permissions,
+        "visibility": sorted(set(configured.get("visibility") or [])),
+        "permission_registry": PERMISSION_REGISTRY,
+    }
+
+
+def require_permission(permission: str):
+    if permission not in PERMISSION_REGISTRY:
+        raise ValueError(f"Unknown permission: {permission}")
+
+    def dependency(user: Annotated[AuthContext, Depends(current_user)]) -> AuthContext:
+        if permission not in resolved_authorization_profile(user)["permissions"]:
+            raise HTTPException(status_code=403, detail=f"Permission required: {permission}")
+        if permission.startswith("enterprise.") and not user.enterprise_id:
+            raise HTTPException(status_code=403, detail="Enterprise membership is required")
+        return user
+
+    return dependency
+
+
 def _enterprise_id(user: AuthContext) -> str:
     if not user.enterprise_id:
         raise HTTPException(status_code=400, detail="Select an enterprise before managing themes")
@@ -141,13 +189,13 @@ def sync_enterprise_session(user: Annotated[AuthContext, Depends(current_user)])
 
 
 @router.get("/admin/users")
-def list_enterprise_users(user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+def list_enterprise_users(user: Annotated[AuthContext, Depends(require_permission("enterprise.users.read"))]) -> dict:
     enterprise_id = _enterprise_id(user)
     return {"enterprise_id": enterprise_id, "users": directory().list_members(enterprise_id)}
 
 
 @router.patch("/admin/users/{user_id}")
-def update_enterprise_user(user_id: str, update: MemberUpdate, actor: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+def update_enterprise_user(user_id: str, update: MemberUpdate, actor: Annotated[AuthContext, Depends(require_permission("enterprise.users.write"))]) -> dict:
     enterprise_id = _enterprise_id(actor)
     if update.role and update.role not in ALLOWED_ROLES:
         raise HTTPException(status_code=400, detail="Unsupported enterprise role")
@@ -160,12 +208,12 @@ def update_enterprise_user(user_id: str, update: MemberUpdate, actor: Annotated[
 
 
 @router.get("/admin/themes")
-def list_enterprise_themes(user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+def list_enterprise_themes(user: Annotated[AuthContext, Depends(require_permission("enterprise.themes.read"))]) -> dict:
     return themes().list(_enterprise_id(user))
 
 
 @router.post("/admin/themes")
-def create_enterprise_theme(request: ThemeCreate, user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+def create_enterprise_theme(request: ThemeCreate, user: Annotated[AuthContext, Depends(require_permission("enterprise.themes.write"))]) -> dict:
     if not request.name.strip():
         raise HTTPException(status_code=400, detail="Theme name is required")
     theme = themes().create(_enterprise_id(user), name=request.name, source_theme_id=request.source_theme_id)
@@ -174,19 +222,19 @@ def create_enterprise_theme(request: ThemeCreate, user: Annotated[AuthContext, D
 
 
 @router.get("/admin/themes/{theme_id}")
-def get_enterprise_theme_by_id(theme_id: str, user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+def get_enterprise_theme_by_id(theme_id: str, user: Annotated[AuthContext, Depends(require_permission("enterprise.themes.read"))]) -> dict:
     return {"theme": themes().get(_enterprise_id(user), theme_id)}
 
 
 @router.put("/admin/themes/{theme_id}")
-def save_enterprise_theme_by_id(theme_id: str, update: ThemeUpdate, user: Annotated[AuthContext, Depends(require_enterprise_admin)], publish: bool = False) -> dict:
+def save_enterprise_theme_by_id(theme_id: str, update: ThemeUpdate, user: Annotated[AuthContext, Depends(require_permission("enterprise.themes.write"))], publish: bool = False) -> dict:
     saved = themes().save(_enterprise_id(user), update.model_dump(exclude_none=True), theme_id=theme_id, publish=publish)
     _audit_theme(user, "theme.published" if publish else "theme.saved", saved)
     return {"ok": True, "theme": saved}
 
 
 @router.post("/admin/themes/{theme_id}/activate")
-def activate_enterprise_theme(theme_id: str, user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+def activate_enterprise_theme(theme_id: str, user: Annotated[AuthContext, Depends(require_permission("enterprise.themes.write"))]) -> dict:
     try:
         theme = themes().activate(_enterprise_id(user), theme_id)
     except LookupError as exc:
@@ -198,7 +246,7 @@ def activate_enterprise_theme(theme_id: str, user: Annotated[AuthContext, Depend
 
 
 @router.delete("/admin/themes/{theme_id}")
-def delete_enterprise_theme(theme_id: str, user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+def delete_enterprise_theme(theme_id: str, user: Annotated[AuthContext, Depends(require_permission("enterprise.themes.write"))]) -> dict:
     try:
         active = themes().delete(_enterprise_id(user), theme_id)
     except LookupError as exc:
@@ -210,19 +258,19 @@ def delete_enterprise_theme(theme_id: str, user: Annotated[AuthContext, Depends(
 
 # Backwards-compatible endpoints used by the existing Theme Studio.
 @router.get("/admin/theme")
-def get_enterprise_theme(user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+def get_enterprise_theme(user: Annotated[AuthContext, Depends(require_permission("enterprise.themes.read"))]) -> dict:
     return {"theme": themes().get(_enterprise_id(user))}
 
 
 @router.put("/admin/theme")
-def save_enterprise_theme(update: ThemeUpdate, user: Annotated[AuthContext, Depends(require_enterprise_admin)], publish: bool = False) -> dict:
+def save_enterprise_theme(update: ThemeUpdate, user: Annotated[AuthContext, Depends(require_permission("enterprise.themes.write"))], publish: bool = False) -> dict:
     saved = themes().save(_enterprise_id(user), update.model_dump(exclude_none=True), theme_id=update.id, publish=publish)
     _audit_theme(user, "theme.published" if publish else "theme.saved", saved)
     return {"ok": True, "theme": saved}
 
 
 @router.delete("/admin/theme")
-def reset_enterprise_theme(user: Annotated[AuthContext, Depends(require_enterprise_admin)], theme_id: str | None = None) -> dict:
+def reset_enterprise_theme(user: Annotated[AuthContext, Depends(require_permission("enterprise.themes.write"))], theme_id: str | None = None) -> dict:
     return {"ok": True, "theme": themes().reset(_enterprise_id(user), theme_id)}
 
 
@@ -240,11 +288,11 @@ def get_public_theme(enterprise_id: str, theme_id: str | None = None) -> dict:
 
 
 @router.get("/platform/enterprises")
-def list_enterprises(user: Annotated[AuthContext, Depends(require_platform_admin)]) -> dict:
+def list_enterprises(user: Annotated[AuthContext, Depends(require_permission("platform.enterprises.read"))]) -> dict:
     return {"enterprises": directory().list_enterprises()}
 
 @router.post("/platform/enterprises")
-def create_platform_enterprise(request: EnterpriseCreate, user: Annotated[AuthContext, Depends(require_platform_admin)]) -> dict:
+def create_platform_enterprise(request: EnterpriseCreate, user: Annotated[AuthContext, Depends(require_permission("platform.enterprises.write"))]) -> dict:
     name = request.name.strip()
     slug = (request.slug or name.lower().replace(" ", "-")).strip("-")
     try:
@@ -255,7 +303,7 @@ def create_platform_enterprise(request: EnterpriseCreate, user: Annotated[AuthCo
     return {"ok": True, "enterprise": enterprise}
 
 @router.post("/platform/enterprises/{enterprise_id}/access-codes")
-def create_platform_access_code(enterprise_id: str, request: AccessCodeCreate, user: Annotated[AuthContext, Depends(require_platform_admin)]) -> dict:
+def create_platform_access_code(enterprise_id: str, request: AccessCodeCreate, user: Annotated[AuthContext, Depends(require_permission("platform.enterprises.write"))]) -> dict:
     try:
         code = directory().create_access_code(enterprise_id, label=request.label.strip() if request.label else None)
     except LookupError as exc:
@@ -264,10 +312,10 @@ def create_platform_access_code(enterprise_id: str, request: AccessCodeCreate, u
     return {"ok": True, "access_code": code}
 
 @router.get("/platform/enterprises/{enterprise_id}/access-codes")
-def list_platform_access_codes(enterprise_id: str, user: Annotated[AuthContext, Depends(require_platform_admin)]) -> dict:
+def list_platform_access_codes(enterprise_id: str, user: Annotated[AuthContext, Depends(require_permission("platform.enterprises.read"))]) -> dict:
     return {"enterprise_id": enterprise_id, "access_codes": directory().list_access_codes(enterprise_id)}
 @router.post("/admin/roles")
-def create_role(request: RoleCreate, user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+def create_role(request: RoleCreate, user: Annotated[AuthContext, Depends(require_permission("enterprise.roles.write"))]) -> dict:
     enterprise_id = _enterprise_id(user)
     try:
         role = directory().create_role(enterprise_id, name=request.name.strip(), permissions=request.permissions, visibility=request.visibility)
@@ -279,11 +327,11 @@ def create_role(request: RoleCreate, user: Annotated[AuthContext, Depends(requir
     return {"ok": True, "role": role}
 
 @router.get("/admin/roles")
-def list_roles(user: Annotated[AuthContext, Depends(require_enterprise_admin)]) -> dict:
+def list_roles(user: Annotated[AuthContext, Depends(require_permission("enterprise.roles.read"))]) -> dict:
     return {"enterprise_id": _enterprise_id(user), "roles": directory().list_roles(_enterprise_id(user))}
 
 @router.get("/authorization/profile")
 def authorization_profile(user: Annotated[AuthContext, Depends(current_user)]) -> dict:
     if not user.enterprise_id:
         return {"role": user.role, "permissions": [], "visibility": []}
-    return directory().authorization_profile(user.enterprise_id, user.role)
+    return resolved_authorization_profile(user)
