@@ -53,6 +53,16 @@ def test_custom_role_uses_explicit_dynamic_permissions(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         routes.require_permission("enterprise.users.write")(user)
     assert exc.value.status_code == 403
+    assert exc.value.detail == "Enterprise administrator permission is required"
+
+
+def test_legacy_directory_double_without_profile_method_is_supported(monkeypatch):
+    class LegacyDirectory:
+        pass
+
+    monkeypatch.setattr(routes, "directory", lambda: LegacyDirectory())
+    user = routes.AuthContext(uid="member", enterprise_id="acme", role="member")
+    assert routes.resolved_authorization_profile(user)["permissions"] == []
 
 
 def test_admin_frontend_uses_runtime_profile_and_contains_no_escaped_newline_token():
