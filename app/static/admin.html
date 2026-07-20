@@ -7,6 +7,7 @@
   <title>GlucoPlate Enterprise Admin</title>
   <link rel="stylesheet" href="/static/admin.css" />
   <link rel="stylesheet" href="/static/admin-premium.css" />
+  <link rel="stylesheet" href="/static/admin-roles.css" />
 </head>
 <body>
   <div class="admin-shell">
@@ -16,6 +17,7 @@
       <nav aria-label="Administration">
         <button class="nav-item active" data-view="overview"><span>◫</span><b>Overview</b></button>
         <button class="nav-item" data-view="users"><span>◎</span><b>People & access</b></button>
+        <button class="nav-item" data-view="roles"><span>◇</span><b>Roles & visibility</b></button>
         <a class="nav-item" href="/static/theme.html"><span>✦</span><b>Theme Studio</b></a>
         <button class="nav-item platform-only" data-view="enterprises"><span>◇</span><b>Enterprises</b></button>
       </nav>
@@ -46,6 +48,7 @@
           <div class="panel-heading"><div><span class="section-label">Core controls</span><h2>Enterprise operations</h2><p>Choose an area to manage without leaving the workspace.</p></div><button id="refreshOverview" class="button secondary">↻ Refresh</button></div>
           <div class="action-grid">
             <button class="action-card" data-open-view="users"><span class="action-icon">◎</span><strong>People & access</strong><span>Review members, assign roles, disable accounts, and reactivate access.</span><em>Manage users →</em></button>
+            <button class="action-card" data-open-view="roles"><span class="action-icon">◇</span><strong>Roles & visibility</strong><span>Create least-privilege roles and choose which product features they can see.</span><em>Manage roles →</em></button>
             <a class="action-card accent" href="/static/theme.html"><span class="action-icon">✦</span><strong>Brand experience</strong><span>Create multiple themes, publish them, and choose the company default.</span><em>Open Theme Studio →</em></a>
             <button class="action-card platform-only" data-open-view="enterprises"><span class="action-icon">◇</span><strong>Platform enterprises</strong><span>Review every enterprise registered on the platform.</span><em>View enterprises →</em></button>
           </div>
@@ -61,6 +64,26 @@
         </article>
       </section>
 
+
+      <section id="rolesView" class="view">
+        <div class="roles-layout">
+          <article class="panel role-list-panel">
+            <div class="panel-heading"><div><span class="section-label">Authorization</span><h2>Roles & visibility</h2><p>Create modular access profiles without changing the built-in enterprise roles.</p></div><button id="refreshRoles" class="button secondary" type="button">↻ Refresh</button></div>
+            <div id="authorizationProfile" class="authorization-profile" aria-live="polite"><span>Your authorization profile</span><strong>Loading…</strong></div>
+            <div id="roleCards" class="role-cards" aria-live="polite"></div>
+          </article>
+          <aside class="panel role-editor" aria-labelledby="roleEditorTitle">
+            <div class="panel-heading"><div><span class="section-label">New access profile</span><h2 id="roleEditorTitle">Create a role</h2><p>Start with no access and select only what this role needs.</p></div></div>
+            <form id="roleCreateForm" class="role-form">
+              <label class="role-field"><span>Role name</span><input id="roleName" required minlength="2" maxlength="100" autocomplete="off" placeholder="Example: Kitchen coordinator"><small class="role-help">Use a clear job or responsibility name.</small></label>
+              <section aria-labelledby="permissionsHeading"><h3 id="permissionsHeading">Permissions</h3><div id="permissionGroups" class="permission-groups"></div></section>
+              <section aria-labelledby="visibilityHeading"><h3 id="visibilityHeading">Feature visibility</h3><p class="role-help">Visibility controls navigation and discovery. Backend permissions still authorize every protected action.</p><div id="featureChoices" class="feature-choices"></div></section>
+              <div id="roleEditorStatus" class="role-status" role="status" aria-live="polite" tabindex="-1"></div>
+              <div class="role-form-actions"><button class="button secondary" type="reset">Clear</button><button id="saveRole" class="button" type="submit">Create role</button></div>
+            </form>
+          </aside>
+        </div>
+      </section>
       <section id="enterprisesView" class="view platform-only">
         <article class="panel">
           <div class="panel-heading"><div><span class="section-label">Platform administration</span><h2>Enterprise portfolio</h2><p>Visible only to platform administrators.</p></div><button id="refreshEnterprises" class="button secondary">↻ Refresh</button></div>
@@ -71,5 +94,6 @@
   </div>
   <script src="/static/admin-authorization.js" defer></script>
   <script src="/static/admin.js" defer></script>
+  <script src="/static/admin-roles.js" defer></script>
 </body>
 </html>
