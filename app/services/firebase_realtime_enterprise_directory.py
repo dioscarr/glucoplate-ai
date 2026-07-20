@@ -41,6 +41,21 @@ class FirebaseRealtimeEnterpriseDirectory:
         ref.set(item)
         return item
 
+    def create_role(self, enterprise_id: str, *, name: str, permissions: list[str], visibility: list[str]) -> dict[str, Any]:
+        if not self.root.child("enterprises").child(enterprise_id).get():
+            raise LookupError("Enterprise not found")
+        role_id = uuid.uuid4().hex
+        item = {"id": role_id, "enterprise_id": enterprise_id, "name": name, "permissions": sorted(set(permissions)), "visibility": sorted(set(visibility)), "status": "active", "created_at": _utcnow(), "updated_at": _utcnow()}
+        self.root.child("roles").child(enterprise_id).child(role_id).set(item)
+        return item
+
+    def list_roles(self, enterprise_id: str) -> list[dict[str, Any]]:
+        roles = self.root.child("roles").child(enterprise_id).get() or {}
+        return sorted(roles.values(), key=lambda item: item.get("name", "").lower())
+
+    def authorization_profile(self, enterprise_id: str, role_name: str) -> dict[str, Any]:
+        return next((item for item in self.list_roles(enterprise_id) if item.get("name") == role_name and item.get("status") == "active"), {"role": role_name, "permissions": [], "visibility": []})
+
     def create_access_code(self, enterprise_id: str, *, label: str | None = None) -> dict[str, Any]:
         if not self.root.child("enterprises").child(enterprise_id).get():
             raise LookupError("Enterprise not found")
