@@ -1,5 +1,6 @@
 (()=>{
   if(window.GlucoPlateLiveKitchenWorkspace)return;
+  if(!document.querySelector('link[data-live-workspace-css]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/static/live-kitchen-workspace.css';link.dataset.liveWorkspaceCss='1';document.head.appendChild(link)}
 
   let mode=new URL(location.href).searchParams.get('view')==='workspace'?'workspace':'compact';
   let activeTab='room';
