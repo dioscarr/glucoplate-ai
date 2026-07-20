@@ -57,8 +57,11 @@ def test_custom_role_uses_explicit_dynamic_permissions(monkeypatch):
 
 def test_admin_frontend_uses_runtime_profile_and_contains_no_escaped_newline_token():
     source = (ROOT / "app" / "static" / "admin.js").read_text(encoding="utf-8")
-    assert "/api/enterprise/authorization/profile" in source
-    assert "window.GlucoPlateAuthorization" in source
+    runtime = (ROOT / "app" / "static" / "admin-authorization.js").read_text(encoding="utf-8")
+    html = (ROOT / "app" / "static" / "admin.html").read_text(encoding="utf-8")
+    assert "/api/enterprise/authorization/profile" in runtime
+    assert "window.GlucoPlateAuthorization" in runtime
+    assert html.index("admin-authorization.js") < html.index("admin.js")
     assert "can('enterprise.users.read')" in source
     assert "can('platform.enterprises.read')" in source
     assert ");\\\\n    byId(" not in source
