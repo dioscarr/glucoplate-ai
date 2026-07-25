@@ -81,7 +81,7 @@ def test_livekit_client_renders_remote_tracks_and_recovers_connections():
 
 def test_pwa_caches_live_media_shell():
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
-    assert "glucoplate-shell-v28" in worker
+    assert "glucoplate-shell-v29" in worker
     assert "'/static/live-cook-media.js'" in worker
     assert "'/static/live-cook-media.css'" in worker
 
@@ -121,7 +121,7 @@ def test_same_account_devices_receive_distinct_media_identities():
 
 def test_pwa_refreshes_multi_device_media_client():
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
-    assert "glucoplate-shell-v28" in worker
+    assert "glucoplate-shell-v29" in worker
 
 
 def test_partial_device_failure_keeps_live_call_connected():
@@ -148,7 +148,7 @@ def test_livekit_track_events_are_batched_and_control_errors_are_handled():
 
 def test_pwa_refreshes_partial_device_recovery():
     worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
-    assert "glucoplate-shell-v28" in worker
+    assert "glucoplate-shell-v29" in worker
 
 
 def test_live_video_presence_distinguishes_room_members_from_active_devices():
@@ -187,3 +187,23 @@ def test_unchanged_media_updates_do_not_rebuild_video_tracks():
     assert "section.dataset.renderSignature=signature" in source
     assert "participantQualities=new Map()" in source
     assert "participantQualities.set" in source
+
+
+def test_local_recording_uses_active_media_tracks_and_supports_download():
+    source = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    styles = (ROOT / "app" / "static" / "live-cook-media.css").read_text(encoding="utf-8")
+    assert "new MediaRecorder" in source
+    assert "recordingStream" in source
+    assert "data-media-record-start" in source
+    assert "data-media-record-stop" in source
+    assert "URL.createObjectURL" in source
+    assert 'download="${escapeHtml(recordingFilename())}"' in source
+    assert "recordings are saved locally on this device" in source
+    assert "live-media-recording" in styles
+
+
+def test_recording_is_stopped_when_live_media_is_stopped_and_service_worker_bumps_cache():
+    source = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
+    assert "stopRecording();stopMediaHeartbeat()" in source
+    assert "const CACHE='glucoplate-shell-v29'" in worker

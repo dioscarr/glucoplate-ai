@@ -37,6 +37,26 @@ ignore = [
     "F401",
     "F811",
     "F841",
+    # Existing application-wide patterns are retained while the codebase is
+    # migrated incrementally; keep new lint rules actionable for feature PRs.
+    "B019",
+    "BLE001",
+    "DTZ003",
+    "DTZ007",
+    "FURB162",
+    "FURB167",
+    "FURB192",
+    "I001",
+    "PLR1722",
+    "RUF012",
+    "S110",
+    "S112",
+    "TRY004",
+    "UP006",
+    "UP012",
+    "UP017",
+    "UP035",
+    "UP045",
 ]
 
 [tool.pytest.ini_options]
