@@ -187,3 +187,23 @@ def test_unchanged_media_updates_do_not_rebuild_video_tracks():
     assert "section.dataset.renderSignature=signature" in source
     assert "participantQualities=new Map()" in source
     assert "participantQualities.set" in source
+
+
+def test_local_recording_uses_active_media_tracks_and_supports_download():
+    source = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    styles = (ROOT / "app" / "static" / "live-cook-media.css").read_text(encoding="utf-8")
+    assert "new MediaRecorder" in source
+    assert "recordingStream" in source
+    assert "data-media-record-start" in source
+    assert "data-media-record-stop" in source
+    assert "URL.createObjectURL" in source
+    assert 'download="${escapeHtml(recordingFilename())}"' in source
+    assert "recordings are saved locally on this device" in source
+    assert "live-media-recording" in styles
+
+
+def test_recording_is_stopped_when_live_media_is_stopped_and_service_worker_bumps_cache():
+    source = (ROOT / "app" / "static" / "live-cook-media.js").read_text(encoding="utf-8")
+    worker = (ROOT / "app" / "static" / "sw.js").read_text(encoding="utf-8")
+    assert "stopRecording();stopMediaHeartbeat()" in source
+    assert "const CACHE='glucoplate-shell-v29'" in worker
