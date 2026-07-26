@@ -194,6 +194,10 @@ def test_local_recording_uses_active_media_tracks_and_supports_download():
     styles = (ROOT / "app" / "static" / "live-cook-media.css").read_text(encoding="utf-8")
     assert "new MediaRecorder" in source
     assert "recordingStream" in source
+    assert "'video/mp4'" in source
+    assert "avc1.42E01E,mp4a.40.2" in source
+    assert "recordingType=type" in source
+    assert "startsWith('video/mp4')?'mp4':'webm'" in source
     assert "data-media-record-start" in source
     assert "data-media-record-stop" in source
     assert "URL.createObjectURL" in source
