@@ -53,6 +53,7 @@ HTML_SCRIPT_PATHS = (
     "/static/live-cook-rooms.js",
     "/static/live-kitchen-workspace.js",
     "/static/live-cook-media.js",
+    "/static/live-video-studio.js",
     "/static/live-cook-transcript.js",
     "/static/live-cook-session-lifecycle.js",
     "/static/live-cook-shared-state.js",
