@@ -7,7 +7,7 @@
   const mediaDeviceLabel=String(navigator.userAgentData?.platform||navigator.platform||'Device').slice(0,40);
   const SDK_URL='https://cdn.jsdelivr.net/npm/livekit-client@2.17.2/dist/livekit-client.umd.min.js';
   let stream=null,access=null,busy=false,liveRoom=null,sdkPromise=null,renderFrame=null,mediaHeartbeat=null,presenceClock=null,lastPresenceKey='',connectionState='off',providerError='',stoppingMedia=false,participantQualities=new Map(),devices={audioinput:[],videoinput:[]};
-  let recorder=null,recordingChunks=[],recordingUrl='',recordingStartedAt=0,recordingTimer=null,recordingError='';
+  let recorder=null,recordingChunks=[],recordingUrl='',recordingStartedAt=0,recordingTimer=null,recordingError='',recordingType='';
   async function authToken(forceRefresh=false){const provider=window.GlucoPlateFirebaseAuth?.getIdToken;if(typeof provider==='function')return provider(forceRefresh);const cached=localStorage.getItem('glucoplate_firebase_id_token')||'';if(!cached)throw new Error('Sign in before using live video.');return cached}
   async function api(path,options={}){const request=async forceRefresh=>fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:'Bearer '+await authToken(forceRefresh),...(options.headers||{})}});let response=await request(false);if(response.status===401&&window.GlucoPlateFirebaseAuth?.getIdToken)response=await request(true);const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.detail||'Live media is unavailable.');return body}
   function ensureStyles(){if(document.querySelector('link[data-live-media-styles]'))return;const link=document.createElement('link');link.rel='stylesheet';link.href='/static/live-cook-media.css';link.dataset.liveMediaStyles='1';document.head.appendChild(link)}
@@ -65,9 +65,9 @@
     return localTracks.length?new MediaStream(localTracks):null;
   }
   function recordingSupported(){return Boolean(window.MediaRecorder&&recordingStream())}
-  function recordingMimeType(){return ['video/mp4;codecs=h264,aac','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(type=>MediaRecorder.isTypeSupported?.(type))||''}
+  function recordingMimeType(){return ['video/mp4','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=h264,aac','video/webm;codecs=vp8,opus','video/webm'].find(type=>MediaRecorder.isTypeSupported?.(type))||''}
   function recordingTime(){const seconds=Math.max(0,Math.floor((Date.now()-recordingStartedAt)/1000));return [Math.floor(seconds/60),seconds%60].map(value=>String(value).padStart(2,'0')).join(':')}
-  function recordingFilename(){const title=String(window.currentRecipe?.title||'live-kitchen').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48)||'live-kitchen';return `${title}-${new Date().toISOString().slice(0,10)}.${recordingMimeType().startsWith('video/mp4')?'mp4':'webm'}`}
+  function recordingFilename(){const title=String(window.currentRecipe?.title||'live-kitchen').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48)||'live-kitchen';return `${title}-${new Date().toISOString().slice(0,10)}.${(recordingType||recordingMimeType()).startsWith('video/mp4')?'mp4':'webm'}`}
   function updateRecordingTimer(){const output=document.querySelector('[data-recording-time]');if(output)output.textContent=recordingTime()}
   function recordingControls(){
     if(!connected())return '';
@@ -76,12 +76,12 @@
     if(recordingError)return `<div class="live-media-recording-error" role="alert">${escapeHtml(recordingError)}</div>`;
     return recordingSupported()?'<button type="button" class="live-media-record-start" data-media-record-start>Record cooking video</button>':'<p class="live-media-note">Video recording is not supported in this browser.</p>';
   }
-  function clearRecordingState(resetUrl=true){clearInterval(recordingTimer);recordingTimer=null;recordingStartedAt=0;if(resetUrl&&recordingUrl){URL.revokeObjectURL(recordingUrl);recordingUrl=''}recorder=null;recordingChunks=[]}
+  function clearRecordingState(resetUrl=true){clearInterval(recordingTimer);recordingTimer=null;recordingStartedAt=0;if(resetUrl&&recordingUrl){URL.revokeObjectURL(recordingUrl);recordingUrl=''}recorder=null;recordingChunks=[];if(resetUrl)recordingType=''}
   function startRecording(){
     if(recorder?.state==='recording')return;
     const source=recordingStream();if(!source||!window.MediaRecorder){recordingError='This browser cannot record the current camera session.';render();return}
     try{
-      recordingError='';recordingChunks=[];const type=recordingMimeType();recorder=new MediaRecorder(source,type?{mimeType:type}:undefined);recordingStartedAt=Date.now();
+      recordingError='';recordingChunks=[];const type=recordingMimeType();recordingType=type;recorder=new MediaRecorder(source,type?{mimeType:type}:undefined);recordingStartedAt=Date.now();
       recorder.ondataavailable=event=>{if(event.data?.size)recordingChunks.push(event.data)};
       recorder.onerror=()=>{recordingError='The recording stopped unexpectedly.';clearRecordingState();render()};
       recorder.onstop=()=>{if(!recordingChunks.length){recordingError='No video data was captured.';clearRecordingState();render();return}if(recordingUrl)URL.revokeObjectURL(recordingUrl);recordingUrl=URL.createObjectURL(new Blob(recordingChunks,{type:recorder.mimeType||type||'video/webm'}));clearRecordingState(false);render();notify('Recording ready to download.')};
