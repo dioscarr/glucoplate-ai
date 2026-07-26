@@ -17,6 +17,8 @@ class CreateRoomPayload(BaseModel):
     display_name: str | None = Field(default=None, max_length=80)
     visibility: Literal["private", "public"] = "private"
     recipe: dict[str, Any] = Field(default_factory=dict)
+    cooking_session_id: str | None = Field(default=None, max_length=120)
+    current_step: int = Field(default=0, ge=0, le=1000)
 
 
 class JoinRoomPayload(BaseModel):
