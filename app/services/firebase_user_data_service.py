@@ -355,6 +355,10 @@ class FirebaseUserDataService:
         ref.update(self._normalize(allowed))
         return ref.get()
 
+    def get_cooking_session(self, enterprise_id: str, uid: str, session_id: str, profile_id: str | None = None) -> dict[str, Any] | None:
+        selected_profile_id = self._profile_id(profile_id)
+        return self._profile_root(enterprise_id, uid, selected_profile_id).child(f"cooking_sessions/{session_id}").get()
+
     def save_preferences(self, enterprise_id: str, uid: str, preferences: dict[str, Any], profile_id: str | None = None) -> dict[str, Any]:
         record = self._normalize({**preferences, "updated_at": self._now()})
         self._profile_root(enterprise_id, uid, profile_id).child("preferences").update(record)
