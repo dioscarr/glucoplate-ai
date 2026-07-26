@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import io
 import json
+import urllib.error
 import urllib.request
 
 from app.schemas.store import ProductSearchRequest
@@ -53,12 +53,12 @@ def test_product_lookup_keeps_safe_unknown_when_open_prices_is_unavailable(monke
     result = ProductLookupService().search_products(ProductSearchRequest(ingredient="garlic powder"))
 
     assert result[0].price is None
-    assert result[0].source == "openfoodfacts"
+    assert result[0].source == "openfoodfacts-unavailable"
     assert result[0].availability == "unknown"
 
 
 def test_price_endpoint_contract_remains_exposed():
     from app.main import app
 
-    paths = {route.path for route in app.routes}
+    paths = {route.path for route in app.routes if hasattr(route, "path")}
     assert "/api/products/search" in paths
