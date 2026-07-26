@@ -4,6 +4,8 @@ import json
 import urllib.error
 import urllib.request
 
+from fastapi.testclient import TestClient
+
 from app.schemas.store import ProductSearchRequest
 from app.services.product_lookup_service import ProductLookupService
 
@@ -57,8 +59,21 @@ def test_product_lookup_keeps_safe_unknown_when_open_prices_is_unavailable(monke
     assert result[0].availability == "unknown"
 
 
-def test_price_endpoint_contract_remains_exposed():
+def test_price_endpoint_returns_enriched_product(monkeypatch):
+    responses = [
+        {"products": [{"code": "0123456789012", "product_name": "Grade A Parmesan"}]},
+        {"items": [{"price": "6.49", "currency": "USD"}]},
+    ]
+
+    def fake_urlopen(_request, timeout):
+        return FakeResponse(responses.pop(0))
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
     from app.main import app
 
-    paths = {route.path for route in app.routes if hasattr(route, "path")}
-    assert "/api/products/search" in paths
+    response = TestClient(app).post("/api/products/search", json={"ingredient": "parmesan"})
+
+    assert response.status_code == 200
+    assert response.json()[0]["price"] == 6.49
+    assert response.json()[0]["source"] == "openfoodfacts-open-prices"
