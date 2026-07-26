@@ -192,7 +192,7 @@
   async function createRoom(){
     const recipe=currentRecipe();if(!recipe){notify('Open a recipe before starting a room.');return}
     try{
-      const result=await api('/api/live-cook-rooms',{method:'POST',body:JSON.stringify({recipe,title:recipe.title,display_name:displayName(),visibility:'private'})});
+      const result=await api('/api/live-cook-rooms',{method:'POST',body:JSON.stringify({recipe,title:recipe.title,display_name:displayName(),visibility:'private',cooking_session_id:window.GlucoPlateCookingSession?.getSession?.()?.id||undefined,current_step:Number(window.GlucoPlateCookingSession?.getSession?.()?.current_step??window.cookIndex??0)})});
       activate(result.room);notify(`Room ${result.room.invite_code} created.`);
     }catch(error){notify(error.message)}
   }
@@ -225,7 +225,7 @@
     }
   }
 
-  async function sendState(updates){if(!room||applyingRemote)return;try{const result=await api(`/api/live-cook-rooms/${room.id}/state`,{method:'PATCH',body:JSON.stringify(updates)});room=result.room;lastRevision=Number(room.state?.revision||lastRevision);emitRoomUpdated()}catch(error){notify(error.message)}}
+  async function sendState(updates){if(!room||applyingRemote)return;try{const result=await api(`/api/live-cook-rooms/${room.id}/state`,{method:'PATCH',body:JSON.stringify(updates)});room=result.room;lastRevision=Number(room.state?.revision||lastRevision);window.GlucoPlateCookingSession?.persist?.({current_step:Number(room.state?.current_step||0)});emitRoomUpdated()}catch(error){notify(error.message)}}
   async function setReady(ready){try{room=(await api(`/api/live-cook-rooms/${room.id}/ready`,{method:'PUT',body:JSON.stringify({ready})})).room;render()}catch(error){notify(error.message)}}
   async function chat(kind='message'){
     const input=document.getElementById('liveRoomChatInput');const message=kind==='help'?'I need help with this step.':input?.value.trim();if(!message)return;

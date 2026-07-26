@@ -99,6 +99,8 @@ class FirebaseLiveCookRoomService:
         host_name = self._clean_name(payload.get("display_name"), "Host")
         recipe = payload.get("recipe") or {}
         ingredients = recipe.get("ingredients") or []
+        cooking_session_id = str(payload.get("cooking_session_id") or "").strip()[:120]
+        current_step = max(0, int(payload.get("current_step") or 0))
         participant = {
             "uid": uid,
             "display_name": host_name,
@@ -115,9 +117,10 @@ class FirebaseLiveCookRoomService:
             "visibility": payload.get("visibility") or "private",
             "status": "active",
             "host_uid": uid,
+            "cooking_session_id": cooking_session_id or None,
             "recipe": recipe,
             "state": {
-                "current_step": 0,
+                "current_step": current_step,
                 "selected_servings": self._servings(recipe),
                 "ingredient_checks": {self._ingredient_id(recipe, index): False for index, _ in enumerate(ingredients)},
                 "timer": None,
