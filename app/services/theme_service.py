@@ -14,36 +14,38 @@ from firebase_admin import db
 
 from app.services.firebase_auth_service import FirebaseAuthService
 
+DEFAULT_THEME_NAME = "Midnight Fire"
+
 DEFAULT_THEME: dict[str, Any] = {
     "id": "default",
-    "name": "Default",
+    "name": DEFAULT_THEME_NAME,
     "version": 1,
     "status": "published",
     "enabled": True,
     "tokens": {
         "colors": {
-            "background": "#f7f4ef",
-            "surface": "#ffffff",
-            "surfaceAlt": "#f3ede6",
-            "text": "#211f1d",
-            "muted": "#756f69",
-            "border": "#e7ded4",
-            "primary": "#f26a2e",
-            "secondary": "#ff9e3d",
-            "accent": "#257453",
-            "danger": "#a92f24",
-            "dark": "#171412",
+            "background": "#101411",
+            "surface": "#171d18",
+            "surfaceAlt": "#222a23",
+            "text": "#f4f1e8",
+            "muted": "#b9c2b8",
+            "border": "#3a443b",
+            "primary": "#ff5a36",
+            "secondary": "#d93f24",
+            "accent": "#c7ef57",
+            "danger": "#ff7a65",
+            "dark": "#090c0a",
         },
         "typography": {
-            "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+            "fontFamily": "\"Avenir Next\", \"Segoe UI\", Helvetica, Arial, sans-serif",
             "baseSize": 16,
             "baseWeight": 400,
             "headingWeight": 900,
         },
-        "shape": {"radius": 26, "controlRadius": 17, "borderWidth": 1},
+        "shape": {"radius": 8, "controlRadius": 3, "borderWidth": 1},
         "effects": {
-            "shadow": "0 18px 50px rgba(59,43,30,.12)",
-            "softShadow": "0 10px 28px rgba(59,43,30,.08)",
+            "shadow": "0 12px 32px rgba(0,0,0,.28)",
+            "softShadow": "0 4px 14px rgba(0,0,0,.18)",
             "textShadow": "none",
         },
     },
@@ -110,7 +112,7 @@ class ThemeService:
             theme.update(deepcopy(stored))
         theme["id"] = theme_id
         theme["enterpriseId"] = enterprise_id
-        theme.setdefault("name", "Default" if theme_id == "default" else theme_id.replace("-", " ").title())
+        theme.setdefault("name", DEFAULT_THEME_NAME if theme_id == "default" else theme_id.replace("-", " ").title())
         theme.setdefault("enabled", True)
         return theme
 
@@ -157,7 +159,7 @@ class ThemeService:
             saved = deepcopy(theme)
             saved.pop("enterpriseId", None)
             saved["id"] = selected_id
-            saved["name"] = saved.get("name") or current.get("name") or ("Default" if selected_id == "default" else selected_id.replace("-", " ").title())
+            saved["name"] = saved.get("name") or current.get("name") or (DEFAULT_THEME_NAME if selected_id == "default" else selected_id.replace("-", " ").title())
             saved["version"] = int(current.get("version", 0)) + 1
             saved["status"] = "published" if publish else "draft"
             saved["enabled"] = bool(saved.get("enabled", current.get("enabled", publish)))
@@ -211,7 +213,7 @@ class ThemeService:
             company = self._read_company(enterprise_id)
             company.setdefault("themes", {})[selected_id] = deepcopy(DEFAULT_THEME) | {
                 "id": selected_id,
-                "name": "Default" if selected_id == "default" else selected_id.replace("-", " ").title(),
+                "name": DEFAULT_THEME_NAME if selected_id == "default" else selected_id.replace("-", " ").title(),
                 "updated_at": _utcnow(),
             }
             company.setdefault("active_theme_id", "default")
