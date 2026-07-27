@@ -19,3 +19,5 @@ def test_product_shell_navigation_uses_textual_accessible_marks() -> None:
     assert markup.count('<span aria-hidden="true"></span><span>') == 5
     assert '<span>🏠</span><span>Home</span>' not in markup
     assert '<span>🌍</span><span>Cuisines</span>' not in markup
+    assert ".tab>span:first-child{display:none}" in markup
+    assert 'content:"Home"' not in markup
