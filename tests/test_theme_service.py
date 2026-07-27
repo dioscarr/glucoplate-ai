@@ -1,3 +1,5 @@
+import json
+
 from app.services.theme_service import DEFAULT_THEME_NAME, ThemeService
 
 
@@ -21,3 +23,14 @@ def test_reset_restores_midnight_fire_as_company_default(tmp_path) -> None:
 
     assert restored["name"] == DEFAULT_THEME_NAME
     assert restored["tokens"]["colors"]["accent"] == "#c7ef57"
+
+
+def test_legacy_default_name_is_normalized_to_midnight_fire(tmp_path) -> None:
+    path = tmp_path / "themes.json"
+    path.write_text(
+        json.dumps({"glucoplate": {"themes": {"default": {"name": "Default"}}}}),
+        encoding="utf-8",
+    )
+    service = ThemeService(path=str(path))
+
+    assert service.get("glucoplate")["name"] == DEFAULT_THEME_NAME

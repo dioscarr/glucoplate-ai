@@ -112,7 +112,10 @@ class ThemeService:
             theme.update(deepcopy(stored))
         theme["id"] = theme_id
         theme["enterpriseId"] = enterprise_id
-        theme.setdefault("name", DEFAULT_THEME_NAME if theme_id == "default" else theme_id.replace("-", " ").title())
+        if theme_id == "default" and theme.get("name") in {None, "Default"}:
+            theme["name"] = DEFAULT_THEME_NAME
+        else:
+            theme.setdefault("name", theme_id.replace("-", " ").title())
         theme.setdefault("enabled", True)
         return theme
 
