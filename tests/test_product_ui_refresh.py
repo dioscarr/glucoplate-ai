@@ -21,3 +21,12 @@ def test_product_shell_navigation_uses_textual_accessible_marks() -> None:
     assert '<span>🌍</span><span>Cuisines</span>' not in markup
     assert ".tab>span:first-child{display:none}" in markup
     assert 'content:"Home"' not in markup
+
+
+def test_hero_motion_respects_reduced_motion_preferences() -> None:
+    markup = INDEX_HTML.read_text(encoding="utf-8")
+
+    assert "@media(prefers-reduced-motion:no-preference)" in markup
+    assert "@keyframes productHeroReveal" in markup
+    assert "transform:translateY(12px)" in markup
+    assert "@media(prefers-reduced-motion:reduce)" in markup
