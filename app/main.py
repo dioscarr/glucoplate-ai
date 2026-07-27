@@ -93,7 +93,7 @@ async def pwa_headers_and_script(request: Request, call_next):
         body = b"".join(chunks)
         head_marker = b"</head>"
         body_marker = b"</body>"
-        native_style = b'<link rel="stylesheet" href="/static/native-pwa.css" /><link rel="stylesheet" href="/static/product-redesign.css" /></head>'
+        native_style = b'<link rel="stylesheet" href="/static/design-tokens.css" /><link rel="stylesheet" href="/static/app-shell.css" /><link rel="stylesheet" href="/static/native-pwa.css" /></head>'
 
         if b"/static/native-pwa.css" not in body and head_marker in body:
             body = body.replace(head_marker, native_style)
