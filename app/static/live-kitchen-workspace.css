@@ -13,3 +13,13 @@
 @media(max-width:1023px){.live-workspace-layout{grid-template-columns:1fr}.live-workspace-stage{min-height:auto}.live-workspace-rail{position:static;max-height:none}.live-workspace-rail [role=tabpanel]{max-height:none}}
 @media(max-width:640px){.live-room-panel.is-full-page #liveRoomBody{padding:.75rem .75rem calc(1rem + env(safe-area-inset-bottom))!important}.live-workspace-stage{padding:.85rem;border-radius:20px}.live-workspace-layout{gap:.75rem}.live-workspace-rail{border-radius:20px}.live-room-panel.is-full-page .live-room-expand:after{content:""}}
 @media(prefers-reduced-motion:reduce){.live-workspace-shell *{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
+/* Culinary Instrument Live Kitchen */
+.live-room-panel.is-full-page{background:var(--canvas)!important}.live-room-panel.is-full-page>header{height:68px!important;background:var(--canvas)!important;border-bottom:1px solid var(--rule)!important}
+.live-room-panel.is-full-page #liveRoomBody{max-width:1440px!important;padding:24px!important}.live-workspace-layout{grid-template-columns:minmax(0,1fr) minmax(300px,380px)!important;gap:16px!important}
+.live-workspace-stage{min-height:calc(100dvh - 124px)!important;padding:16px!important;border:1px solid var(--rule)!important;border-radius:var(--radius-media)!important;background:var(--paper)!important;box-shadow:none!important}
+.live-workspace-rail{top:84px!important;border:1px solid var(--rule)!important;border-radius:var(--radius-card)!important;background:var(--paper)!important;box-shadow:none!important}
+.live-room-panel.is-full-page .live-workspace-nav{padding:0!important;border:0!important;border-bottom:1px solid var(--rule)!important;border-radius:0!important;background:transparent!important}
+.live-workspace-nav [role=tab]{border-radius:0!important;color:var(--muted)!important}.live-workspace-nav [role=tab][aria-selected=true]{border-bottom:2px solid var(--forest)!important;background:transparent!important;color:var(--forest)!important;box-shadow:none!important}
+.live-workspace-activity{border:1px solid var(--rule)!important;border-radius:var(--radius-card)!important;background:var(--paper)!important}.live-workspace-activity summary{color:var(--forest)!important}
+@media(max-width:1023px){.live-workspace-layout{grid-template-columns:1fr!important}.live-workspace-stage{min-height:auto!important}.live-workspace-rail{position:static!important}}
+@media(max-width:640px){.live-room-panel.is-full-page #liveRoomBody{padding:12px!important}.live-workspace-stage,.live-workspace-rail{border-radius:var(--radius-card)!important}}
