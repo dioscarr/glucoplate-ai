@@ -35,12 +35,12 @@ DEFAULT_THEME: dict[str, Any] = {
             "dark": "#171412",
         },
         "typography": {
-            "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+            "fontFamily": "\"Avenir Next\", \"Segoe UI\", Helvetica, Arial, sans-serif",
             "baseSize": 16,
             "baseWeight": 400,
             "headingWeight": 900,
         },
-        "shape": {"radius": 26, "controlRadius": 17, "borderWidth": 1},
+        "shape": {"radius": 8, "controlRadius": 3, "borderWidth": 1},
         "effects": {
             "shadow": "0 18px 50px rgba(59,43,30,.12)",
             "softShadow": "0 10px 28px rgba(59,43,30,.08)",
@@ -110,7 +110,7 @@ class ThemeService:
             theme.update(deepcopy(stored))
         theme["id"] = theme_id
         theme["enterpriseId"] = enterprise_id
-        theme.setdefault("name", "Default" if theme_id == "default" else theme_id.replace("-", " ").title())
+        theme.setdefault("name", DEFAULT_THEME_NAME if theme_id == "default" else theme_id.replace("-", " ").title())
         theme.setdefault("enabled", True)
         return theme
 
@@ -157,7 +157,7 @@ class ThemeService:
             saved = deepcopy(theme)
             saved.pop("enterpriseId", None)
             saved["id"] = selected_id
-            saved["name"] = saved.get("name") or current.get("name") or ("Default" if selected_id == "default" else selected_id.replace("-", " ").title())
+            saved["name"] = saved.get("name") or current.get("name") or (DEFAULT_THEME_NAME if selected_id == "default" else selected_id.replace("-", " ").title())
             saved["version"] = int(current.get("version", 0)) + 1
             saved["status"] = "published" if publish else "draft"
             saved["enabled"] = bool(saved.get("enabled", current.get("enabled", publish)))
@@ -211,7 +211,7 @@ class ThemeService:
             company = self._read_company(enterprise_id)
             company.setdefault("themes", {})[selected_id] = deepcopy(DEFAULT_THEME) | {
                 "id": selected_id,
-                "name": "Default" if selected_id == "default" else selected_id.replace("-", " ").title(),
+                "name": DEFAULT_THEME_NAME if selected_id == "default" else selected_id.replace("-", " ").title(),
                 "updated_at": _utcnow(),
             }
             company.setdefault("active_theme_id", "default")
