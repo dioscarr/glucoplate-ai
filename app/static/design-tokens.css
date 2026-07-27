@@ -1,0 +1,20 @@
+/*
+  Culinary Instrument Panel
+  Operate-mode system for GlucoPlate. The interface is a calm kitchen tool:
+  precise, legible, and practical rather than a generic wellness dashboard.
+*/
+:root{
+  --canvas:#f5f3ed;--paper:#fefdfc;--ink:#172119;--muted:#667064;
+  --rule:#d8d8cf;--rule-strong:#bfc3b8;--forest:#1d5a3a;--forest-hover:#16462d;
+  --herb:#b8d94a;--ember:#d65a36;--brass:#a67c35;--mist:#eceee7;
+  --radius-control:2px;--radius-card:6px;--radius-media:10px;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;--space-6:32px;--space-7:48px;
+  --font-ui:"Avenir Next","Segoe UI",Helvetica,Arial,sans-serif;
+  --font-display:Georgia,"Times New Roman",serif;
+  --shadow-raised:0 8px 24px rgba(20,30,20,.08);
+}
+html{background:var(--canvas)}
+body{background:var(--canvas);color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.5}
+button,input,textarea,select{font:inherit}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid color-mix(in srgb,var(--forest) 40%,transparent);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
