@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 from app.api.enterprise_admin_routes import AuthContext
 from app.api.user_data_routes import scoped_user
 from app.services.firebase_live_cook_room_service import FirebaseLiveCookRoomService
+from app.services.firebase_user_data_service import FirebaseUserDataService
 
 router = APIRouter(prefix="/api/live-cook-rooms", tags=["live-cook-rooms"])
 
@@ -19,6 +20,7 @@ class CreateRoomPayload(BaseModel):
     recipe: dict[str, Any] = Field(default_factory=dict)
     cooking_session_id: str | None = Field(default=None, max_length=120)
     current_step: int = Field(default=0, ge=0, le=1000)
+    profile_id: str | None = Field(default=None, max_length=120)
 
 
 class JoinRoomPayload(BaseModel):
@@ -57,6 +59,13 @@ class InsightPayload(BaseModel):
     provider: Literal["auto", "gemini", "groq", "local"] = "auto"
 
 
+def user_data_service() -> FirebaseUserDataService:
+    try:
+        return FirebaseUserDataService()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Cooking session data is unavailable") from exc
+
+
 def service() -> FirebaseLiveCookRoomService:
     try:
         return FirebaseLiveCookRoomService()
@@ -74,7 +83,14 @@ def create_room(
     payload: CreateRoomPayload,
     user: Annotated[AuthContext, Depends(scoped_user)],
 ) -> dict[str, Any]:
-    room = service().create_room(user.enterprise_id, user.uid, payload.model_dump())
+    data = payload.model_dump()
+    if payload.cooking_session_id:
+        session = user_data_service().get_cooking_session(user.enterprise_id, user.uid, payload.cooking_session_id, payload.profile_id)
+        if session is None or session.get("status") != "active":
+            raise HTTPException(status_code=422, detail="An active CookingSession for this profile is required")
+        data["current_step"] = max(0, int(session.get("current_step") or 0))
+        data["recipe"] = session.get("recipe") or data["recipe"]
+    room = service().create_room(user.enterprise_id, user.uid, data)
     return {"ok": True, "room": room}
 
 

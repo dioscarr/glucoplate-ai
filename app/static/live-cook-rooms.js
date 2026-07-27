@@ -192,7 +192,7 @@
   async function createRoom(){
     const recipe=currentRecipe();if(!recipe){notify('Open a recipe before starting a room.');return}
     try{
-      const result=await api('/api/live-cook-rooms',{method:'POST',body:JSON.stringify({recipe,title:recipe.title,display_name:displayName(),visibility:'private',cooking_session_id:window.GlucoPlateCookingSession?.getSession?.()?.id||undefined,current_step:Number(window.GlucoPlateCookingSession?.getSession?.()?.current_step??window.cookIndex??0)})});
+      const result=await api('/api/live-cook-rooms',{method:'POST',body:JSON.stringify({recipe,title:recipe.title,display_name:displayName(),visibility:'private',cooking_session_id:window.GlucoPlateCookingSession?.getSession?.()?.id||undefined,current_step:Number(window.GlucoPlateCookingSession?.getSession?.()?.current_step??window.cookIndex??0),profile_id:window.GlucoPlateCookingSession?.getSession?.()?.profile_id||undefined})});
       activate(result.room);notify(`Room ${result.room.invite_code} created.`);
     }catch(error){notify(error.message)}
   }
