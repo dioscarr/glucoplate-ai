@@ -14,9 +14,11 @@ from firebase_admin import db
 
 from app.services.firebase_auth_service import FirebaseAuthService
 
+DEFAULT_THEME_NAME = "Midnight Fire"
+
 DEFAULT_THEME: dict[str, Any] = {
     "id": "default",
-    "name": "Default",
+    "name": DEFAULT_THEME_NAME,
     "version": 1,
     "status": "published",
     "enabled": True,
@@ -42,8 +44,8 @@ DEFAULT_THEME: dict[str, Any] = {
         },
         "shape": {"radius": 8, "controlRadius": 3, "borderWidth": 1},
         "effects": {
-            "shadow": "0 18px 50px rgba(59,43,30,.12)",
-            "softShadow": "0 10px 28px rgba(59,43,30,.08)",
+            "shadow": "0 12px 32px rgba(0,0,0,.28)",
+            "softShadow": "0 4px 14px rgba(0,0,0,.18)",
             "textShadow": "none",
         },
     },
