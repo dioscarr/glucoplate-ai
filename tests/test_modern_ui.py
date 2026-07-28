@@ -36,7 +36,7 @@ def test_index_page_has_ingredient_and_food_browsing() -> None:
     assert "selectedFoods" in html
     assert "renderCategories" in html
     assert "renderFoods" in html
-    assert "ingredients you already have" in html
+    assert "ingredients already on hand" in html
 
 
 def test_index_page_has_native_app_shell() -> None:
