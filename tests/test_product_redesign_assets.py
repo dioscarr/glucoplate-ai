@@ -22,3 +22,14 @@ def test_component_system_covers_core_product_surfaces() -> None:
     assert ".cook-active-stage" in cook
     assert "[data-live-video-studio]" in studio
     assert "prefers-reduced-motion:reduce" in tokens
+
+
+def test_home_surface_uses_the_today_entry_point() -> None:
+    index = Path("app/static/index.html").read_text(encoding="utf-8")
+    shell = Path("app/static/app-shell.css").read_text(encoding="utf-8")
+
+    assert "Today in your kitchen" in index
+    assert "Your kitchen, in focus." in index
+    assert "Plan a meal" in index
+    assert "today-prompt" in index
+    assert ".today-prompt" in shell
