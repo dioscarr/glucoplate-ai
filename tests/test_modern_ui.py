@@ -19,12 +19,12 @@ def test_root_redirects_to_single_index_page() -> None:
     assert response.headers["location"] == "/static/index.html"
 
 
-def test_index_page_has_cuisine_first_recipe_discovery() -> None:
+def test_index_page_has_focused_today_recipe_discovery() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
 
-    assert "Cuisine-first recipe discovery" in html
-    assert "Choose a cuisine. Pick a dish. Generate it." in html
-    assert "Explore cuisines" in html
+    assert "Today in your kitchen" in html
+    assert "Your kitchen, in focus." in html
+    assert "Plan a meal" in html
     assert "cuisineGrid" in html
     assert "renderPopularRecipes" in html
 
@@ -48,7 +48,7 @@ def test_index_page_has_native_app_shell() -> None:
     assert "savedView" in html
     assert "profileView" in html
     assert "bottom-nav" in html
-    assert "Open Cook Mode" in html
+    assert "Continue cooking" in html
 
 
 def test_index_page_has_cook_mode() -> None:
