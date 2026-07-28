@@ -45,7 +45,7 @@ test('application shell loads without browser runtime failures', async ({ page }
   const failures = collectRuntimeFailures(page);
   await page.goto('/');
   await expect(page).toHaveTitle('GlucoPlate AI');
-  await expect(page.getByRole('heading', { name: 'Choose a cuisine. Pick a dish. Generate it.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your kitchen, in focus.' })).toBeVisible();
   await expect(page.locator('#enterpriseAuthGate')).toBeVisible();
 
   expect(failures, failures.join('\n')).toEqual([]);
