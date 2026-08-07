@@ -2,19 +2,16 @@
 
 ## Project Identity
 
-GlucoPlate AI is a Python/FastAPI portfolio project demonstrating AI systems architecture for diabetes-friendly recipe and meal planning.
-
-The project should be built as a safe wellness-support system, not as a medical device or clinical decision tool.
+GlucoPlate AI is an AI-powered recipe companion that helps people decide what to cook from their ingredients, preferences, culture, time, and cooking goals. Nutrition and dietary preferences support personalization, but the product is not positioned as a medical device or clinical decision tool.
 
 ## Development Style
 
 When generating code:
 
 - Use Python 3.12+.
-- Prefer FastAPI, Pydantic, and typed service classes/functions.
+- Prefer FastAPI, Pydantic, SQLAlchemy, and typed service classes/functions.
 - Keep files small and focused.
 - Separate API routes, schemas, services, repositories, safety checks, and AI providers.
-- Prefer local JSON data before adding databases.
 - Make AI providers swappable through interfaces.
 - Do not hard-code API keys.
 - Use environment variables for secrets.
@@ -28,117 +25,110 @@ Follow this boundary:
 API Route
   -> Application Service
   -> Domain / Safety / Nutrition Services
-  -> Repository / JSON Store / External API Provider
+  -> Repository / Data Store / External API Provider
 ```
 
 Do not place business logic directly in FastAPI route functions.
 
 ## AI Safety Rules
 
-The application must never:
+The application must never diagnose a user, recommend medication changes, make cure claims, encourage dangerous restriction, or present nutrition estimates as exact clinical guidance.
 
-- Diagnose diabetes.
-- Recommend insulin or medication changes.
-- Claim that a recipe cures diabetes.
-- Encourage extreme fasting or unsafe restriction.
-- Provide emergency medical advice.
-
-The application should:
-
-- Explain that nutrition estimates are approximate.
-- Encourage clinician or registered dietitian review for personal medical decisions.
-- Flag unsafe prompts and risky recipe outputs.
-- Prefer balanced meals with protein, fiber, vegetables, and controlled carbohydrates.
+The application should clearly communicate uncertainty, keep AI providers behind interfaces, validate structured output, fail safely, and preserve a local fallback where supported.
 
 ## Recipe Generation Rules
 
-Generated recipes should include:
+Generated recipes should include the fields expected by the active schemas and API contracts, including title, summary, ingredients, steps, nutrition estimates, substitutions, and applicable safety or review metadata.
 
-- Title
-- Summary
-- Ingredients
-- Steps
-- Nutrition estimate
-- Substitutions
-- Safety review
+## Copilot Handoff Operating System
 
-## Copilot Task Pattern
+Treat this repository as a coordinated multi-agent engineering system, not a collection of isolated prompts.
 
-When implementing a new feature, use this pattern:
+For meaningful work, follow this pipeline:
 
-1. Update or create the Pydantic schema.
-2. Add service logic.
-3. Add JSON repository support if needed.
-4. Add API route.
-5. Add tests.
-6. Update docs.
+1. Understand the objective and current state.
+2. Plan the smallest coherent slice.
+3. Define architecture/contracts when the change crosses boundaries.
+4. Implement the slice.
+5. Verify with tests and repository checks.
+6. Review the total change for regressions, security, safety, and product fit.
+7. Update durable memory and leave a precise handoff for the next session.
 
-## Preferred Commit Style
+### Context to load
 
-Use concise feature-oriented messages, for example:
+Read these files when relevant before making meaningful changes:
 
-- `Add local recipe repository`
-- `Add AI provider interface`
-- `Add nutrition safety checks`
-- `Add Codespaces configuration`
+- `README.md`
+- `PROJECT_STATUS.md`
+- `ROADMAP.md`
+- `docs/AI_DEVELOPMENT_GUIDE.md`
+- `.ai/memory/project-state.md`
+- `.ai/memory/decisions.md`
+- `.ai/handoffs/current.md`
+- `.github/agent/` when using the existing programmatic agent-memory helpers
 
----
+### Role routing
 
-# Copilot CLI / Agent Wiring (development-only)
+Use the prompts in `.ai/agents/` as explicit modes:
 
-Purpose
-- These instructions guide Copilot CLI-driven automation and local chat agents that operate on this repository for development tasks. They explain how to load context, update agent memory/backlog files, and apply safety/cost gates.
+- `planner.md` — converts objectives into executable plans.
+- `architect.md` — defines boundaries, contracts, data flow, and tradeoffs.
+- `implementer.md` — implements an approved slice with minimal scope.
+- `tester.md` — verifies behavior, edge cases, and regressions.
+- `reviewer.md` — reviews the whole change before merge.
+- `memory-keeper.md` — records durable state and prepares the next handoff.
 
-Key development-only files (agent helpers)
-- .github/agent/soul.md — guiding principles (safety, cost, provenance)
-- .github/agent/config.yaml — model preferences, cost caps, and approval thresholds
-- .github/agent/longterm-context.md — rules for durable facts
-- .github/agent/shortterm-context.md — session cache rules
-- .github/agent/backlog.md — backlog conventions
+One Copilot session may perform several roles, but it must keep role transitions explicit and respect the output contract of each role.
 
-Programmatic helpers (use from scripts or Copilot CLI)
-- app.ai.agent_interface.load_context_for_session(session_id)
-  - Returns {long_term: [...], short_term: [...], config: ...}
-- app.ai.agent_interface.append_session_transcript(session_id, transcript_text)
-  - Save redacted transcripts to .github/agent/session_cache/
-- app.ai.agent_interface.persist_session_summary(session_id, summary, tags=None)
-  - Persist vetted summaries to long-term memory
-- app.ai.agent_memory.AgentMemory
-  - list_memory(), add_memory(fact, tags), list_backlog(), add_backlog(title, details)
+### Rules of engagement
 
-Behavior rules for Copilot-driven agents
-1. Load context at session start
-   - Call load_context_for_session(session_id) and include its long_term and short_term summaries in the system prompt.
-2. Redact before writing
-   - Never write secrets, API keys, or unredacted PII to session_cache or memory.json. Use provided redaction helpers or refuse.
-3. Short-term vs long-term writes
-   - Append raw session transcripts to session_cache via append_session_transcript().
-   - Persist only short vetted summaries to long-term memory via persist_session_summary().
-4. Cost & human approval
-   - Respect .github/agent/config.yaml human_approval_threshold_usd. If an operation (e.g., high-cost image generation) exceeds the threshold, request explicit human approval before proceeding.
-5. Safety
-   - Do not provide medical diagnoses, dosing advice, or emergency instructions. For risky prompts, return a safe fallback and recommend clinician review.
-6. Backlog
-   - When a work item is identified, call AgentMemory.add_backlog(title, details) with tags and provenance.
-7. Traceability
-   - Memory/backlog entries must include provenance: session_id, source, and timestamp.
+- Do not invent requirements unsupported by the repo, user request, or recorded decisions.
+- Prefer small, reviewable changes over broad rewrites.
+- Preserve existing behavior unless the objective changes it.
+- Do not code across an architectural boundary until the contract is clear enough to test.
+- Add or update tests for behavior changes.
+- Run the narrowest useful checks first, then broader checks when warranted.
+- For user-facing changes, consider API, PWA/UI, accessibility, loading/error states, and observability.
+- For AI changes, consider provider failure, fallback behavior, structured output validation, safety, and cost.
+- For data changes, consider migrations and production PostgreSQL even when SQLite is used locally.
+- Never mark work complete with known blockers hidden. Record them in the handoff.
 
-Prompt guidance
-- System prompt: include up to 8 top long-term facts and 6 most recent short-term filenames with concise metadata.
-- Keep summaries compact; use a cheap summarizer for long transcripts when available.
+### Handoff contract
 
-Operational notes
-- These helpers are for local development agents only and must not be exposed as public HTTP endpoints.
-- CI may run scripts/agent_sync.py to summarize session cache periodically.
+At the end of meaningful work, update `.ai/handoffs/current.md` with:
 
-Example pseudo-flow
-- At start: ctx = load_context_for_session(session_id)
-  Build system prompt with ctx['long_term'][:8] and ctx['short_term'][:6]
-- After output: safe = redact_secrets(transcript)
-  append_session_transcript(session_id, safe)
-  summary = summarize_short(safe)
-  persist_session_summary(session_id, summary, tags=['auto-summary'])
+- objective
+- current status
+- what changed
+- files touched
+- validation performed
+- decisions made
+- unresolved risks/blockers
+- exact recommended next action
 
-If unsure about safety or cost, stop and ask for human confirmation.
+If work changes durable understanding of the project, also update `.ai/memory/project-state.md` and/or `.ai/memory/decisions.md`.
 
+### Definition of done
 
+Work is complete only when the requested behavior or analysis is complete, relevant checks pass or failures are documented, no known critical regression is left unaddressed, and the handoff is updated.
+
+## Existing Agent Memory Integration
+
+The repository already includes development-only agent helpers under `.github/agent/` and `app.ai.agent_interface`. Keep using them where programmatic session memory is appropriate.
+
+Key development-only files:
+
+- `.github/agent/soul.md`
+- `.github/agent/config.yaml`
+- `.github/agent/longterm-context.md`
+- `.github/agent/shortterm-context.md`
+- `.github/agent/backlog.md`
+
+Programmatic helpers:
+
+- `app.ai.agent_interface.load_context_for_session(session_id)`
+- `app.ai.agent_interface.append_session_transcript(session_id, transcript_text)`
+- `app.ai.agent_interface.persist_session_summary(session_id, summary, tags=None)`
+- `app.ai.agent_memory.AgentMemory`
+
+Use `.github/agent/` for programmatic session cache/backlog memory and `.ai/` for human-readable orchestration, role contracts, project state, and handoffs. Never write secrets, API keys, or unredacted PII to either system.
