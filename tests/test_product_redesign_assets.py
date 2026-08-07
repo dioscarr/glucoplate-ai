@@ -33,3 +33,14 @@ def test_home_surface_uses_the_today_entry_point() -> None:
     assert "Plan a meal" in index
     assert "today-prompt" in index
     assert ".today-prompt" in shell
+
+
+def test_discovery_and_recipe_detail_share_the_wave_two_hierarchy() -> None:
+    shell = Path("app/static/app-shell.css").read_text(encoding="utf-8")
+
+    assert "Wave 2 — Discovery and recipe detail" in shell
+    assert "body #discoverView" in shell
+    assert "body .dish-card:focus-visible" in shell
+    assert "body #recipeView" in shell
+    assert "body .recipe-hero h1" in shell
+    assert "grid-template-columns:minmax(0,1.15fr)" in shell
