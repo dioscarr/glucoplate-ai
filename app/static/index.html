@@ -8,6 +8,7 @@
 <meta name="description" content="A native-feeling AI recipe companion for planning, cooking, and saving meals." />
 <style>
 /* Product refresh: Premium utilitarian kitchen */
+.tab>span:first-child{display:none}
 :root{--brand:#245f36}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif;background:#f2f2f7;color:#111;-webkit-font-smoothing:antialiased}button,textarea,input{font:inherit}button{cursor:pointer}.hidden{display:none!important}
 :root{--bg:#f2f2f7;--surface:rgba(255,255,255,.88);--surface-solid:#fff;--label:#111;--secondary:#6e6e73;--tertiary:#8e8e93;--line:rgba(60,60,67,.16);--orange:#ff6b35;--orange-soft:#fff1e9;--green:#34c759;--blue:#007aff;--shadow:0 10px 30px rgba(0,0,0,.08);--radius:24px;--small-radius:16px}
@@ -44,7 +45,7 @@
           <h1>Your kitchen, in focus.</h1>
           <p>Describe a craving, use what is already in your kitchen, or jump back into a recipe you saved.</p>
           <div class="hero-actions">
-            <button class="btn primary" onclick="focusPrompt()">Create a recipe</button>
+            <button class="btn primary" onclick="focusPrompt()">Plan a meal</button>
             <button class="btn secondary" onclick="showView('savedView');loadSaved()">Open cookbook</button>
           </div>
         </div>
