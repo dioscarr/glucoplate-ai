@@ -69,13 +69,24 @@
   function mountSwitcher(){
     document.getElementById('companyThemeSwitcherWrap')?.remove();
     if(!bundle?.themes||bundle.themes.length<2)return;
-    const target=document.querySelector('.app-header .header-actions,.app-header nav,.app-header,.bottom-nav');
-    if(!target)return;
+    const profile=document.getElementById('profileView');
+    if(!profile)return;
+
+    let slot=profile.querySelector('[data-theme-picker-slot]');
+    if(!slot){
+      slot=document.createElement('div');
+      slot.dataset.themePickerSlot='true';
+      slot.className='card section profile-theme-section';
+      slot.innerHTML='<div class="section-head"><div><h2>Appearance</h2><p>Choose how GlucoPlate looks on this device.</p></div></div>';
+      profile.appendChild(slot);
+    }
+
     const wrap=document.createElement('label');
     wrap.id='companyThemeSwitcherWrap';
-    wrap.style.cssText='display:flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;white-space:nowrap';
-    wrap.innerHTML=`<span>Theme</span><select id="companyThemeSwitcher" aria-label="Company theme" style="width:auto;min-width:110px;padding:7px 9px;border:1px solid var(--line,#ddd);border-radius:10px;background:var(--surface,#fff);color:var(--text,#222)">${bundle.themes.map(theme=>`<option value="${theme.id}">${theme.name||theme.id}</option>`).join('')}</select>`;
-    target.appendChild(wrap);
+    wrap.className='profile-theme-picker';
+    wrap.style.cssText='display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,220px);align-items:center;gap:12px;font-size:.82rem;font-weight:800';
+    wrap.innerHTML=`<span>Theme</span><select id="companyThemeSwitcher" aria-label="Company theme" style="width:100%;min-width:0;padding:10px 12px;border:1px solid var(--line,#ddd);border-radius:10px;background:var(--surface,#fff);color:var(--text,#222)">${bundle.themes.map(theme=>`<option value="${theme.id}">${theme.name||theme.id}</option>`).join('')}</select>`;
+    slot.appendChild(wrap);
     const select=wrap.querySelector('select');
     select.value=selectedTheme()?.id||bundle.activeThemeId;
     select.addEventListener('change',()=>switchTheme(select.value));
