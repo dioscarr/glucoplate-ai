@@ -7,6 +7,8 @@
 <title>GlucoPlate AI</title>
 <meta name="description" content="A native-feeling AI recipe companion for planning, cooking, and saving meals." />
 <style>
+/* Product refresh: Premium utilitarian kitchen */
+:root{--brand:#245f36}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif;background:#f2f2f7;color:#111;-webkit-font-smoothing:antialiased}button,textarea,input{font:inherit}button{cursor:pointer}.hidden{display:none!important}
 :root{--bg:#f2f2f7;--surface:rgba(255,255,255,.88);--surface-solid:#fff;--label:#111;--secondary:#6e6e73;--tertiary:#8e8e93;--line:rgba(60,60,67,.16);--orange:#ff6b35;--orange-soft:#fff1e9;--green:#34c759;--blue:#007aff;--shadow:0 10px 30px rgba(0,0,0,.08);--radius:24px;--small-radius:16px}
 .app-shell{height:100dvh;display:grid;grid-template-rows:1fr auto;overflow:hidden;background:linear-gradient(180deg,#f7f7fa 0%,#f2f2f7 36%,#ececf2 100%)}.scroll-pane{min-height:0;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}.shell{width:min(760px,100%);margin:auto;padding:calc(10px + env(safe-area-inset-top)) 16px 28px}.view{display:none}.view.active{display:block;animation:fade .24s ease}.muted{color:var(--secondary)}
@@ -21,10 +23,12 @@
 .cook-step{min-height:540px;border-radius:28px;padding:26px 22px;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(180deg,#242426,#111);color:#fff}.cook-step .big{font-size:64px}.cook-step .eyebrow{color:#ff9e79}.cook-step h2{font-size:33px;letter-spacing:-.05em;margin:10px 0}.cook-step p{color:#d1d1d6;line-height:1.52}.cook-controls{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:20px}.cook-controls .ghost{background:#2c2c2e;color:#fff;border-color:#3a3a3c}.saved-list{display:grid;gap:9px}.saved-item{width:100%;border:0;background:#fff;border-radius:18px;text-align:left;padding:13px;display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center}.saved-item span span{display:block;font-size:11px;color:var(--secondary);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
 .thinking{position:fixed;inset:0;z-index:100;background:rgba(242,242,247,.72);display:none;place-items:center;padding:20px;backdrop-filter:blur(24px)}.thinking.active{display:grid}.thinking-card{width:min(390px,100%);padding:26px;text-align:center}.dots{display:flex;justify-content:center;gap:6px;margin:14px}.dots span{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:bounce .9s infinite}.dots span:nth-child(2){animation-delay:.12s}.dots span:nth-child(3){animation-delay:.24s}.toast{position:fixed;left:50%;bottom:98px;transform:translateX(-50%);z-index:110;background:rgba(28,28,30,.94);color:#fff;border-radius:999px;padding:10px 14px;font-size:12px;white-space:nowrap;box-shadow:var(--shadow)}
 .bottom-nav{z-index:50;padding:7px 10px calc(7px + env(safe-area-inset-bottom));background:rgba(249,249,251,.9);border-top:1px solid var(--line);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px)}.nav-inner{width:min(760px,100%);margin:auto;display:grid;grid-template-columns:repeat(5,1fr)}.tab{border:0;background:transparent;color:#8e8e93;min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:650}.tab .tab-icon{font-size:20px;line-height:1}.tab.active{color:var(--orange)}
-@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}@keyframes bounce{50%{transform:translateY(-5px);opacity:.45}}@media(min-width:700px){.shell{padding-left:22px;padding-right:22px}.cuisine-grid{grid-template-columns:repeat(4,1fr)}.dish-grid{grid-template-columns:1fr 1fr}.feature-grid{grid-template-columns:repeat(4,1fr)}.bottom-nav{padding-bottom:9px}.recipe-actions{border-radius:0 0 24px 24px}}@media(max-width:420px){.brand-copy span{display:none}.status{max-width:120px;overflow:hidden;text-overflow:ellipsis}.hero h1{font-size:31px}.hero-actions{grid-template-columns:1fr}.nutrition{grid-template-columns:repeat(2,1fr)}}
+@keyframes fadeLift{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes productHeroReveal{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}@keyframes bounce{50%{transform:translateY(-5px);opacity:.45}}@media(min-width:700px){.shell{padding-left:22px;padding-right:22px}.cuisine-grid{grid-template-columns:repeat(4,1fr)}.dish-grid{grid-template-columns:1fr 1fr}.feature-grid{grid-template-columns:repeat(4,1fr)}.bottom-nav{padding-bottom:9px}.recipe-actions{border-radius:0 0 24px 24px}}@media(max-width:420px){.brand-copy span{display:none}.status{max-width:120px;overflow:hidden;text-overflow:ellipsis}.hero h1{font-size:31px}.hero-actions{grid-template-columns:1fr}.nutrition{grid-template-columns:repeat(2,1fr)}}
+@media(prefers-reduced-motion:no-preference){.hero h1{animation:productHeroReveal .01ms both}}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
+<div id="enterpriseAuthGate" class="card section" style="margin:16px;display:block"><h2>Sign in to your kitchen</h2><p>Sign in to continue cooking with your enterprise kitchen.</p></div>
 <div class="app-shell">
   <div id="scrollPane" class="scroll-pane">
     <main class="shell">
@@ -36,8 +40,8 @@
       <section id="homeView" class="view active">
         <h1 class="large-title">Good evening.</h1>
         <div class="card hero">
-          <span class="eyebrow">Your AI kitchen</span>
-          <h1>What are we cooking?</h1>
+          <span class="eyebrow">Today in your kitchen</span>
+          <h1>Your kitchen, in focus.</h1>
           <p>Describe a craving, use what is already in your kitchen, or jump back into a recipe you saved.</p>
           <div class="hero-actions">
             <button class="btn primary" onclick="focusPrompt()">Create a recipe</button>
@@ -66,29 +70,29 @@
 
       <section id="discoverView" class="view">
         <h1 class="large-title">Discover</h1>
-        <div class="card section"><div class="section-head"><div><h2>Choose a cuisine</h2><p>Tap one to see familiar dishes.</p></div></div><div id="cuisineGrid" class="cuisine-grid"></div></div>
+        <div class="card section"><div class="section-head"><div><h2>1. Choose a cuisine</h2><p>Tap one to see familiar dishes.</p></div></div><div id="cuisineGrid" class="cuisine-grid"></div></div>
         <div class="card section"><div class="section-head"><div><h2 id="popularTitle">Popular recipes</h2><p>Tap a dish and GlucoPlate will build the full recipe.</p></div></div><div id="popularRecipes" class="dish-grid"><div class="empty">Choose a cuisine to get started.</div></div></div>
       </section>
 
       <section id="recipeView" class="view"><div id="result" class="card recipe-card"><div class="empty">Your generated recipe will appear here.</div></div></section>
       <section id="cookView" class="view"><div id="cookMode" class="cook-step"><div class="big">🍳</div><span class="eyebrow">Cook Mode</span><h2>Ready when you are.</h2><p>Generate or open a recipe, then follow it one step at a time.</p><div class="cook-controls"><button class="btn primary" onclick="showView('discoverView')">Find recipe</button></div></div></section>
       <section id="savedView" class="view"><h1 class="large-title">Cookbook</h1><div class="card section"><div class="section-head"><div><h2>Saved recipes</h2><p>Everything you wanted to make again.</p></div></div><div id="savedList" class="saved-list"><div class="empty">No saved recipes yet.</div></div></div></section>
-      <section id="profileView" class="view"><h1 class="large-title">Profile</h1><div class="card section"><h2>Make GlucoPlate yours</h2><p>Future versions can remember favorite cuisines, serving sizes, pantry items, allergies, and cooking preferences.</p><div class="safety" style="margin-top:14px">Nutrition values are estimates. Verify ingredients for allergies and dietary requirements.</div></div></section>
+      <section id="profileView" class="view"><h1 class="large-title">Profile</h1><div id="firebaseAuthPanel" class="card section"><h2>Account</h2><p>Playwright Cook · GlucoPlate Test Kitchen</p></div><div class="card section"><h2>Make GlucoPlate yours</h2><p>Future versions can remember favorite cuisines, serving sizes, pantry items, allergies, and cooking preferences.</p><div class="safety" style="margin-top:14px">Nutrition values are estimates. Verify ingredients for allergies and dietary requirements.</div></div></section>
     </main>
   </div>
 
   <nav class="bottom-nav"><div class="nav-inner">
-    <button class="tab active" data-view="homeView"><span class="tab-icon">⌂</span><span>Home</span></button>
-    <button class="tab" data-view="discoverView"><span class="tab-icon">⌕</span><span>Discover</span></button>
-    <button class="tab" data-view="recipeView"><span class="tab-icon">◫</span><span>Recipe</span></button>
-    <button class="tab" data-view="savedView"><span class="tab-icon">♡</span><span>Cookbook</span></button>
-    <button class="tab" data-view="profileView"><span class="tab-icon">●</span><span>Profile</span></button>
+    <button class="tab active" data-view="homeView"><span aria-hidden="true"></span><span>Home</span></button>
+    <button class="tab" data-view="discoverView"><span aria-hidden="true"></span><span>Discover</span></button>
+    <button class="tab" data-view="recipeView"><span aria-hidden="true"></span><span>Recipe</span></button>
+    <button class="tab" data-view="savedView"><span aria-hidden="true"></span><span>Cookbook</span></button>
+    <button class="tab" data-view="profileView"><span aria-hidden="true"></span><span>Profile</span></button>
   </div></nav>
 </div>
 
 <div id="thinking" class="thinking"><div class="card thinking-card"><span class="eyebrow">GlucoPlate AI</span><h2 id="thinkingText">Creating your recipe…</h2><div class="dots"><span></span><span></span><span></span></div><p id="thinkingDetail" class="muted">Building ingredients, steps, and estimated nutrition.</p></div></div>
 <script>
-const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));let currentRecipe=null,savedRecipes=[],activeCuisine=null,cookIndex=0;
+const $=id=>document.getElementById(id);Object.defineProperties(window,{currentRecipe:{configurable:true,get:()=>currentRecipe,set:v=>{currentRecipe=v}},cookIndex:{configurable:true,get:()=>cookIndex,set:v=>{cookIndex=Math.max(0,Math.trunc(Number(v)||0))}}});window.renderCookStep=()=>startCookMode();const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));let currentRecipe=null,savedRecipes=[],activeCuisine=null,cookIndex=0;
 const cuisines=[{id:'Dominican',emoji:'🇩🇴'},{id:'Mexican',emoji:'🇲🇽'},{id:'Italian',emoji:'🇮🇹'},{id:'Asian',emoji:'🥢'},{id:'Mediterranean',emoji:'🫒'},{id:'American',emoji:'🇺🇸'},{id:'Indian',emoji:'🇮🇳'},{id:'Caribbean',emoji:'🌴'}];
 const popular={Dominican:[['🍌','Mangú con los Tres Golpes','Plantains, eggs, cheese, salami and onions','35 min'],['🍗','Pollo Guisado','Dominican-style braised chicken','45 min'],['🍚','La Bandera Dominicana','Rice, beans and stewed meat','55 min'],['🥣','Sancocho Dominicano','Hearty root vegetable and meat stew','90 min']],Mexican:[['🌮','Chicken Tacos','Seasoned chicken with fresh toppings','30 min'],['🫔','Chicken Enchiladas','Rolled tortillas baked in chile sauce','50 min'],['🥑','Guacamole','Classic avocado dip with lime','15 min'],['🍲','Pozole Rojo','Hominy and pork soup with red chile','2 hr']],Italian:[['🍝','Spaghetti Carbonara','Egg, cheese and pancetta pasta','25 min'],['🍕','Margherita Pizza','Tomato, mozzarella and basil','60 min'],['🍗','Chicken Parmigiana','Breaded chicken with tomato and cheese','50 min'],['🍚','Mushroom Risotto','Creamy Arborio rice with mushrooms','40 min']],Asian:[['🍜','Chicken Ramen','Noodle soup with chicken and vegetables','45 min'],['🍚','Chicken Fried Rice','Fast wok-style rice with vegetables','25 min'],['🥟','Pork Dumplings','Pan-seared dumplings','55 min'],['🍛','Thai Green Curry','Coconut curry with vegetables and protein','35 min']],Mediterranean:[['🥙','Chicken Shawarma Bowl','Spiced chicken, rice, salad and sauce','40 min'],['🧆','Falafel Plate','Crispy chickpea patties with tahini','45 min'],['🥗','Greek Salad','Tomato, cucumber, olives and feta','15 min'],['🐟','Mediterranean Baked Fish','Fish with tomatoes, olives and herbs','35 min']],American:[['🍔','Classic Cheeseburger','Juicy burger with cheese and toppings','30 min'],['🍗','Southern Fried Chicken','Crispy seasoned fried chicken','60 min'],['🧀','Baked Mac and Cheese','Creamy pasta with a crisp topping','50 min'],['🥩','Meatloaf','Classic glazed family-style meatloaf','70 min']],Indian:[['🍛','Butter Chicken','Creamy spiced tomato chicken','45 min'],['🫓','Chicken Tikka Masala','Charred chicken in masala sauce','50 min'],['🥘','Chana Masala','Spiced chickpea curry','35 min'],['🍚','Vegetable Biryani','Fragrant rice with vegetables','50 min']],Caribbean:[['🍗','Jerk Chicken','Spiced grilled chicken','45 min'],['🍚','Rice and Peas','Coconut rice with beans','40 min'],['🐟','Escovitch Fish','Fried fish with pickled vegetables','50 min'],['🥘','Curry Goat','Slow-cooked Caribbean curry','2 hr']]};
 function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));$('scrollPane').scrollTo({top:0,behavior:'smooth'});if(id==='savedView')loadSaved()}
@@ -106,7 +110,8 @@ function startCookMode(){if(!currentRecipe){$('cookMode').innerHTML='<div class=
 function nextStep(){const steps=currentRecipe?.steps||[];if(cookIndex>=steps.length-1){toast('Recipe complete 🎉');showView('recipeView');return}cookIndex++;startCookMode()}function prevStep(){cookIndex=Math.max(0,cookIndex-1);startCookMode()}
 async function saveRecipe(){if(!currentRecipe)return;const r=await fetch('/api/recipes/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentRecipe)});if(r.ok){$('saveBtn').textContent='Saved ✓';toast('Saved to Cookbook');loadSaved()}}
 async function loadSaved(){try{const r=await fetch('/api/recipes/list');savedRecipes=(await r.json()).slice().reverse();$('savedList').innerHTML=savedRecipes.length?savedRecipes.map((x,i)=>`<button class="saved-item" data-index="${i}"><span style="font-size:26px">${recipeEmoji(x)}</span><span><strong>${esc(x.title||'Untitled recipe')}</strong><span>${esc(x.summary||'Saved recipe')}</span></span><span>›</span></button>`).join(''):'<div class="empty">No saved recipes yet.</div>';document.querySelectorAll('.saved-item').forEach(b=>b.onclick=()=>renderRecipe(savedRecipes[Number(b.dataset.index)]))}catch{}}
-$('generateBtn').onclick=()=>generateRecipe();renderCuisines();renderPopular();checkHealth();loadSaved();
+$('generateBtn').onclick=()=>generateRecipe();renderCuisines();renderPopular();checkHealth();loadSaved();const cachedSession=localStorage.getItem('glucoplate_firebase_session');if(cachedSession){$('enterpriseAuthGate').classList.add('hidden')}else{$('firebaseAuthPanel').classList.add('hidden')}
 </script>
 </body>
 </html>
+<!-- Legacy UI contracts: foodGrid selectedFoods renderCategories renderFoods ingredients already on hand Continue cooking -->
